@@ -7,6 +7,9 @@ const Role = require('_helpers/role');
 const accountService = require('./account.service');
 
 // routes
+
+// Add new route
+router.get('/me', authorize(), getMe);
 router.post('/authenticate', authenticateSchema, authenticate);
 router.post('/refresh-token', refreshToken);
 router.post('/revoke-token', authorize(), revokeTokenSchema, revokeToken);
@@ -21,7 +24,20 @@ router.post('/', authorize(Role.Admin), createSchema, create);
 router.put('/:id', authorize(), updateSchema, update);
 router.delete('/:id', authorize(), _delete);
 
+
+
 module.exports = router;
+
+// Controller function for '/me' endpoint
+async function getMe(req, res, next) {
+    try {
+        const account = await accountService.getById(req.user.id);
+        if (!account) return res.status(404).json({ message: 'Account not found' });
+        res.json(account);
+    } catch (error) {
+        next(error);
+    }
+}
 
 function authenticateSchema(req, res, next) {
     const schema = Joi.object({
@@ -42,9 +58,26 @@ function authenticate(req, res, next) {
         .catch(next);
 }
 
+// function refreshToken(req, res, next) {
+//     const token = req.cookies.refreshToken;
+//     const ipAddress = req.ip;
+//     accountService.refreshToken({ token, ipAddress })
+//         .then(({ refreshToken, ...account }) => {
+//             setTokenCookie(res, refreshToken);
+//             res.json(account);
+//         })
+//         .catch(next);
+// }
+
 function refreshToken(req, res, next) {
     const token = req.cookies.refreshToken;
     const ipAddress = req.ip;
+
+    if (!token) {
+        console.error('No refresh token cookie found');
+        return res.status(400).json({ message: 'No refresh token provided' });
+    }
+
     accountService.refreshToken({ token, ipAddress })
         .then(({ refreshToken, ...account }) => {
             setTokenCookie(res, refreshToken);
@@ -229,11 +262,31 @@ function _delete(req, res, next) {
 
 // helper functions
 
+// function setTokenCookie(res, token) {
+//     // create cookie with refresh token that expires in 7 days
+//     const cookieOptions = {
+//         httpOnly: true,
+//         expires: new Date(Date.now() + 7*24*60*60*1000)
+//     };
+//     res.cookie('refreshToken', token, cookieOptions);
+// }
+
+// function setTokenCookie(res, token) {
+//     const cookieOptions = {
+//         httpOnly: true,
+//         expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+//         secure: true, // Set to true if your site is served over HTTPS
+//         sameSite: 'Strict' // Adjust as necessary
+//     };
+//     res.cookie('refreshToken', token, cookieOptions);
+// }
+
 function setTokenCookie(res, token) {
-    // create cookie with refresh token that expires in 7 days
     const cookieOptions = {
         httpOnly: true,
-        expires: new Date(Date.now() + 7*24*60*60*1000)
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        secure: process.env.NODE_ENV === 'production', // Set to true if your site is served over HTTPS
+        sameSite: 'Strict' // Adjust as necessary
     };
     res.cookie('refreshToken', token, cookieOptions);
 }
