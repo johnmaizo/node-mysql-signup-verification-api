@@ -39,3 +39,13 @@ function model(sequelize) {
 
     return sequelize.define('account', attributes, options);
 }
+
+
+// class TblUsers(models.Model):
+//     username = models.CharField(max_length=255)
+//     password = models.CharField(max_length=255)
+//     user_level = models.CharField(max_length=255)
+//     user_role = models.CharField(max_length=255)
+//     active = models.BooleanField(default=True)
+
+    
