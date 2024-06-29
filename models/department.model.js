@@ -4,8 +4,18 @@ module.exports = model;
 
 function model(sequelize) {
     const attributes = {
-        departmentName: { type: DataTypes.STRING, allowNull: false },
-        isActive: { type: DataTypes.BOOLEAN }       
+        department_id: { 
+            type: DataTypes.INTEGER, 
+            primaryKey: true,
+            autoIncrement: true
+        },
+        departmentName: { 
+            type: DataTypes.STRING, 
+            allowNull: false 
+        },
+        isActive: { 
+            type: DataTypes.BOOLEAN 
+        }       
     };
 
     const options = {

@@ -4,11 +4,10 @@ module.exports = model;
 
 function model(sequelize) {
     const attributes = {
-        subjectCode: { type: DataTypes.STRING, allowNull: false },
-        subjectDescription: { type: DataTypes.STRING, allowNull: false },
-        subjectCode: { type: DataTypes.STRING, allowNull: false },
-        unit: { type: DataTypes.INTEGER, allowNull: false }, 
-        // NEED IG COURSE ID NGA FOREIGN KEY
+        floorLevel: { type: DataTypes.STRING, allowNull: false },
+        roomNumber: { type: DataTypes.INTEGER, allowNull: false },
+        building: { type: DataTypes.STRING, allowNull: false },
+
         isActive: { type: DataTypes.BOOLEAN }       
     };
 
@@ -21,5 +20,5 @@ function model(sequelize) {
         }        
     };
 
-    return sequelize.define('subjectinfo', attributes, options);
+    return sequelize.define('roomInfo', attributes, options);
 }

@@ -179,7 +179,6 @@ async function create(params) {
   // save account
   await account.save();
 
-
   return basicDetails(account);
 }
 
@@ -234,7 +233,8 @@ async function hash(password) {
 function generateJwtToken(account) {
   // create a jwt token containing the account id
   return jwt.sign({sub: account.id, id: account.id}, config.secret, {
-    expiresIn: "3m",
+    // expiresIn: "5m",
+    expiresIn: "30m",
   });
 }
 
