@@ -22,7 +22,23 @@ async function initialize() {
 
   db.Department = require("../models/department.model")(sequelize);
   db.Course = require("../models/course.model")(sequelize);
-  db.SubjectInfo = require("../models/subjectInfo.model")(sequelize);
+  db.SubjectInfo = require("../models/subject_info.model")(sequelize);
+  db.RoomInfo = require("../models/room_info.model")(sequelize);
+
+  // ! Student
+  db.Student = require("../models/student.model")(sequelize);
+  db.StudentContact = require("../models/student_contact.model")(sequelize);
+  db.StudentFamily = require("../models/student_family.model")(sequelize);
+  db.StudentAcademic = require("../models/student_academic_background.model")(sequelize);
+  db.AcademicHistory = require("../models/student_academic_history.model")(sequelize);
+  db.StudentSchoolDetail = require("../models/student_school_detail.model")(sequelize);
+  db.StudentSubject = require("../models/student_subject.model")(sequelize);
+
+  // ! Schedule
+  db.Schedule = require("../models/schedule.model")(sequelize);
+  
+  // ! Staff
+  db.StaffInfo = require("../models/staff.model")(sequelize);
 
   // define relationships using the imported function
   defineRelationships(db);

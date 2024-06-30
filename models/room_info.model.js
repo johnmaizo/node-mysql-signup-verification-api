@@ -4,11 +4,16 @@ module.exports = model;
 
 function model(sequelize) {
     const attributes = {
+        room_id: { 
+            type: DataTypes.INTEGER, 
+            primaryKey: true, 
+            autoIncrement: true
+        },
         floorLevel: { type: DataTypes.STRING, allowNull: false },
         roomNumber: { type: DataTypes.INTEGER, allowNull: false },
         building: { type: DataTypes.STRING, allowNull: false },
 
-        isActive: { type: DataTypes.BOOLEAN }       
+        isActive: { type: DataTypes.BOOLEAN, defaultValue: true }    
     };
 
     const options = {
@@ -20,5 +25,5 @@ function model(sequelize) {
         }        
     };
 
-    return sequelize.define('roomInfo', attributes, options);
+    return sequelize.define('roominfo', attributes, options);
 }

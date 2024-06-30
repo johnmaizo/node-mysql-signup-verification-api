@@ -4,20 +4,26 @@ module.exports = model;
 
 function model(sequelize) {
     const attributes = {
-        // student id naka foreign key
+        student_id: { 
+            type: DataTypes.STRING,
+            references: {
+                model: 'students', 
+                key: 'student_id'
+            }
+        } ,
         elementarySchool: { type: DataTypes.STRING, allowNull: false },
         elementaryAddress: { type: DataTypes.STRING, allowNull: false },
-        elementaryHonors: { type: DataTypes.STRING, allowNull: false },
+        elementaryHonors: { type: DataTypes.STRING, allowNull: true },
         elementaryGraduate: { type: DataTypes.DATE, allowNull: false }, 
         secondarySchool: { type: DataTypes.STRING, allowNull: false },
         secondaryAddress: { type: DataTypes.STRING, allowNull: false },
-        secondaryHonors: { type: DataTypes.STRING, allowNull: false },
+        secondaryHonors: { type: DataTypes.STRING, allowNull: true },
         secondaryGraduate: { type: DataTypes.DATE, allowNull: false },
         seniorHighSchool: { type: DataTypes.STRING, allowNull: false },
         seniorHighAddress: { type: DataTypes.STRING, allowNull: false },
-        seniorHighHonors: { type: DataTypes.STRING, allowNull: false },
+        seniorHighHonors: { type: DataTypes.STRING, allowNull: true },
         seniorHighSchoolGraduate: { type: DataTypes.DATE, allowNull: false },
-        isActive: { type: DataTypes.BOOLEAN }       
+        isActive: { type: DataTypes.BOOLEAN, defaultValue: true }  
     };
 
     const options = {
@@ -29,5 +35,5 @@ function model(sequelize) {
         }        
     };
 
-    return sequelize.define('academicHistory', attributes, options);
+    return sequelize.define('academichistory', attributes, options);
 }

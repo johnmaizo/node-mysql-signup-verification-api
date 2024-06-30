@@ -4,15 +4,23 @@ module.exports = model;
 
 function model(sequelize) {
     const attributes = {
+        schedule_id: { 
+            type: DataTypes.INTEGER, 
+            primaryKey: true,
+            autoIncrement: true
+        },
         classDay: { type: DataTypes.STRING, allowNull: false },
         classHour: { type: DataTypes.INTEGER, allowNull: false },
         staff: { type: DataTypes.STRING, allowNull: false },
-        // foreign key staff
         courseCode: { type: DataTypes.STRING, allowNull: false },
-        // foreign key course code
-        roomNumber: { type: DataTypes.INTEGER, allowNull: false },
-        // foreign key roomNumber
-        isActive: { type: DataTypes.BOOLEAN }       
+        room_id: {
+            type: DataTypes.INTEGER,
+            references: {
+                model: 'roominfos',
+                key: 'room_id'
+            }
+        },
+        isActive: { type: DataTypes.BOOLEAN, defaultValue: true }
     };
 
     const options = {

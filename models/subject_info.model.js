@@ -4,7 +4,7 @@ module.exports = model;
 
 function model(sequelize) {
     const attributes = {
-        subjectCode: { 
+        subject_code: { 
             type: DataTypes.STRING, 
             primaryKey: true, 
             allowNull: false 
@@ -17,9 +17,7 @@ function model(sequelize) {
             type: DataTypes.INTEGER, 
             allowNull: false 
         },
-        isActive: { 
-            type: DataTypes.BOOLEAN 
-        },
+        isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
         course_id: { 
             type: DataTypes.INTEGER,
             references: {
