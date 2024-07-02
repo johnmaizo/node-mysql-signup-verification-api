@@ -19,14 +19,14 @@ function defineRelationships(db) {
     db.Student.hasMany(db.StudentFamily, { foreignKey: 'student_id' });
     db.StudentFamily.belongsTo(db.Student, { foreignKey: 'student_id' });
 
-    db.Student.hasMany(db.StudentAcademic, { foreignKey: 'student_id' });
-    db.StudentAcademic.belongsTo(db.Student, { foreignKey: 'student_id' });
+    db.Student.hasMany(db.StudentCurrentAcademic, { foreignKey: 'student_id' });
+    db.StudentCurrentAcademic.belongsTo(db.Student, { foreignKey: 'student_id' });
 
     db.Student.hasMany(db.AcademicHistory, { foreignKey: 'student_id' });
     db.AcademicHistory.belongsTo(db.Student, { foreignKey: 'student_id' });
 
-    db.Department.hasMany(db.StudentAcademic, { foreignKey: 'department_id' });
-    db.StudentAcademic.belongsTo(db.Department, { foreignKey: 'department_id' });
+    db.Department.hasMany(db.StudentCurrentAcademic, { foreignKey: 'department_id' });
+    db.StudentCurrentAcademic.belongsTo(db.Department, { foreignKey: 'department_id' });
 
     // ! Room
     db.RoomInfo.hasMany(db.Schedule, { foreignKey: 'room_id' });

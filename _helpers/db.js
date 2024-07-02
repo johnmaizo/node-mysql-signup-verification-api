@@ -29,7 +29,7 @@ async function initialize() {
   db.Student = require("../models/student.model")(sequelize);
   db.StudentContact = require("../models/student_contact.model")(sequelize);
   db.StudentFamily = require("../models/student_family.model")(sequelize);
-  db.StudentAcademic = require("../models/student_academic_background.model")(sequelize);
+  db.StudentCurrentAcademic = require("../models/student_current_academic_background.model")(sequelize);
   db.AcademicHistory = require("../models/student_academic_history.model")(sequelize);
   db.StudentSchoolDetail = require("../models/student_school_detail.model")(sequelize);
   db.StudentSubject = require("../models/student_subject.model")(sequelize);

@@ -11,17 +11,18 @@ function model(sequelize) {
                 key: 'student_id'
             }
         },
-        cityAddress: { type: DataTypes.STRING, allowNull: false },
-        provinceAddress: { type: DataTypes.STRING, allowNull: false },
-        contactNumber: { type: DataTypes.STRING, allowNull: false },
-        cityContactNumber: { type: DataTypes.STRING, allowNull: false },
-        provinceContactNumber: { type: DataTypes.STRING, allowNull: false },
         email: { type: DataTypes.STRING, allowNull: false, unique: true },
+        contactNumber: { type: DataTypes.STRING, allowNull: false },
+        cityAddress: { type: DataTypes.STRING, allowNull: false },
+        cityTelNumber: { type: DataTypes.STRING, allowNull: true },
+        provinceAddress: { type: DataTypes.STRING, allowNull: true },
+        provinceTelNumber: { type: DataTypes.STRING, allowNull: false },
+
         isActive: { type: DataTypes.BOOLEAN, defaultValue: true }
     };
 
     const options = {
-        timestamps: false,
+        timestamps: true,
     };
 
     return sequelize.define('studentcontact', attributes, options);

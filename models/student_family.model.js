@@ -11,33 +11,44 @@ function model(sequelize) {
                 key: 'student_id'
             }
         },
-        fatherFirstName: { type: DataTypes.STRING, allowNull: false },
-        fatherMiddleName: { type: DataTypes.STRING, allowNull: false },
-        fatherLastName: { type: DataTypes.STRING, allowNull: false },
-        fatherContactNumber: { type: DataTypes.STRING, allowNull: false },
-        fatherEmail: { type: DataTypes.STRING, allowNull: false },
-        fatherOccupation: { type: DataTypes.STRING, allowNull: false },
-        fatherIncome: { type: DataTypes.STRING, allowNull: false },
-        fatherCompany: { type: DataTypes.STRING, allowNull: false },
-        motherFirstName: { type: DataTypes.STRING, allowNull: false },
-        motherMiddleName: { type: DataTypes.STRING, allowNull: false },
-        motherLastName: { type: DataTypes.STRING, allowNull: false },
-        motherEmail: { type: DataTypes.STRING, allowNull: false },
-        motherContactNumber: { type: DataTypes.STRING, allowNull: false },
-        motherOccupation: { type: DataTypes.STRING, allowNull: false },
-        motherIncome: { type: DataTypes.STRING, allowNull: false },
-        motherCompany: { type: DataTypes.STRING, allowNull: false },
-        guardianFirstName: { type: DataTypes.STRING, allowNull: false },
-        guardianMiddleName: { type: DataTypes.STRING, allowNull: false },
-        guardianLastName: { type: DataTypes.STRING, allowNull: false },
-        guardianRelation: { type: DataTypes.STRING, allowNull: false },
-        guardianContactNumber: { type: DataTypes.STRING, allowNull: false },
-        guardianEmail: { type: DataTypes.STRING, allowNull: false },
+
+        // Father
+        fatherFirstName: { type: DataTypes.STRING, allowNull: true },
+        fatherMiddleName: { type: DataTypes.STRING, allowNull: true },
+        fatherLastName: { type: DataTypes.STRING, allowNull: true },
+        fatherAddress: { type: DataTypes.STRING, allowNull: true },
+        fatherOccupation: { type: DataTypes.STRING, allowNull: true },
+        fatherContactNumber: { type: DataTypes.STRING, allowNull: true },
+        fatherCompanyName: { type: DataTypes.STRING, allowNull: true },
+        fatherCompanyAddress: { type: DataTypes.STRING, allowNull: true },
+        fatherEmail: { type: DataTypes.STRING, allowNull: true },
+        fatherIncome: { type: DataTypes.STRING, allowNull: true },
+
+
+        // Mother
+        motherFirstName: { type: DataTypes.STRING, allowNull: true },
+        motherMiddleName: { type: DataTypes.STRING, allowNull: true },
+        motherLastName: { type: DataTypes.STRING, allowNull: true },
+        motherAddress: { type: DataTypes.STRING, allowNull: true },
+        motherOccupation: { type: DataTypes.STRING, allowNull: true },
+        motherContactNumber: { type: DataTypes.STRING, allowNull: true },
+        motherIncome: { type: DataTypes.STRING, allowNull: true },
+        motherCompanyName: { type: DataTypes.STRING, allowNull: true },
+        motherCompanyAddress: { type: DataTypes.STRING, allowNull: true },
+
+
+        // Guardian
+        guardianFirstName: { type: DataTypes.STRING, allowNull: true },
+        guardianMiddleName: { type: DataTypes.STRING, allowNull: true },
+        guardianLastName: { type: DataTypes.STRING, allowNull: true },
+        guardianRelation: { type: DataTypes.STRING, allowNull: true },
+        guardianContactNumber: { type: DataTypes.STRING, allowNull: true },
+        
         isActive: { type: DataTypes.BOOLEAN, defaultValue: true }
     };
 
     const options = {
-        timestamps: false,
+        timestamps: true,
     };
 
     return sequelize.define('studentfamily', attributes, options);

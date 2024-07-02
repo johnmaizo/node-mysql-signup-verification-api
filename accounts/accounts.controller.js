@@ -58,17 +58,6 @@ function authenticate(req, res, next) {
         .catch(next);
 }
 
-// function refreshToken(req, res, next) {
-//     const token = req.cookies.refreshToken;
-//     const ipAddress = req.ip;
-//     accountService.refreshToken({ token, ipAddress })
-//         .then(({ refreshToken, ...account }) => {
-//             setTokenCookie(res, refreshToken);
-//             res.json(account);
-//         })
-//         .catch(next);
-// }
-
 function refreshToken(req, res, next) {
     const token = req.cookies.refreshToken;
     const ipAddress = req.ip;

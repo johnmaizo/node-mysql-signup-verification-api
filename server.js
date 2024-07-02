@@ -18,6 +18,8 @@ app.use(
 // api routes
 app.use("/accounts", require("./accounts/accounts.controller"));
 
+app.use("/students", require("./students/students.controller"));
+
 // swagger docs route
 app.use("/api-docs", require("_helpers/swagger"));
 
