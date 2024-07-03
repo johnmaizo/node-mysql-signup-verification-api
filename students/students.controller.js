@@ -26,9 +26,9 @@ function addStudent(req, res, next) {
 // ! Schemas
 function addStudentSchema(req, res, next) {
   const schema = Joi.object({
-    student_id: Joi.string().required(),
+    // student_id: Joi.string().required(),
     firstName: Joi.string().required(),
-    middleName: Joi.string(),
+    middleName: [Joi.string().optional(), Joi.allow(null)],
     lastName: Joi.string().required(),
     // email: Joi.string().email().required(),
     gender: Joi.string().required(),
@@ -38,7 +38,7 @@ function addStudentSchema(req, res, next) {
     religion: Joi.string().required(),
     citizenship: Joi.string().required(),
     country: Joi.string().required(),
-    ACR: Joi.string(),
+    ACR: [Joi.string().optional(), Joi.allow(null)],
   });
   validateRequest(req, next, schema);
 }
