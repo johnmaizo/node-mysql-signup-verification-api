@@ -13,7 +13,7 @@ function model(sequelize) {
         lastName: { type: DataTypes.STRING, allowNull: false },
         gender: { type: DataTypes.STRING, allowNull: false },
         civilStatus: { type: DataTypes.STRING, allowNull: false },
-        birthDate: { type: DataTypes.DATE, allowNull: false },
+        birthDate: { type: DataTypes.DATEONLY, allowNull: false },
         birthPlace: { type: DataTypes.STRING, allowNull: false },
         
         religion: { type: DataTypes.STRING, allowNull: false },

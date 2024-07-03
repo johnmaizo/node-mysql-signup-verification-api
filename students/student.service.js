@@ -3,7 +3,7 @@ const db = require("_helpers/db");
 const Role = require("_helpers/role");
 
 module.exports = {
-  // getAllStudent,
+  getAllStudents,
   createStudent,
   // updateStudent,
   // deleteStudent,
@@ -22,6 +22,11 @@ async function createStudent(params) {
   await student.save();
 }
 
+/**
+ * Generates a unique student ID based on the current year and the existing student IDs in the database.
+ *
+ * @return {string} The generated unique student ID.
+ */
 async function generateStudentId() {
   const currentYear = new Date().getFullYear().toString();
   const lastStudent = await db.Student.findOne({
@@ -42,6 +47,11 @@ async function generateStudentId() {
   }
 }
 
+async function getAllStudents() {
+  const student = await db.Student.findAll();
+  return student.map((x) => studentBasicDetails(x));
+}
+
 function studentBasicDetails(student) {
   const {
     student_id,
@@ -50,11 +60,6 @@ function studentBasicDetails(student) {
     lastName,
     gender,
     civilStatus,
-    birthDate,
-    birthPlace,
-    religion,
-    citizenship,
-    country,
     ACR,
 
     createdAt,
@@ -66,11 +71,6 @@ function studentBasicDetails(student) {
     lastName,
     gender,
     civilStatus,
-    birthDate,
-    birthPlace,
-    religion,
-    citizenship,
-    country,
     ACR,
 
     createdAt,

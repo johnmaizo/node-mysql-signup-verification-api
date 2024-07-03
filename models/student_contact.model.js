@@ -12,7 +12,7 @@ function model(sequelize) {
             }
         },
         email: { type: DataTypes.STRING, allowNull: false, unique: true },
-        contactNumber: { type: DataTypes.STRING, allowNull: false },
+        contactNumber: { type: DataTypes.STRING(11), allowNull: false},
         cityAddress: { type: DataTypes.STRING, allowNull: false },
         cityTelNumber: { type: DataTypes.STRING, allowNull: true },
         provinceAddress: { type: DataTypes.STRING, allowNull: true },

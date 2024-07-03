@@ -6,7 +6,8 @@ const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const studentService = require("./student.service");
 
-router.post("/add-student", addStudentSchema, addStudent);
+router.post("/add-student", authorize(Role.Admin, Role.Staff), addStudentSchema, addStudent);
+router.get('/', authorize(Role.Admin, Role.Staff), getAllStudents);
 
 
 module.exports = router;
@@ -23,10 +24,15 @@ function addStudent(req, res, next) {
     .catch(next);
 }
 
+function getAllStudents(req, res, next) {
+  studentService.getAllStudents()
+      .then(accounts => res.json(accounts))
+      .catch(next);
+}
+
 // ! Schemas
 function addStudentSchema(req, res, next) {
   const schema = Joi.object({
-    // student_id: Joi.string().required(),
     firstName: Joi.string().required(),
     middleName: [Joi.string().optional(), Joi.allow(null)],
     lastName: Joi.string().required(),
