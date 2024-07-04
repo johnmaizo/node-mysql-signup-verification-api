@@ -61,6 +61,7 @@ function studentBasicDetails(student) {
     gender,
     civilStatus,
     ACR,
+    isActive,
 
     createdAt,
   } = student;
@@ -72,6 +73,8 @@ function studentBasicDetails(student) {
     gender,
     civilStatus,
     ACR,
+    isActive,
+
 
     createdAt,
   };
