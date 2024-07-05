@@ -9,7 +9,7 @@ function model(sequelize) {
             primaryKey: true, 
         },
         firstName: { type: DataTypes.STRING(35), allowNull: false },
-        middleName: { type: DataTypes.STRING(15), allowNull: true },
+        middleName: { type: DataTypes.STRING(35), allowNull: true },
         lastName: { type: DataTypes.STRING(35), allowNull: false },
         gender: { type: DataTypes.STRING(10), allowNull: false },
         email: { type: DataTypes.STRING, allowNull: false, unique: true },

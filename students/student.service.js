@@ -11,11 +11,13 @@ module.exports = {
 };
 
 async function createStudent(params) {
-  //   if (await db.student.findOne({where: {email: params.email}})) {
-  // if (await db.StudentContact.findOne({where: {email: params.email}})) {
-  //   throw 'Email "' + params.email + '" is already exist!';
-  // }
-  params.student_id = await generateStudentId();
+  // validate
+  if (await db.Student.findOne({where: {email: params.email}})) {
+    throw 'Email "' + params.email + '" is already registered';
+  }
+
+  params.student_id = generateStudentId();
+
 
   const student = new db.Student(params);
 
@@ -66,6 +68,7 @@ function studentBasicDetails(student) {
     middleName,
     lastName,
     gender,
+    email,
     civilStatus,
     ACR,
     isActive,
@@ -78,6 +81,7 @@ function studentBasicDetails(student) {
     middleName,
     lastName,
     gender,
+    email,
     civilStatus,
     ACR,
     isActive,
