@@ -11,17 +11,17 @@ function model(sequelize) {
                 key: 'student_id'
             }
         } ,
-        elementarySchool: { type: DataTypes.STRING, allowNull: false },
-        elementaryAddress: { type: DataTypes.STRING, allowNull: false },
-        elementaryHonors: { type: DataTypes.STRING, allowNull: true },
+        elementarySchool: { type: DataTypes.STRING(50), allowNull: false },
+        elementaryAddress: { type: DataTypes.STRING(95), allowNull: false },
+        elementaryHonors: { type: DataTypes.STRING(20), allowNull: true },
         elementaryGraduate: { type: DataTypes.DATE, allowNull: false }, 
-        secondarySchool: { type: DataTypes.STRING, allowNull: false },
-        secondaryAddress: { type: DataTypes.STRING, allowNull: false },
-        secondaryHonors: { type: DataTypes.STRING, allowNull: true },
+        secondarySchool: { type: DataTypes.STRING(50), allowNull: false },
+        secondaryAddress: { type: DataTypes.STRING(95), allowNull: false },
+        secondaryHonors: { type: DataTypes.STRING(20), allowNull: true },
         secondaryGraduate: { type: DataTypes.DATE, allowNull: false },
-        seniorHighSchool: { type: DataTypes.STRING, allowNull: false },
-        seniorHighAddress: { type: DataTypes.STRING, allowNull: false },
-        seniorHighHonors: { type: DataTypes.STRING, allowNull: true },
+        seniorHighSchool: { type: DataTypes.STRING(50), allowNull: false },
+        seniorHighAddress: { type: DataTypes.STRING(95), allowNull: false },
+        seniorHighHonors: { type: DataTypes.STRING(20), allowNull: true },
         seniorHighSchoolGraduate: { type: DataTypes.DATE, allowNull: false },
         isActive: { type: DataTypes.BOOLEAN, defaultValue: true }  
     };

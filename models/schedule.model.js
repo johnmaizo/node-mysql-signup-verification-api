@@ -9,12 +9,12 @@ function model(sequelize) {
             primaryKey: true,
             autoIncrement: true
         },
-        classDay: { type: DataTypes.STRING, allowNull: false },
-        classHour: { type: DataTypes.INTEGER, allowNull: false },
-        staff: { type: DataTypes.STRING, allowNull: false },
-        courseCode: { type: DataTypes.STRING, allowNull: false },
+        classDay: { type: DataTypes.STRING(15), allowNull: false },
+        classHour: { type: DataTypes.INTEGER(10), allowNull: false },
+        staff: { type: DataTypes.STRING(50), allowNull: false },
+        courseCode: { type: DataTypes.STRING(20), allowNull: false },
         room_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.INTEGER(3),
             references: {
                 model: 'roominfos',
                 key: 'room_id'

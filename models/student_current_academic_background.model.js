@@ -18,14 +18,14 @@ function model(sequelize) {
                 key: 'department_id'
             }
         },
-        course: { type: DataTypes.STRING, allowNull: false },
-        majorIn: { type: DataTypes.STRING, allowNull: true },
+        course: { type: DataTypes.STRING(50), allowNull: false },
+        majorIn: { type: DataTypes.STRING(50), allowNull: true },
         studentType: { type: DataTypes.STRING, allowNull: false },
         // semesterType dapat naay choice either undergrad or grad 
-        semesterEntry: { type: DataTypes.STRING, allowNull: false },
-        yearEntry: { type: DataTypes.INTEGER, allowNull: false },
-        yearGraduate: { type: DataTypes.INTEGER, allowNull: true },
-        applicationType: { type: DataTypes.STRING, allowNull: false },
+        semesterEntry: { type: DataTypes.STRING(10), allowNull: false },
+        yearEntry: { type: DataTypes.INTEGER(4), allowNull: false },
+        yearGraduate: { type: DataTypes.INTEGER(4), allowNull: true },
+        applicationType: { type: DataTypes.STRING(15), allowNull: false },
         // Application type have three choices either Freshmen, Transferee, and Cross Enrollee
 
         isActive: { type: DataTypes.BOOLEAN, defaultValue: true }  

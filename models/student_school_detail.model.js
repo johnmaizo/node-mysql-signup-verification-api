@@ -25,8 +25,8 @@ function model(sequelize) {
                 key: 'department_id'  // refers to the column name in the departments table
             }
         },
-        yearLevel: { type: DataTypes.INTEGER, allowNull: false },
-        semester: { type: DataTypes.STRING, allowNull: false },
+        yearLevel: { type: DataTypes.INTEGER(4), allowNull: false },
+        semester: { type: DataTypes.STRING(10), allowNull: false },
         isActive: { type: DataTypes.BOOLEAN, defaultValue: true }      
     };
 

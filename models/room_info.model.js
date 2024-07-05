@@ -9,9 +9,9 @@ function model(sequelize) {
             primaryKey: true, 
             autoIncrement: true
         },
-        floorLevel: { type: DataTypes.STRING, allowNull: false },
+        floorLevel: { type: DataTypes.INTEGER, allowNull: false },
         roomNumber: { type: DataTypes.INTEGER, allowNull: false },
-        building: { type: DataTypes.STRING, allowNull: false },
+        building: { type: DataTypes.STRING(25), allowNull: false },
 
         isActive: { type: DataTypes.BOOLEAN, defaultValue: true }    
     };
