@@ -11,7 +11,6 @@ function model(sequelize) {
                 key: 'student_id'
             }
         },
-        email: { type: DataTypes.STRING, allowNull: false, unique: true },
         contactNumber: { type: DataTypes.STRING(15), allowNull: false},
         cityAddress: { type: DataTypes.STRING(35), allowNull: false },
         cityTelNumber: { type: DataTypes.STRING(15), allowNull: true },

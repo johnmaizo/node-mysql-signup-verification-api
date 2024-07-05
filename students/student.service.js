@@ -5,6 +5,7 @@ const Role = require("_helpers/role");
 module.exports = {
   getAllStudents,
   createStudent,
+  getStudentById,
   // updateStudent,
   // deleteStudent,
 };
@@ -50,6 +51,12 @@ async function generateStudentId() {
 async function getAllStudents() {
   const student = await db.Student.findAll();
   return student.map((x) => studentBasicDetails(x));
+}
+
+async function getStudentById(id) {
+  const student = await db.Student.findByPk(id);
+  if (!student) throw "Student not found";
+  return student;
 }
 
 function studentBasicDetails(student) {

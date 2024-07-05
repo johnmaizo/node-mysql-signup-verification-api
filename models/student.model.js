@@ -12,6 +12,7 @@ function model(sequelize) {
         middleName: { type: DataTypes.STRING(15), allowNull: true },
         lastName: { type: DataTypes.STRING(35), allowNull: false },
         gender: { type: DataTypes.STRING(10), allowNull: false },
+        email: { type: DataTypes.STRING, allowNull: false, unique: true },
         civilStatus: { type: DataTypes.STRING(20), allowNull: false },
         birthDate: { type: DataTypes.DATEONLY, allowNull: false },
         birthPlace: { type: DataTypes.STRING(95), allowNull: false },
