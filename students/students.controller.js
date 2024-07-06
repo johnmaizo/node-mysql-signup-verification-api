@@ -43,7 +43,10 @@ function addStudentSchema(req, res, next) {
     firstName: Joi.string().required(),
     middleName: [Joi.string().optional(), Joi.allow(null)],
     lastName: Joi.string().required(),
+    
     email: Joi.string().email().required(),
+    contactNumber: Joi.string().required(),
+
     gender: Joi.string().required(),
     civilStatus: Joi.string().required(),
     birthDate: Joi.date().required(),

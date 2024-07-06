@@ -16,7 +16,7 @@ async function createStudent(params) {
     throw 'Email "' + params.email + '" is already registered';
   }
 
-  params.student_id = generateStudentId();
+  params.student_id = await generateStudentId();
 
 
   const student = new db.Student(params);
