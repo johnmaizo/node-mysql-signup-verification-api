@@ -4,9 +4,10 @@ const Role = require("_helpers/role");
 
 module.exports = {
   getAllStudents,
+  getPreviousTotalStudents,
   createStudent,
   getStudentById,
-  // updateStudent,
+  updateStudent,
   // deleteStudent,
 };
 
@@ -60,6 +61,38 @@ async function getStudentById(id) {
   if (!student) throw "Student not found";
   return student;
 }
+
+async function updateStudent(id, params) {
+  const student = await getStudentById(id);
+
+  if (!student) throw "Student not found";
+
+  if (params.email !== student.email && await db.Student.findOne({where: {email: params.email}})) {
+    throw 'Email "' + params.email + '" is already registered';
+  }
+
+  Object.assign(student, params);
+  await student.save();
+}
+
+async function getPreviousTotalStudents() {
+  const today = new Date();
+  const firstDayOfPreviousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const lastDayOfPreviousMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+
+  const previousTotalStudents = await db.Student.count({
+    where: {
+      createdAt: {
+        [Op.between]: [firstDayOfPreviousMonth, lastDayOfPreviousMonth],
+      },
+    },
+  });
+
+  return previousTotalStudents || 0;
+}
+
+
+
 
 function studentBasicDetails(student) {
   const {

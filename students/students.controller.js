@@ -8,7 +8,9 @@ const studentService = require("./student.service");
 
 router.post("/add-student", authorize(Role.Admin, Role.Staff), addStudentSchema, addStudent);
 router.get('/', authorize(Role.Admin, Role.Staff), getAllStudents);
+router.get('/previous', authorize(Role.Admin, Role.Staff), getPreviousTotalStudents);
 router.get('/:id', authorize(Role.Admin, Role.Staff), getStudentById);
+router.put("/:id", updateStudentSchema, updateStudent); 
 
 
 module.exports = router;
@@ -31,10 +33,28 @@ function getAllStudents(req, res, next) {
       .catch(next);
 }
 
+function getPreviousTotalStudents(req, res, next) {
+  studentService.getPreviousTotalStudents()
+    .then(previousTotal => res.json({ total: previousTotal }))
+    .catch(next);
+}
+
 function getStudentById(req, res, next) {
   studentService.getStudentById(req.params.id)
       .then(student => student ? res.json(student) : res.sendStatus(404))
       .catch(next);
+}
+
+function updateStudent(req, res, next) {
+  studentService
+    .updateStudent(req.params.id, req.body)
+    .then(() =>
+      res.json({
+        message:
+          "Student Updated Successfully.",
+      })
+    )
+    .catch(next);
 }
 
 // ! Schemas
@@ -54,6 +74,28 @@ function addStudentSchema(req, res, next) {
     religion: Joi.string().required(),
     citizenship: Joi.string().required(),
     country: Joi.string().required(),
+    ACR: [Joi.string().optional(), Joi.allow(null)],
+  });
+  validateRequest(req, next, schema);
+}
+
+
+function updateStudentSchema(req, res, next) {
+  const schema = Joi.object({
+    firstName: Joi.string().empty(""),
+    middleName: [Joi.string().optional(), Joi.allow(null)],
+    lastName: Joi.string().empty(""),
+    
+    email: Joi.string().email().empty(""),
+    contactNumber: Joi.string().empty(""),
+
+    gender: Joi.string().empty(""),
+    civilStatus: Joi.string().empty(""),
+    birthDate: Joi.date().empty(""),
+    birthPlace: Joi.string().empty(""),
+    religion: Joi.string().empty(""),
+    citizenship: Joi.string().empty(""),
+    country: Joi.string().empty(""),
     ACR: [Joi.string().optional(), Joi.allow(null)],
   });
   validateRequest(req, next, schema);
