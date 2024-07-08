@@ -19,7 +19,6 @@ async function createStudent(params) {
 
   params.student_id = await generateStudentId();
 
-
   const student = new db.Student(params);
 
   // save student
@@ -67,8 +66,13 @@ async function updateStudent(id, params) {
 
   if (!student) throw "Student not found";
 
-  if (params.email !== student.email && await db.Student.findOne({where: {email: params.email}})) {
-    throw 'Email "' + params.email + '" is already registered';
+  // validate (if email was changed)
+  if (
+    params.email &&
+    student.email !== params.email &&
+    (await db.Student.findOne({where: {email: params.email}}))
+  ) {
+    throw 'Email "' + params.email + '" is already taken';
   }
 
   Object.assign(student, params);
@@ -77,8 +81,16 @@ async function updateStudent(id, params) {
 
 async function getPreviousTotalStudents() {
   const today = new Date();
-  const firstDayOfPreviousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-  const lastDayOfPreviousMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+  const firstDayOfPreviousMonth = new Date(
+    today.getFullYear(),
+    today.getMonth() - 1,
+    1
+  );
+  const lastDayOfPreviousMonth = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    0
+  );
 
   const previousTotalStudents = await db.Student.count({
     where: {
@@ -90,9 +102,6 @@ async function getPreviousTotalStudents() {
 
   return previousTotalStudents || 0;
 }
-
-
-
 
 function studentBasicDetails(student) {
   const {
@@ -118,7 +127,6 @@ function studentBasicDetails(student) {
     civilStatus,
     ACR,
     isActive,
-
 
     createdAt,
   };

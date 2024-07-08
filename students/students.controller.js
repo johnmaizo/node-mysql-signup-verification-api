@@ -97,6 +97,8 @@ function updateStudentSchema(req, res, next) {
     citizenship: Joi.string().empty(""),
     country: Joi.string().empty(""),
     ACR: [Joi.string().optional(), Joi.allow(null)],
+    
+    isActive: Joi.boolean().empty(''),
   });
   validateRequest(req, next, schema);
 }
