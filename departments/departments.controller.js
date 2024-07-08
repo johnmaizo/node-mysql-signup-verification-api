@@ -5,11 +5,9 @@ const validateRequest = require("_middleware/validate-request");
 const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const departmentService = require("./department.service");
-const { getAllDepartment, getPreviousTotalDepartment, updateDepartment } = require("./department.service");
 
 router.post("/add-department", authorize(Role.Admin, Role.Staff), addDepartmentSchema, addDepartment);
 router.get('/', authorize(Role.Admin, Role.Staff), getAllDepartment);
-router.get('/previous', authorize(Role.Admin, Role.Staff), getPreviousTotalDepartment);
 router.get('/:id', authorize(Role.Admin, Role.Staff), getDepartmentById);
 router.put("/:id", updateDepartmentSchema, updateDepartment); 
 
@@ -30,19 +28,14 @@ function addDepartment(req, res, next) {
 
 function getAllDepartment(req, res, next) {
   departmentService.getAllDepartment()
-      .then(department => res.json(department))
+      .then(departments => res.json(departments))
       .catch(next);
 }
 
-function getPreviousTotalDepartment(req, res, next) {
-  departmentService.getPreviousTotalDepartment()
-    .then(previousTotal => res.json({ total: previousTotal }))
-    .catch(next);
-}
 
 function getDepartmentById(req, res, next) {
   departmentService.getDepartmentById(req.params.id)
-      .then(teacher => teacher ? res.json(teacher) : res.sendStatus(404))
+      .then(department => department ? res.json(department) : res.sendStatus(404))
       .catch(next);
 }
 
@@ -62,6 +55,7 @@ function updateDepartment(req, res, next) {
 function addDepartmentSchema(req, res, next) {
   const schema = Joi.object({
     departmentName: Joi.string().required(),
+    departmentCode: Joi.string().required()
   });
   validateRequest(req, next, schema);
 }
@@ -70,6 +64,8 @@ function addDepartmentSchema(req, res, next) {
 function updateDepartmentSchema(req, res, next) {
   const schema = Joi.object({
     departmentName: Joi.string().empty(""),
+    departmentCode: Joi.string().empty(""),
+    isActive: Joi.boolean().empty(""),
   });
   validateRequest(req, next, schema);
 }

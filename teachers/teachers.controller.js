@@ -5,7 +5,6 @@ const validateRequest = require("_middleware/validate-request");
 const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const teacherService = require("./teacher.service");
-const { getAllTeachers, getPreviousTotalTeachers, updateTeacher } = require("./teachers.service");
 
 router.post("/add-teacher", authorize(Role.Admin, Role.Staff), addTeacherSchema, addTeacher);
 router.get('/', authorize(Role.Admin, Role.Staff), getAllTeachers);
@@ -30,7 +29,7 @@ function addTeacher(req, res, next) {
 
 function getAllTeachers(req, res, next) {
   teacherService.getAllTeachers()
-      .then(teacher => res.json(teacher))
+      .then(teachers => res.json(teachers))
       .catch(next);
 }
 
@@ -67,6 +66,8 @@ function addTeacherSchema(req, res, next) {
     teacherAddress: Joi.string().required(),
     contactNumber: Joi.string().required(),
     email: Joi.string().email().required(),
+
+    department_id: Joi.number().required(),
   });
   validateRequest(req, next, schema);
 }
@@ -78,8 +79,12 @@ function updateTeacherSchema(req, res, next) {
     middleName: [Joi.string().optional(), Joi.allow(null)],
     lastName: Joi.string().empty(""),
     teacherAddress: Joi.string().empty(""),
-    email: Joi.string().email().empty(""),
     contactNumber: Joi.string().empty(""),
+    email: Joi.string().email().empty(""),
+
+    department_id: Joi.number().empty(""),
+    
+    isActive: Joi.boolean().empty(""),
   });
   validateRequest(req, next, schema);
 }

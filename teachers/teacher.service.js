@@ -5,60 +5,33 @@ const Role = require("_helpers/role");
 module.exports = {
   getAllTeachers,
   getPreviousTotalTeachers,
-  createTeachers,
+  createTeacher,
   getTeacherById,
   updateTeacher,
 };
 
-async function createTeachers(params) {
+async function createTeacher(params) {
   // validate
   if (await db.TeacherInfo.findOne({where: {email: params.email}})) {
     throw 'Email "' + params.email + '" is already registered';
   }
 
-  // params.student_id = await generateStudentId();
-
-
   const teacher = new db.TeacherInfo(params);
 
-  // save student
+  // save teacher
   await teacher.save();
 }
 
-/**
- * Generates a unique student ID based on the current year and the existing student IDs in the database.
- *
- * @return {string} The generated unique student ID.
- */
-// async function generateStudentId() {
-//   const currentYear = new Date().getFullYear().toString();
-//   const lastStudent = await db.Student.findOne({
-//     where: {
-//       student_id: {
-//         [Op.like]: `${currentYear}%`,
-//       },
-//     },
-//     order: [["createdAt", "DESC"]],
-//   });
-
-//   if (lastStudent) {
-//     const lastId = lastStudent.student_id.split("-")[1];
-//     const newIdNumber = (parseInt(lastId) + 1).toString().padStart(5, "0");
-//     return `${currentYear}-${newIdNumber}`;
-//   } else {
-//     return `${currentYear}-00001`;
-//   }
-// }
-
 async function getAllTeachers() {
-  const teacher = await db.Student.findAll();
+  const teacher = await db.TeacherInfo.findAll();
+  
   return teacher.map((x) => teacherBasicDetails(x));
 }
 
 async function getTeacherById(id) {
   const teacher = await db.TeacherInfo.findByPk(id);
   if (!teacher) throw "Teacher not found";
-  return teacherBasicDetails;
+  return teacher;
 }
 
 async function updateTeacher(id, params) {
@@ -103,6 +76,7 @@ function teacherBasicDetails(teacher) {
     contactNumber,
     email,
     isActive,
+    department_id,
 
     createdAt,
   } = teacher;
@@ -115,6 +89,8 @@ function teacherBasicDetails(teacher) {
     contactNumber,
     email,
     isActive,
+    department_id,
+
 
 
     createdAt,
