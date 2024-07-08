@@ -48,9 +48,9 @@ function defineRelationships(db) {
     db.StudentSubject.belongsTo(db.SubjectInfo, { foreignKey: 'subject_code' });
 
 
-    // ! Staff
-    db.Department.hasMany(db.StaffInfo, { foreignKey: 'department_id' });
-    db.StaffInfo.belongsTo(db.Department, { foreignKey: 'department_id' });
+    // ! Teacher
+    db.Department.hasMany(db.TeacherInfo, { foreignKey: 'department_id' });
+    db.TeacherInfo.belongsTo(db.Department, { foreignKey: 'department_id' });
 
 
 }
