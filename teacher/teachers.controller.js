@@ -1,0 +1,85 @@
+const express = require("express");
+const router = express.Router();
+const Joi = require("joi");
+const validateRequest = require("_middleware/validate-request");
+const authorize = require("_middleware/authorize");
+const Role = require("_helpers/role");
+const teacherService = require("./teacher.service");
+const { getAllTeachers, getPreviousTotalTeachers, updateTeacher } = require("./teachers.service");
+
+router.post("/add-teacher", authorize(Role.Admin, Role.Staff), addTeacherSchema, addTeacher);
+router.get('/', authorize(Role.Admin, Role.Staff), getAllTeachers);
+router.get('/previous', authorize(Role.Admin, Role.Staff), getPreviousTotalTeachers);
+router.get('/:id', authorize(Role.Admin, Role.Staff), getTeacherById);
+router.put("/:id", updateTeacherSchema, updateTeacher); 
+
+
+module.exports = router;
+
+function addTeacher(req, res, next) {
+  teacherService
+    .createTeacher(req.body)
+    .then(() =>
+      res.json({
+        message:
+          "Teacher Added Successfully.",
+      })
+    )
+    .catch(next);
+}
+
+function getAllTeachers(req, res, next) {
+  teacherService.getAllTeachers()
+      .then(teacher => res.json(teacher))
+      .catch(next);
+}
+
+function getPreviousTotalTeachers(req, res, next) {
+  teacherService.getPreviousTotalTeachers()
+    .then(previousTotal => res.json({ total: previousTotal }))
+    .catch(next);
+}
+
+function getTeacherById(req, res, next) {
+  teacherService.getTeacherById(req.params.id)
+      .then(teacher => teacher ? res.json(teacher) : res.sendStatus(404))
+      .catch(next);
+}
+
+function updateTeacher(req, res, next) {
+  teacherService
+    .updateTeacher(req.params.id, req.body)
+    .then(() =>
+      res.json({
+        message:
+          "Teacher Updated Successfully.",
+      })
+    )
+    .catch(next);
+}
+
+// ! Schemas
+function addTeacherSchema(req, res, next) {
+  const schema = Joi.object({
+    firstName: Joi.string().required(),
+    middleName: [Joi.string().optional(), Joi.allow(null)],
+    lastName: Joi.string().required(),
+    teacherAddress: Joi.string().required(),
+    contactNumber: Joi.string().required(),
+    email: Joi.string().email().required(),
+  });
+  validateRequest(req, next, schema);
+}
+
+
+function updateTeacherSchema(req, res, next) {
+  const schema = Joi.object({
+    firstName: Joi.string().empty(""),
+    middleName: [Joi.string().optional(), Joi.allow(null)],
+    lastName: Joi.string().empty(""),
+    teacherAddress: Joi.string().empty(""),
+    email: Joi.string().email().empty(""),
+    contactNumber: Joi.string().empty(""),
+  });
+  validateRequest(req, next, schema);
+}
