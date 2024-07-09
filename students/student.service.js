@@ -3,9 +3,12 @@ const db = require("_helpers/db");
 const Role = require("_helpers/role");
 
 module.exports = {
-  getAllStudents,
-  getPreviousTotalStudents,
   createStudent,
+  getAllStudents,
+  getAllStudentsActive,
+  getPreviousTotalStudents,
+  getPreviousTotalStudentsActive,
+
   getStudentById,
   updateStudent,
   // deleteStudent,
@@ -55,6 +58,15 @@ async function getAllStudents() {
   return student.map((x) => studentBasicDetails(x));
 }
 
+async function getAllStudentsActive() {
+  const students = await db.Student.findAll({
+    where: {
+      isActive: true,
+    },
+  });
+  return students.map((x) => studentBasicDetails(x));
+}
+
 async function getStudentById(id) {
   const student = await db.Student.findByPk(id);
   if (!student) throw "Student not found";
@@ -102,6 +114,39 @@ async function getPreviousTotalStudents() {
 
   return previousTotalStudents || 0;
 }
+
+
+async function getPreviousTotalStudentsActive() {
+  const today = new Date();
+  const firstDayOfPreviousMonth = new Date(
+    today.getFullYear(),
+    today.getMonth() - 1,
+    1
+  );
+  const lastDayOfPreviousMonth = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    0
+  );
+
+  const previousTotalStudentsActive = await db.Student.count({
+    where: {
+      createdAt: {
+        [Op.between]: [firstDayOfPreviousMonth, lastDayOfPreviousMonth],
+      },
+      isActive: true
+    },
+  });
+
+  return previousTotalStudentsActive || 0;
+}
+
+
+
+
+
+
+// ! Student Basic Details
 
 function studentBasicDetails(student) {
   const {

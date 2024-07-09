@@ -8,7 +8,9 @@ const studentService = require("./student.service");
 
 router.post("/add-student", authorize(Role.Admin, Role.Staff), addStudentSchema, addStudent);
 router.get('/', authorize(Role.Admin, Role.Staff), getAllStudents);
+router.get('/active', authorize(Role.Admin, Role.Staff), getAllStudentsActive);
 router.get('/previous', authorize(Role.Admin, Role.Staff), getPreviousTotalStudents);
+router.get('/previous-active', authorize(Role.Admin, Role.Staff), getPreviousTotalStudentsActive);
 router.get('/:id', authorize(Role.Admin, Role.Staff), getStudentById);
 router.put("/:id", updateStudentSchema, updateStudent); 
 
@@ -33,8 +35,20 @@ function getAllStudents(req, res, next) {
       .catch(next);
 }
 
+function getAllStudentsActive(req, res, next) {
+  studentService.getAllStudentsActive()
+      .then(students => res.json(students))
+      .catch(next);
+}
+
 function getPreviousTotalStudents(req, res, next) {
   studentService.getPreviousTotalStudents()
+    .then(previousTotal => res.json({ total: previousTotal }))
+    .catch(next);
+}
+
+function getPreviousTotalStudentsActive(req, res, next) {
+  studentService.getPreviousTotalStudentsActive()
     .then(previousTotal => res.json({ total: previousTotal }))
     .catch(next);
 }

@@ -10,6 +10,7 @@ function model(sequelize) {
             autoIncrement: true
         },
         courseName: { type: DataTypes.STRING(50), allowNull: false },
+        courseCode: { type: DataTypes.STRING(50), allowNull: false },
         department_id: { 
             type: DataTypes.INTEGER,
             references: {
