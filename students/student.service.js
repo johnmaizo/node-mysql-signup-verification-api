@@ -59,12 +59,12 @@ async function getAllStudents() {
 }
 
 async function getAllStudentsActive() {
-  const students = await db.Student.findAll({
+  const students = await db.Student.count({
     where: {
       isActive: true,
     },
   });
-  return students.map((x) => studentBasicDetails(x));
+  return students;
 }
 
 async function getStudentById(id) {
