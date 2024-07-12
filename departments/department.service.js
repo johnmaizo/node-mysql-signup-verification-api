@@ -3,13 +3,19 @@ const db = require("_helpers/db");
 const Role = require("_helpers/role");
 
 module.exports = {
-  getAllDepartment,
   createDepartment,
+  getAllDepartment,
+  getAllDepartmentsActive,
   getDepartmentById,
   updateDepartment,
 };
 
 async function createDepartment(params) {
+  // validate
+  if (await db.Department.findOne({where: {departmentCode: params.departmentCode}})) {
+    throw 'Department Code "' + params.departmentCode + '" is already registered';
+  }
+
   const department = new db.Department(params);
 
   // save department
@@ -20,6 +26,15 @@ async function getAllDepartment() {
   const department = await db.Department.findAll();
 
   return department;
+}
+
+async function getAllDepartmentsActive() {
+  const students = await db.Department.count({
+    where: {
+      isActive: true,
+    },
+  });
+  return students;
 }
 
 async function getDepartmentById(id) {

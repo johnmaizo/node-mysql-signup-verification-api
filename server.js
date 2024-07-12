@@ -25,7 +25,7 @@ app.use("/students", require("./students/students.controller"));
 app.use("/teachers", require("./teachers/teachers.controller"));
 
 // ! Department
-app.use("/department", require("./departments/departments.controller"));
+app.use("/departments", require("./departments/departments.controller"));
 
 // swagger docs route
 app.use("/api-docs", require("_helpers/swagger"));
