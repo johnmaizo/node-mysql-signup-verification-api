@@ -40,7 +40,7 @@ async function getAllDepartmentsActive() {
 async function getDepartmentById(id) {
   const department = await db.Department.findByPk(id);
   if (!department) throw "Department not found";
-  return departmentBasicDetails;
+  return department;
 }
 
 async function updateDepartment(id, params) {
