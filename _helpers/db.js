@@ -20,9 +20,16 @@ async function initialize() {
   db.Account = require("../accounts/account.model")(sequelize);
   db.RefreshToken = require("../accounts/refresh-token.model")(sequelize);
 
+  // ! Campus
+  db.Campus = require("../models/campus.model")(sequelize);
+
+  // ! Department
   db.Department = require("../models/department.model")(sequelize);
+  // ! Course
   db.Course = require("../models/course.model")(sequelize);
+  // ! Subject Info
   db.SubjectInfo = require("../models/subject_info.model")(sequelize);
+  // ! Room Info
   db.RoomInfo = require("../models/room_info.model")(sequelize);
 
   // ! Student
