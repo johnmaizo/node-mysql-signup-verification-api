@@ -21,6 +21,16 @@ function model(sequelize) {
         course: { type: DataTypes.STRING(50), allowNull: false },
         majorIn: { type: DataTypes.STRING(50), allowNull: true },
         studentType: { type: DataTypes.STRING, allowNull: false },
+
+        semester_id: {
+            type: DataTypes.INTEGER,
+            references: {
+                model: 'semesters',
+                key: 'semester_id'
+            },
+            allowNull: false
+        },
+
         // semesterType dapat naay choice either undergrad or grad 
         semesterEntry: { type: DataTypes.STRING(10), allowNull: false },
         yearEntry: { type: DataTypes.INTEGER(4), allowNull: false },

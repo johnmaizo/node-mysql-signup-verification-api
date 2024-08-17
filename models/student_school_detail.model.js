@@ -26,7 +26,17 @@ function model(sequelize) {
             }
         },
         yearLevel: { type: DataTypes.INTEGER(4), allowNull: false },
-        semester: { type: DataTypes.STRING(10), allowNull: false },
+
+        semester_id: {
+            type: DataTypes.INTEGER,
+            references: {
+                model: 'semesters',
+                key: 'semester_id'
+            },
+            allowNull: false
+        },
+        
+        // semester: { type: DataTypes.STRING(10), allowNull: false },
         isActive: { type: DataTypes.BOOLEAN, defaultValue: true }      
     };
 

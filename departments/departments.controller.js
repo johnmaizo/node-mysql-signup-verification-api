@@ -10,7 +10,7 @@ router.post("/add-department", authorize(Role.Admin, Role.Staff), addDepartmentS
 router.get('/', authorize(Role.Admin, Role.Staff), getAllDepartment);
 router.get('/active', authorize(Role.Admin, Role.Staff), getAllDepartmentsActive);
 router.get('/:id', authorize(Role.Admin, Role.Staff), getDepartmentById);
-router.put("/:id", updateDepartmentSchema, updateDepartment); 
+router.put("/:id", authorize(Role.Admin, Role.Staff), updateDepartmentSchema, updateDepartment); 
 
 
 module.exports = router;
@@ -62,7 +62,8 @@ function updateDepartment(req, res, next) {
 function addDepartmentSchema(req, res, next) {
   const schema = Joi.object({
     departmentName: Joi.string().required(),
-    departmentCode: Joi.string().required()
+    departmentCode: Joi.string().required(),
+    departmentDean: Joi.string().required()
   });
   validateRequest(req, next, schema);
 }
@@ -72,6 +73,7 @@ function updateDepartmentSchema(req, res, next) {
   const schema = Joi.object({
     departmentName: Joi.string().empty(""),
     departmentCode: Joi.string().empty(""),
+    departmentDean: Joi.string().required(),
     isActive: Joi.boolean().empty(""),
   });
   validateRequest(req, next, schema);

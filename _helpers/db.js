@@ -23,6 +23,9 @@ async function initialize() {
   // ! Campus
   db.Campus = require("../models/campus.model")(sequelize);
 
+  // ! Semester
+  db.Semester = require("../models/semester.model")(sequelize);
+
   // ! Department
   db.Department = require("../models/department.model")(sequelize);
   // ! Course

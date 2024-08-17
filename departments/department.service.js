@@ -29,12 +29,12 @@ async function getAllDepartment() {
 }
 
 async function getAllDepartmentsActive() {
-  const students = await db.Department.count({
+  const departments = await db.Department.count({
     where: {
       isActive: true,
     },
   });
-  return students;
+  return departments;
 }
 
 async function getDepartmentById(id) {

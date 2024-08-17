@@ -24,6 +24,15 @@ function model(sequelize) {
         citizenship: { type: DataTypes.STRING(20), allowNull: false }, 
         country: { type: DataTypes.STRING(20), allowNull: false }, 
         ACR: { type: DataTypes.STRING, allowNull: true }, // ACR = Academic Record Code (For foreign students)
+
+        campus_id: { 
+            type: DataTypes.INTEGER,
+            references: {
+                model: 'campuses',
+                key: 'campus_id'
+            },
+            allowNull: false // Assuming a student must belong to a campus
+        },
         
         isActive: { type: DataTypes.BOOLEAN, defaultValue: true }
     };

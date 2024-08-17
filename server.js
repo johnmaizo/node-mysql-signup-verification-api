@@ -24,6 +24,9 @@ app.use("/students", require("./students/students.controller"));
 // ! Teacher
 app.use("/teachers", require("./teachers/teachers.controller"));
 
+// ! Campus
+app.use("/campus", require("./campus/campuses.controller"));
+
 // ! Department
 app.use("/departments", require("./departments/departments.controller"));
 

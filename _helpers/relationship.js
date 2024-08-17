@@ -53,6 +53,27 @@ function defineRelationships(db) {
     db.TeacherInfo.belongsTo(db.Department, { foreignKey: 'department_id' });
 
 
+    // ! Semester -> Schedule
+    db.Semester.hasMany(db.Schedule, { foreignKey: 'semester_id'});
+    db.Schedule.belongsTo(db.Semester, { foreignKey: 'semester_id'});
+    
+    // ! Semester -> Student Current Academic Background
+    db.Semester.hasMany(db.StudentCurrentAcademic, { foreignKey: 'semester_id'});
+    db.StudentCurrentAcademic.belongsTo(db.Semester, { foreignKey: 'semester_id'});
+    
+    // ! Semester -> Student School Detail
+    db.Semester.hasMany(db.StudentSchoolDetail, { foreignKey: 'semester_id'});
+    db.StudentSchoolDetail.belongsTo(db.Semester, { foreignKey: 'semester_id'});
+    
+    // ! Campus -> Student
+    db.Campus.hasMany(db.Student, { foreignKey: 'campus_id'});
+    db.Student.belongsTo(db.Campus, { foreignKey: 'campus_id'});
+    
+    // ! Campus -> Department
+    db.Campus.hasMany(db.Department, { foreignKey: 'campus_id'});
+    db.Department.belongsTo(db.Campus, { foreignKey: 'campus_id'});
+
+
 }
 
 module.exports = defineRelationships;
