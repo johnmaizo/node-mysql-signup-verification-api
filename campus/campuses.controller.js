@@ -73,6 +73,8 @@ function updateCampusSchema(req, res, next) {
     campusName: Joi.string().empty(""),
     campusAddress: Joi.string().empty(""),
     isActive: Joi.boolean().empty(""),
+    
+    isDeleted: Joi.boolean().empty(""),
   });
   validateRequest(req, next, schema);
 }

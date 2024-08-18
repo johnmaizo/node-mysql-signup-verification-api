@@ -24,7 +24,9 @@ function model(sequelize) {
                 model: 'courses', // refers to the table name
                 key: 'course_id'  // refers to the column name in the courses table
             }
-        }       
+        },
+            
+        isDeleted: { type: DataTypes.BOOLEAN, defaultValue: false }         
     };
 
     const options = {

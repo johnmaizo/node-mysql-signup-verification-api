@@ -45,7 +45,9 @@ function model(sequelize) {
         guardianRelation: { type: DataTypes.STRING(20), allowNull: true },
         guardianContactNumber: { type: DataTypes.STRING(15), allowNull: true },
         
-        isActive: { type: DataTypes.BOOLEAN, defaultValue: true }
+        isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+            
+        isDeleted: { type: DataTypes.BOOLEAN, defaultValue: false }  
     };
 
     const options = {

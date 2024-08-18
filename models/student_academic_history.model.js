@@ -23,7 +23,9 @@ function model(sequelize) {
         seniorHighAddress: { type: DataTypes.STRING(95), allowNull: false },
         seniorHighHonors: { type: DataTypes.STRING(20), allowNull: true },
         seniorHighSchoolGraduate: { type: DataTypes.DATE, allowNull: false },
-        isActive: { type: DataTypes.BOOLEAN, defaultValue: true }  
+        isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+            
+        isDeleted: { type: DataTypes.BOOLEAN, defaultValue: false }    
     };
 
     const options = {

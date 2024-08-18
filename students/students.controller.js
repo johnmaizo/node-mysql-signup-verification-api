@@ -12,7 +12,7 @@ router.get('/active', authorize(Role.Admin, Role.Staff), getAllStudentsActive);
 router.get('/previous', authorize(Role.Admin, Role.Staff), getPreviousTotalStudents);
 router.get('/previous-active', authorize(Role.Admin, Role.Staff), getPreviousTotalStudentsActive);
 router.get('/:id', authorize(Role.Admin, Role.Staff), getStudentById);
-router.put("/:id", updateStudentSchema, updateStudent); 
+router.put("/:id", authorize(Role.Admin, Role.Staff), updateStudentSchema, updateStudent); 
 
 
 module.exports = router;
@@ -113,6 +113,8 @@ function updateStudentSchema(req, res, next) {
     ACR: [Joi.string().optional(), Joi.allow(null)],
     
     isActive: Joi.boolean().empty(''),
+    
+    isDeleted: Joi.boolean().empty(""),
   });
   validateRequest(req, next, schema);
 }

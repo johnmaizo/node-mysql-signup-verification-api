@@ -23,6 +23,8 @@ function model(sequelize) {
 
 
     isActive: {type: DataTypes.BOOLEAN, defaultValue: true},
+    
+    isDeleted: { type: DataTypes.BOOLEAN, defaultValue: false }  
   };
 
   const options = {

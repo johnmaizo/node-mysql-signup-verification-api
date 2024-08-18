@@ -9,7 +9,7 @@ const scheduleService = require("./schedule.service");
 router.post("/add-schedule", authorize(Role.Admin, Role.Staff), addScheduleSchema, addSchedule);
 router.get('/', authorize(Role.Admin, Role.Staff), getAllSchedule);
 router.get('/:id', authorize(Role.Admin, Role.Staff), getScheduleById);
-router.put("/:id", updateScheduleSchema, updateSchedule); 
+router.put("/:id", authorize(Role.Admin, Role.Staff), updateScheduleSchema, updateSchedule); 
 
 
 module.exports = router;
@@ -71,6 +71,8 @@ function updateScheduleSchema(req, res, next) {
     staff: Joi.string().required(""),
     courseCode: Joi.string().required(""),
     isActive: Joi.boolean().empty(""),
+    
+    isDeleted: Joi.boolean().empty(""),
   });
   validateRequest(req, next, schema);
 }

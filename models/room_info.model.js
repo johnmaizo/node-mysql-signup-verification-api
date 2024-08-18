@@ -13,7 +13,9 @@ function model(sequelize) {
         roomNumber: { type: DataTypes.INTEGER, allowNull: false },
         building: { type: DataTypes.STRING(25), allowNull: false },
 
-        isActive: { type: DataTypes.BOOLEAN, defaultValue: true }    
+        isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+            
+        isDeleted: { type: DataTypes.BOOLEAN, defaultValue: false }   
     };
 
     const options = {

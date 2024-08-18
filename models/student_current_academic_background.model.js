@@ -38,7 +38,9 @@ function model(sequelize) {
         applicationType: { type: DataTypes.STRING(15), allowNull: false },
         // Application type have three choices either Freshmen, Transferee, and Cross Enrollee
 
-        isActive: { type: DataTypes.BOOLEAN, defaultValue: true }  
+        isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+            
+        isDeleted: { type: DataTypes.BOOLEAN, defaultValue: false }    
     };
 
     const options = {

@@ -37,7 +37,9 @@ function model(sequelize) {
         },
         
         // semester: { type: DataTypes.STRING(10), allowNull: false },
-        isActive: { type: DataTypes.BOOLEAN, defaultValue: true }      
+        isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+            
+        isDeleted: { type: DataTypes.BOOLEAN, defaultValue: false }        
     };
 
     const options = {

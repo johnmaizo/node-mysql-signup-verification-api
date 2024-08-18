@@ -75,6 +75,8 @@ function updateDepartmentSchema(req, res, next) {
     departmentCode: Joi.string().empty(""),
     departmentDean: Joi.string().required(),
     isActive: Joi.boolean().empty(""),
+    
+    isDeleted: Joi.boolean().empty(""),
   });
   validateRequest(req, next, schema);
 }

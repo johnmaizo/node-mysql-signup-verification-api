@@ -9,7 +9,7 @@ const staffService = require("./staff.service");
 router.post("/add-staff", authorize(Role.Admin, Role.Staff), addStaffSchema, addStaff);
 router.get('/', authorize(Role.Admin, Role.Staff), getAllStaff);
 router.get('/:id', authorize(Role.Admin, Role.Staff), getStaffById);
-router.put("/:id", updateStaffSchema, updateStaff); 
+router.put("/:id", authorize(Role.Admin, Role.Staff), updateStaffSchema, updateStaff); 
 
 
 module.exports = router;
@@ -76,6 +76,8 @@ function updateStaffSchema(req, res, next) {
     contactNumber: Joi.string().empty(""),
     email: Joi.string().empty(""),
     isActive: Joi.boolean().empty(""),
+    
+    isDeleted: Joi.boolean().empty(""),
   });
   validateRequest(req, next, schema);
 }

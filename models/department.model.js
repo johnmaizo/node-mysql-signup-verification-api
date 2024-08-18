@@ -31,7 +31,9 @@ function model(sequelize) {
             allowNull: false // Assuming a department must belong to a campus
         },
 
-        isActive: { type: DataTypes.BOOLEAN, defaultValue: true }    
+        isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+            
+        isDeleted: { type: DataTypes.BOOLEAN, defaultValue: false }  
     };
 
     const options = {

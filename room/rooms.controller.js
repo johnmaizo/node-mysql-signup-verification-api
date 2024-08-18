@@ -9,7 +9,7 @@ const roomService = require("./room.service");
 router.post("/add-room", authorize(Role.Admin, Role.Staff), addRoomSchema, addRoom);
 router.get('/', authorize(Role.Admin, Role.Staff), getAllRoom);
 router.get('/:id', authorize(Role.Admin, Role.Staff), getRoomById);
-router.put("/:id", updateRoomSchema, updateRoom); 
+router.put("/:id", authorize(Role.Admin, Role.Staff), updateRoomSchema, updateRoom); 
 
 
 module.exports = router;
@@ -68,6 +68,8 @@ function updateRoomSchema(req, res, next) {
     roomNumber: Joi.string().empty(""),
     building: Joi.string().empty(""),
     isActive: Joi.boolean().empty(""),
+    
+    isDeleted: Joi.boolean().empty(""),
   });
   validateRequest(req, next, schema);
 }

@@ -9,7 +9,7 @@ const subjectService = require("./subject.service");
 router.post("/add-subject", authorize(Role.Admin, Role.Staff), addSubjectSchema, addSubject);
 router.get('/', authorize(Role.Admin, Role.Staff), getAllSubject);
 router.get('/:id', authorize(Role.Admin, Role.Staff), getSubjectById);
-router.put("/:id", updateSubjectSchema, updateSubject); 
+router.put("/:id", authorize(Role.Admin, Role.Staff), updateSubjectSchema, updateSubject); 
 
 
 module.exports = router;
@@ -67,6 +67,8 @@ function updateSubjectSchema(req, res, next) {
     subjectDescription: Joi.string().empty(""),
     unit: Joi.number().empty(""),
     isActive: Joi.boolean().empty(""),
+    
+    isDeleted: Joi.boolean().empty(""),
   });
   validateRequest(req, next, schema);
 }

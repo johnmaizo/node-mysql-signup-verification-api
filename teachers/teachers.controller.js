@@ -10,7 +10,7 @@ router.post("/add-teacher", authorize(Role.Admin, Role.Staff), addTeacherSchema,
 router.get('/', authorize(Role.Admin, Role.Staff), getAllTeachers);
 router.get('/previous', authorize(Role.Admin, Role.Staff), getPreviousTotalTeachers);
 router.get('/:id', authorize(Role.Admin, Role.Staff), getTeacherById);
-router.put("/:id", updateTeacherSchema, updateTeacher); 
+router.put("/:id", authorize(Role.Admin, Role.Staff), updateTeacherSchema, updateTeacher); 
 
 
 module.exports = router;
@@ -85,6 +85,8 @@ function updateTeacherSchema(req, res, next) {
     department_id: Joi.number().empty(""),
     
     isActive: Joi.boolean().empty(""),
+    
+    isDeleted: Joi.boolean().empty(""),
   });
   validateRequest(req, next, schema);
 }

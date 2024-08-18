@@ -25,7 +25,7 @@ async function getAllRoom() {
 async function getRoomById(id) {
   const room = await db.RoomInfo.findByPk(id);
   if (!room) throw "Room not found";
-  return roomBasicDetails;
+  return room;
 }
 
 async function updateRoom(id, params) {

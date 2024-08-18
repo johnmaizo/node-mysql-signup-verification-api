@@ -25,7 +25,7 @@ async function getAllSchedule() {
 async function getScheduleById(id) {
   const schedule = await db.Schedule.findByPk(id);
   if (!schedule) throw "Schedule not found";
-  return scheduleBasicDetails;
+  return schedule;
 }
 
 async function updateSchedule(id, params) {

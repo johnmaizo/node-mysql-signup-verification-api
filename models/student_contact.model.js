@@ -17,7 +17,9 @@ function model(sequelize) {
         provinceAddress: { type: DataTypes.STRING(95), allowNull: true },
         provinceTelNumber: { type: DataTypes.STRING(15), allowNull: false },
 
-        isActive: { type: DataTypes.BOOLEAN, defaultValue: true }
+        isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+            
+        isDeleted: { type: DataTypes.BOOLEAN, defaultValue: false }  
     };
 
     const options = {

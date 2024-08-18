@@ -25,7 +25,7 @@ async function getAllSubject() {
 async function getSubjectById(id) {
   const subject = await db.SubjectInfo.findByPk(id);
   if (!subject) throw "Subject not found";
-  return subjectBasicDetails;
+  return subject;
 }
 
 async function updateSubject(id, params) {

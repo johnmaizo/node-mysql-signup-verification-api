@@ -25,7 +25,7 @@ async function getAllStaff() {
 async function getStaffById(id) {
   const staff = await db.StaffInfo.findByPk(id);
   if (!staff) throw "Staff not found";
-  return staffBasicDetails;
+  return staff;
 }
 
 async function updateStaff(id, params) {

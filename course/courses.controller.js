@@ -9,7 +9,7 @@ const courseService = require("./course.service");
 router.post("/add-course", authorize(Role.Admin, Role.Staff), addCourseSchema, addCourse);
 router.get('/', authorize(Role.Admin, Role.Staff), getAllCourse);
 router.get('/:id', authorize(Role.Admin, Role.Staff), getCourseById);
-router.put("/:id", updateCourseSchema, updateCourse); 
+router.put("/:id", authorize(Role.Admin, Role.Staff), updateCourseSchema, updateCourse); 
 
 
 module.exports = router;
@@ -66,6 +66,8 @@ function updateCourseSchema(req, res, next) {
     courseName: Joi.string().empty(""),
     courseCode: Joi.string().empty(""),
     isActive: Joi.boolean().empty(""),
+
+    isDeleted: Joi.boolean().empty(""),
   });
   validateRequest(req, next, schema);
 }
