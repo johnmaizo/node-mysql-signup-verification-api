@@ -1,4 +1,4 @@
-const {Op} = require("sequelize");
+const {Op, where} = require("sequelize");
 const db = require("_helpers/db");
 const Role = require("_helpers/role");
 
@@ -6,6 +6,7 @@ module.exports = {
   createCampus,
   getAllCampus,
   getAllCampusActive,
+  getAllCampusDeleted,
   getCampusById,
   updateCampus,
 };
@@ -23,15 +24,29 @@ async function createCampus(params) {
 }
 
 async function getAllCampus() {
-  const campus = await db.Campus.findAll();
+  const campus = await db.Campus.findAll({
+    where: {
+      isDeleted: false,
+    }
+  });
 
   return campus;
 }
 
 async function getAllCampusActive() {
-  const campuses = await db.Campus.count({
+  const campuses = await db.Campus.findAll({
     where: {
       isActive: true,
+      isDeleted: false,
+    },
+  });
+  return campuses;
+}
+
+async function getAllCampusDeleted() {
+  const campuses = await db.Campus.findAll({
+    where: {
+      isDeleted: true,
     },
   });
   return campuses;

@@ -1,6 +1,5 @@
-const {Op} = require("sequelize");
+const { Op } = require("sequelize");
 const db = require("_helpers/db");
-const Role = require("_helpers/role");
 
 module.exports = {
   createDepartment,
@@ -11,9 +10,16 @@ module.exports = {
 };
 
 async function createDepartment(params) {
-  // validate
-  if (await db.Department.findOne({where: {departmentCode: params.departmentCode}})) {
-    throw 'Department Code "' + params.departmentCode + '" is already registered';
+  // validate if departmentCode exists on the same campus_id
+  const existingDepartment = await db.Department.findOne({
+    where: {
+      departmentCode: params.departmentCode,
+      campus_id: params.campus_id
+    }
+  });
+
+  if (existingDepartment) {
+    throw `Department Code "${params.departmentCode}" is already registered on campus ID "${params.campus_id}".`;
   }
 
   const department = new db.Department(params);
@@ -24,7 +30,6 @@ async function createDepartment(params) {
 
 async function getAllDepartment() {
   const department = await db.Department.findAll();
-
   return department;
 }
 

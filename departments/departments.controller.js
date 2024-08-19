@@ -63,7 +63,9 @@ function addDepartmentSchema(req, res, next) {
   const schema = Joi.object({
     departmentName: Joi.string().required(),
     departmentCode: Joi.string().required(),
-    departmentDean: Joi.string().required()
+    departmentDean: Joi.string().required(),
+
+    campus_id: Joi.number().required(),
   });
   validateRequest(req, next, schema);
 }
@@ -73,9 +75,11 @@ function updateDepartmentSchema(req, res, next) {
   const schema = Joi.object({
     departmentName: Joi.string().empty(""),
     departmentCode: Joi.string().empty(""),
-    departmentDean: Joi.string().required(),
+    departmentDean: Joi.string().empty(""),
+
+    campus_id: Joi.number().empty(""),
+
     isActive: Joi.boolean().empty(""),
-    
     isDeleted: Joi.boolean().empty(""),
   });
   validateRequest(req, next, schema);

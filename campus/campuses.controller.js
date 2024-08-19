@@ -9,6 +9,7 @@ const campusService = require("./campus.service");
 router.post("/add-campus", authorize(Role.Admin, Role.Staff), addCampusSchema, addCampus);
 router.get('/', authorize(Role.Admin, Role.Staff), getAllCampus);
 router.get('/active', authorize(Role.Admin, Role.Staff), getAllCampusActive);
+router.get('/deleted', authorize(Role.Admin, Role.Staff), getAllCampusDeleted);
 router.get('/:id', authorize(Role.Admin, Role.Staff), getCampusById);
 router.put("/:id", updateCampusSchema, updateCampus); 
 
@@ -35,6 +36,12 @@ function getAllCampus(req, res, next) {
 
 function getAllCampusActive(req, res, next) {
   campusService.getAllCampusActive()
+      .then(campuses => res.json(campuses))
+      .catch(next);
+}
+
+function getAllCampusDeleted(req, res, next) {
+  campusService.getAllCampusDeleted()
       .then(campuses => res.json(campuses))
       .catch(next);
 }
