@@ -9,6 +9,7 @@ const departmentService = require("./department.service");
 router.post("/add-department", authorize(Role.Admin, Role.Staff), addDepartmentSchema, addDepartment);
 router.get('/', authorize(Role.Admin, Role.Staff), getAllDepartment);
 router.get('/active', authorize(Role.Admin, Role.Staff), getAllDepartmentsActive);
+router.get('/deleted', authorize(Role.Admin, Role.Staff), getAllDepartmentsDeleted);
 router.get('/:id', authorize(Role.Admin, Role.Staff), getDepartmentById);
 router.put("/:id", authorize(Role.Admin, Role.Staff), updateDepartmentSchema, updateDepartment); 
 
@@ -39,6 +40,12 @@ function getAllDepartmentsActive(req, res, next) {
       .catch(next);
 }
 
+function getAllDepartmentsDeleted(req, res, next) {
+  departmentService.getAllDepartmentsDeleted()
+      .then(departments => res.json(departments))
+      .catch(next);
+}
+
 
 function getDepartmentById(req, res, next) {
   departmentService.getDepartmentById(req.params.id)
@@ -64,8 +71,10 @@ function addDepartmentSchema(req, res, next) {
     departmentName: Joi.string().required(),
     departmentCode: Joi.string().required(),
     departmentDean: Joi.string().required(),
-
+    
     campus_id: Joi.number().required(),
+    // campusName: Joi.string().required(),
+    
   });
   validateRequest(req, next, schema);
 }
@@ -76,9 +85,10 @@ function updateDepartmentSchema(req, res, next) {
     departmentName: Joi.string().empty(""),
     departmentCode: Joi.string().empty(""),
     departmentDean: Joi.string().empty(""),
-
+    
     campus_id: Joi.number().empty(""),
-
+    campusName: Joi.string().empty(""),
+    
     isActive: Joi.boolean().empty(""),
     isDeleted: Joi.boolean().empty(""),
   });

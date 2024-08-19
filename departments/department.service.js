@@ -5,38 +5,62 @@ module.exports = {
   createDepartment,
   getAllDepartment,
   getAllDepartmentsActive,
+  getAllDepartmentsDeleted,
   getDepartmentById,
   updateDepartment,
 };
 
 async function createDepartment(params) {
-  // validate if departmentCode exists on the same campus_id
+  // Validate if departmentCode exists on the same campus_id
   const existingDepartment = await db.Department.findOne({
     where: {
       departmentCode: params.departmentCode,
       campus_id: params.campus_id
     }
   });
+  
+  // Get the campusName based on campus_id
+  const campus = await db.Campus.findByPk(params.campus_id);
+  if (!campus) {
+    throw `Campus with ID "${params.campus_id}" not found.`;
+  }
 
   if (existingDepartment) {
-    throw `Department Code "${params.departmentCode}" is already registered on campus ID "${params.campus_id}".`;
+    throw `Department Code "${params.departmentCode}" is already registered on campus "${campus.campusName}".`;
   }
+
+  // Assign the campusName to params
+  params.campusName = campus.campusName;
 
   const department = new db.Department(params);
 
-  // save department
+  // Save department
   await department.save();
 }
 
 async function getAllDepartment() {
-  const department = await db.Department.findAll();
+  const department = await db.Department.findAll({
+    where: {
+      isDeleted: false,
+    }
+  });
   return department;
 }
 
 async function getAllDepartmentsActive() {
-  const departments = await db.Department.count({
+  const departments = await db.Department.findAll({
     where: {
       isActive: true,
+      isDeleted: false,
+    },
+  });
+  return departments;
+}
+
+async function getAllDepartmentsDeleted() {
+  const departments = await db.Department.findAll({
+    where: {
+      isDeleted: true,
     },
   });
   return departments;
@@ -53,6 +77,36 @@ async function updateDepartment(id, params) {
 
   if (!department) throw "Department not found";
 
+  // If departmentCode or campus_id are not provided, use existing values
+  const departmentCode = params.departmentCode || department.departmentCode;
+  const campus_id = params.campus_id || department.campus_id;
+
+  // Validate if departmentCode exists on the same campus_id for another department
+  const existingDepartment = await db.Department.findOne({
+    where: {
+      departmentCode: departmentCode,
+      campus_id: campus_id,
+      department_id: { [Op.ne]: id }  // Ensure the department being updated is excluded from this check
+    }
+  });
+
+  if (existingDepartment) {
+    const campus = await db.Campus.findByPk(campus_id);
+    const campusName = campus ? campus.campusName : "Unknown";
+    throw `Department Code "${departmentCode}" is already registered on campus "${campusName}".`;
+  }
+
+  // If campus_id is provided, get the campusName based on campus_id
+  if (params.campus_id) {
+    const campus = await db.Campus.findByPk(params.campus_id);
+    if (!campus) {
+      throw `Campus with ID "${params.campus_id}" not found.`;
+    }
+    params.campusName = campus.campusName;
+  }
+
+  // Update department with new params
   Object.assign(department, params);
   await department.save();
 }
+
