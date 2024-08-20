@@ -11,7 +11,7 @@ router.get('/', authorize(Role.Admin, Role.Staff), getAllCampus);
 router.get('/active', authorize(Role.Admin, Role.Staff), getAllCampusActive);
 router.get('/deleted', authorize(Role.Admin, Role.Staff), getAllCampusDeleted);
 router.get('/:id', authorize(Role.Admin, Role.Staff), getCampusById);
-router.put("/:id", updateCampusSchema, updateCampus); 
+router.put("/:id", authorize(Role.Admin, Role.Staff), updateCampusSchema, updateCampus); 
 
 
 module.exports = router;
