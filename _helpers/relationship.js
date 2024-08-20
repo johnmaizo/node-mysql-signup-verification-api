@@ -73,6 +73,14 @@ function defineRelationships(db) {
     db.Campus.hasMany(db.Department, { foreignKey: 'campus_id'});
     db.Department.belongsTo(db.Campus, { foreignKey: 'campus_id'});
 
+    // ! Campus -> Room Info
+    db.Campus.hasMany(db.RoomInfo, {foreignKey: 'campus_id'});
+    db.RoomInfo.belongsTo(db.Campus, {foreignKey: 'campus_id'});
+    
+    // ! Campus -> Staffs
+    db.Campus.hasMany(db.StaffInfo, {foreignKey: 'campus_id'});
+    db.StaffInfo.belongsTo(db.Campus, {foreignKey: 'campus_id'});
+
 
 }
 

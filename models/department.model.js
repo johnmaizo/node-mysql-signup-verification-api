@@ -28,7 +28,7 @@ function model(sequelize) {
                 model: 'campuses',
                 key: 'campus_id'
             },
-            allowNull: false // Assuming a department must belong to a campus
+            allowNull: false // Department must belong to a campus
         },
 
         campusName: { 

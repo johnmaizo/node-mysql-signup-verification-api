@@ -20,6 +20,20 @@ function model(sequelize) {
     contactNumber: { type: DataTypes.STRING(15), allowNull: false },
     email: { type: DataTypes.STRING(62), allowNull: false, unique: true },
 
+    campus_id: { 
+      type: DataTypes.INTEGER,
+      references: {
+          model: 'campuses',
+          key: 'campus_id'
+      },
+      allowNull: false // Staff must belong to a campus
+      },
+
+      campusName: { 
+          type: DataTypes.STRING, 
+          allowNull: false 
+      },
+
 
 
     isActive: {type: DataTypes.BOOLEAN, defaultValue: true},
