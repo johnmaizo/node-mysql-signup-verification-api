@@ -9,7 +9,7 @@ function model(sequelize) {
             primaryKey: true,
             autoIncrement: true
         },
-        courseName: { type: DataTypes.STRING(50), allowNull: false },
+        courseName: { type: DataTypes.STRING, allowNull: false },
         courseCode: { type: DataTypes.STRING(50), allowNull: false },
         department_id: { 
             type: DataTypes.INTEGER,

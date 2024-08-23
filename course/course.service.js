@@ -11,7 +11,32 @@ module.exports = {
 };
 
 async function createCourse(params) {
-  // Validate if courseCode exists in the same department_id
+  // Check if params.departmentName is defined and then split
+  let departmentName = "";
+  let campusName = "";
+
+  if (params.departmentName) {
+    [departmentName, campusName] = params.departmentName.split(" - ");
+    departmentName = departmentName.trim();
+    campusName = campusName.trim();
+  }
+
+  // Fetch department_id based on the split departmentName and campusName
+  const department = await db.Department.findOne({
+    where: {
+      departmentName: departmentName,
+      campusName: campusName,
+    },
+  });
+
+  if (!department) {
+    throw `Department with name "${departmentName}" not found on the campus "${campusName}".`;
+  }
+
+  // Assign the department_id to params
+  params.department_id = department.department_id;
+
+  // Validate if courseCode exists in the same department
   const existingCourse = await db.Course.findOne({
     where: {
       courseCode: params.courseCode,
@@ -20,17 +45,8 @@ async function createCourse(params) {
   });
 
   if (existingCourse) {
-    throw `Course Code "${params.courseCode}" is already registered under the same department.`;
+    throw `Course Code "${params.courseCode}" is already registered under the department "${departmentName}" on the campus "${campusName}".`;
   }
-
-  // Get the departmentName based on department_id
-  const department = await db.Department.findByPk(params.department_id);
-  if (!department) {
-    throw `Department with ID "${params.department_id}" not found.`;
-  }
-
-  // Assign the departmentName to params
-  params.departmentName = department.departmentName;
 
   const course = new db.Course(params);
 
@@ -77,30 +93,54 @@ async function updateCourse(id, params) {
 
   if (!course) throw "Course not found";
 
-  // If courseCode or department_id are not provided, use existing values
-  const courseCode = params.courseCode || course.courseCode;
-  const department_id = params.department_id || course.department_id;
+  let departmentName, campusName;
 
-  // Validate if courseCode exists in the same department_id for another course
+  // Check if params.departmentName is defined and then split
+  if (params.departmentName) {
+    [departmentName, campusName] = params.departmentName.split(" - ");
+    departmentName = departmentName.trim();
+    campusName = campusName.trim();
+  } else {
+    departmentName = course.departmentName;
+    campusName = course.campusName;
+  }
+
+  // Fetch department_id if departmentName or campusName is provided
+  if (departmentName || campusName) {
+    const department = await db.Department.findOne({
+      where: {
+        departmentName: departmentName,
+        campusName: campusName,
+      },
+    });
+
+    if (!department) {
+      throw `Department with name "${
+        departmentName || course.departmentName
+      }" not found on the campus "${campusName || course.campusName}".`;
+    }
+
+    params.department_id = department.department_id;
+  } else {
+    // Retain the current department_id if neither departmentName nor campusName is updated
+    params.department_id = course.department_id;
+  }
+
+  // Validate if courseCode exists in the same department for another course
   const existingCourse = await db.Course.findOne({
     where: {
-      courseCode: courseCode,
-      department_id: department_id,
+      courseCode: params.courseCode || course.courseCode,
+      department_id: params.department_id,
       course_id: {[Op.ne]: id}, // Ensure the course being updated is excluded from this check
     },
   });
 
   if (existingCourse) {
-    throw `Course Code "${courseCode}" is already registered under the same department.`;
-  }
-
-  // If department_id is provided, get the departmentName based on department_id
-  if (params.department_id) {
-    const department = await db.Department.findByPk(params.department_id);
-    if (!department) {
-      throw `Department with ID "${params.department_id}" not found.`;
-    }
-    params.departmentName = department.departmentName;
+    throw `Course Code "${
+      params.courseCode || course.courseCode
+    }" is already registered under the department "${
+      departmentName || course.departmentName
+    }" on the campus "${campusName || course.campusName}".`;
   }
 
   // Validation: Ensure isActive is set to false before deleting

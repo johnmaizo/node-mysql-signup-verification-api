@@ -33,6 +33,9 @@ app.use("/campus", require("./campus/campuses.controller"));
 // ! Department
 app.use("/departments", require("./departments/departments.controller"));
 
+// ! Course
+app.use("/course", require("./course/courses.controller"));
+
 // swagger docs route
 app.use("/api-docs", require("_helpers/swagger"));
 

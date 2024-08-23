@@ -18,7 +18,15 @@ async function createDepartment(params) {
       campus_id: params.campus_id
     }
   });
-  
+
+  // Validate if departmentName exists on the same campus_id
+  const existingDepartmentName = await db.Department.findOne({
+    where: {
+      departmentName: params.departmentName,
+      campus_id: params.campus_id
+    }
+  });
+
   // Get the campusName based on campus_id
   const campus = await db.Campus.findByPk(params.campus_id);
   if (!campus) {
@@ -27,6 +35,10 @@ async function createDepartment(params) {
 
   if (existingDepartment) {
     throw `Department Code "${params.departmentCode}" is already registered on campus "${campus.campusName}".`;
+  }
+
+  if (existingDepartmentName) {
+    throw `Department Name "${params.departmentName}" already exists on campus "${campus.campusName}".`;
   }
 
   // Assign the campusName to params
@@ -90,10 +102,25 @@ async function updateDepartment(id, params) {
     }
   });
 
+  // Validate if departmentName exists on the same campus_id for another department
+  const existingDepartmentName = await db.Department.findOne({
+    where: {
+      departmentName: params.departmentName || department.departmentName,
+      campus_id: campus_id,
+      department_id: { [Op.ne]: id }  // Ensure the department being updated is excluded from this check
+    }
+  });
+
   if (existingDepartment) {
     const campus = await db.Campus.findByPk(campus_id);
     const campusName = campus ? campus.campusName : "Unknown";
     throw `Department Code "${departmentCode}" is already registered on campus "${campusName}".`;
+  }
+
+  if (existingDepartmentName) {
+    const campus = await db.Campus.findByPk(campus_id);
+    const campusName = campus ? campus.campusName : "Unknown";
+    throw `Department Name "${params.departmentName}" already exists on campus "${campusName}".`;
   }
 
   // If campus_id is provided, get the campusName based on campus_id
@@ -114,4 +141,3 @@ async function updateDepartment(id, params) {
   Object.assign(department, params);
   await department.save();
 }
-
