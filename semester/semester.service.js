@@ -22,7 +22,7 @@ async function createSemester(params) {
   });
 
   if (activeSemester) {
-    throw `Error: There's currently an active semester: "${activeSemester.semesterName}" for the school year "${activeSemester.schoolYear}". You must inactivate it in order to add a new semester.`;
+    throw `Error: There's currently an active semester: "${activeSemester.semesterName} - S.Y. "${activeSemester.schoolYear}". You must inactivate it in order to add a new semester.`;
   }
 
   // Check existing semesters for the given school year, including deleted ones
@@ -129,7 +129,7 @@ async function updateSemester(id, params) {
     });
 
     if (activeSemester) {
-      throw `Error: There's currently an active semester: "${activeSemester.semesterName}" for the school year "${activeSemester.schoolYear}". You must inactivate it in order to activate this semester.`;
+      throw `Error: There's currently an active semester: "${activeSemester.semesterName} - S.Y. ${activeSemester.schoolYear}". You must inactivate it in order to activate this semester.`;
     }
   }
 
