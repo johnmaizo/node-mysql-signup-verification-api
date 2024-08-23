@@ -55,7 +55,9 @@ function updateCourse(req, res, next) {
 function addCourseSchema(req, res, next) {
   const schema = Joi.object({
     courseName: Joi.string().required(),
-    courseCode: Joi.string().required()
+    courseCode: Joi.string().required(),
+
+    department_id: Joi.number().required(),
   });
   validateRequest(req, next, schema);
 }
@@ -65,8 +67,10 @@ function updateCourseSchema(req, res, next) {
   const schema = Joi.object({
     courseName: Joi.string().empty(""),
     courseCode: Joi.string().empty(""),
-    isActive: Joi.boolean().empty(""),
+    
+    department_id: Joi.number().empty(""),
 
+    isActive: Joi.boolean().empty(""),
     isDeleted: Joi.boolean().empty(""),
   });
   validateRequest(req, next, schema);

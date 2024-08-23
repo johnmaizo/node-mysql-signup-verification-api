@@ -18,6 +18,13 @@ function model(sequelize) {
                 key: 'department_id'  // refers to the column name in the departments table
             }
         },       
+
+        departmentName: { 
+            type: DataTypes.STRING, 
+            allowNull: false 
+        },
+
+        
         isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
             
         isDeleted: { type: DataTypes.BOOLEAN, defaultValue: false }  
