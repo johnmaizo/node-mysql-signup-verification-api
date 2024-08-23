@@ -105,6 +105,11 @@ async function updateDepartment(id, params) {
     params.campusName = campus.campusName;
   }
 
+  // Validation: Ensure isActive is set to false before deleting
+  if (params.isDeleted && department.isActive) {
+    throw `You must set the Status of "${department.departmentName}" to Inactive before you can delete this department.`;
+  }
+
   // Update department with new params
   Object.assign(department, params);
   await department.save();

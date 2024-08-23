@@ -63,6 +63,11 @@ async function updateCampus(id, params) {
 
   if (!campus) throw "Campus not found";
 
+  // Validation: Ensure isActive is set to false before deleting
+  if (params.isDeleted && campus.isActive) {
+    throw `You must set the Status of "${campus.campusName}" to Inactive before you can delete this campus.`;
+  }
+
   Object.assign(campus, params);
   await campus.save();
 }
