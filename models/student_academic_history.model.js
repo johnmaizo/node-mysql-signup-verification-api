@@ -37,5 +37,5 @@ function model(sequelize) {
         }        
     };
 
-    return sequelize.define('academichistory', attributes, options);
+    return sequelize.define('studentacademichistory', attributes, options);
 }

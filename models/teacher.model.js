@@ -16,6 +16,10 @@ function model(sequelize) {
         key: "department_id",
       },
     },
+    departmentName: { 
+      type: DataTypes.STRING, 
+      allowNull: false 
+  },
 
     firstName: {type: DataTypes.STRING(35), allowNull: false},
     middleName: {type: DataTypes.STRING(15), allowNull: false},
