@@ -48,7 +48,7 @@ function getAllCourseDeleted(req, res, next) {
 
 
 function getCourseById(req, res, next) {
-  courtService.getCourseById(req.params.id)
+  courseService.getCourseById(req.params.id)
       .then(course => course ? res.json(course) : res.sendStatus(404))
       .catch(next);
 }
