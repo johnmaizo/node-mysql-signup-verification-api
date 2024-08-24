@@ -93,6 +93,19 @@ async function updateCourse(id, params) {
 
   if (!course) throw "Course not found";
 
+  // If the request is only to delete or reactivate the course, skip department lookups
+  if (params.isDeleted !== undefined) {
+    // Validation: Ensure isActive is set to false before deleting
+    if (params.isDeleted && course.isActive) {
+      throw `You must set the Status of "${course.courseName}" to Inactive before you can delete this course.`;
+    }
+
+    // Proceed with deletion or reactivation
+    Object.assign(course, params);
+    await course.save();
+    return;
+  }
+
   let departmentName, campusName;
 
   // Check if params.departmentName is defined and then split
@@ -141,11 +154,6 @@ async function updateCourse(id, params) {
     }" is already registered under the department "${
       departmentName || course.departmentName
     }" on the campus "${campusName || course.campusName}".`;
-  }
-
-  // Validation: Ensure isActive is set to false before deleting
-  if (params.isDeleted && course.isActive) {
-    throw `You must set the Status of "${course.courseName}" to Inactive before you can delete this course.`;
   }
 
   // Update course with new params
