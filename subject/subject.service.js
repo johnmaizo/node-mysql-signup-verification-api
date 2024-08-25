@@ -1,25 +1,62 @@
 const {Op} = require("sequelize");
 const db = require("_helpers/db");
-const Role = require("_helpers/role");
 
 module.exports = {
-  getAllSubject,
   createSubject,
+  getAllSubject,
+  getAllSubjectActive,
+  getAllSubjectDeleted,
   getSubjectById,
   updateSubject,
 };
 
 async function createSubject(params) {
+  // Fetch course_id based on courseName
+  const course = await db.Course.findOne({
+    where: {
+      courseName: params.courseName, // Match the exact courseName
+    },
+  });
+
+  if (!course) {
+    throw `Course with name "${params.courseName}" not found.`;
+  }
+
+  // Assign the course_id to params
+  params.course_id = course.course_id;
+
   const subject = new db.SubjectInfo(params);
 
-  // save subject
+  // Save subject
   await subject.save();
 }
 
 async function getAllSubject() {
-  const subject = await db.SubjectInfo.findAll();
+  const subjects = await db.SubjectInfo.findAll({
+    where: {
+      isDeleted: false,
+    },
+  });
+  return subjects;
+}
 
-  return subject;
+async function getAllSubjectActive() {
+  const subjects = await db.SubjectInfo.findAll({
+    where: {
+      isActive: true,
+      isDeleted: false,
+    },
+  });
+  return subjects;
+}
+
+async function getAllSubjectDeleted() {
+  const subjects = await db.SubjectInfo.findAll({
+    where: {
+      isDeleted: true,
+    },
+  });
+  return subjects;
 }
 
 async function getSubjectById(id) {
@@ -33,7 +70,22 @@ async function updateSubject(id, params) {
 
   if (!subject) throw "Subject not found";
 
+  // Fetch course_id based on updated courseName if provided
+  if (params.courseName) {
+    const course = await db.Course.findOne({
+      where: {
+        courseName: params.courseName, // Match the exact courseName
+      },
+    });
+
+    if (!course) {
+      throw `Course with name "${params.courseName}" not found.`;
+    }
+
+    params.course_id = course.course_id;
+  }
+
+  // Update subject with new params
   Object.assign(subject, params);
   await subject.save();
 }
-

@@ -6,10 +6,14 @@ const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const subjectService = require("./subject.service");
 
-router.post("/add-subject", authorize(Role.Admin, Role.Staff), addSubjectSchema, addSubject);
-router.get('/', authorize(Role.Admin, Role.Staff), getAllSubject);
-router.get('/:id', authorize(Role.Admin, Role.Staff), getSubjectById);
-router.put("/:id", authorize(Role.Admin, Role.Staff), updateSubjectSchema, updateSubject); 
+// router.post("/add-subject", authorize(Role.Admin, Role.Staff), addSubjectSchema, addSubject);
+
+router.post("/add-subject", addSubjectSchema, addSubject);
+router.get('/', getAllSubject);
+router.get('/active', getAllSubjectActive);
+router.get('/deleted', getAllSubjectDeleted);
+router.get('/:id', getSubjectById);
+router.put("/:id", updateSubjectSchema, updateSubject); 
 
 
 module.exports = router;
@@ -28,6 +32,18 @@ function addSubject(req, res, next) {
 
 function getAllSubject(req, res, next) {
   subjectService.getAllSubject()
+      .then(subject => res.json(subject))
+      .catch(next);
+}
+
+function getAllSubjectActive(req, res, next) {
+  subjectService.getAllSubjectActive()
+      .then(subject => res.json(subject))
+      .catch(next);
+}
+
+function getAllSubjectDeleted(req, res, next) {
+  subjectService.getAllSubjectDeleted()
       .then(subject => res.json(subject))
       .catch(next);
 }
@@ -54,9 +70,11 @@ function updateSubject(req, res, next) {
 // ! Schemas
 function addSubjectSchema(req, res, next) {
   const schema = Joi.object({
+    subject_code: Joi.string().required(),
     subjectDescription: Joi.string().required(),
     unit: Joi.number().required(),
-    // need e connect ang course_id //
+    
+    courseName: Joi.string().required(),
   });
   validateRequest(req, next, schema);
 }
@@ -64,8 +82,12 @@ function addSubjectSchema(req, res, next) {
 
 function updateSubjectSchema(req, res, next) {
   const schema = Joi.object({
+    subject_code: Joi.string().empty(""),
     subjectDescription: Joi.string().empty(""),
     unit: Joi.number().empty(""),
+
+    courseName: Joi.string().empty(""),
+
     isActive: Joi.boolean().empty(""),
     
     isDeleted: Joi.boolean().empty(""),

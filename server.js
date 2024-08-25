@@ -25,7 +25,7 @@ app.use("/students", require("./students/students.controller"));
 app.use("/teachers", require("./teachers/teachers.controller"));
 
 // ! Semester
-app.use("/semesters", require("./semester/semesters.controller"))
+app.use("/semesters", require("./semester/semesters.controller"));
 
 // ! Campus
 app.use("/campus", require("./campus/campuses.controller"));
@@ -35,6 +35,9 @@ app.use("/departments", require("./departments/departments.controller"));
 
 // ! Course
 app.use("/course", require("./course/courses.controller"));
+
+// ! Subject
+app.use("/subjects", require("./subject/subjects.controller"));
 
 // swagger docs route
 app.use("/api-docs", require("_helpers/swagger"));
