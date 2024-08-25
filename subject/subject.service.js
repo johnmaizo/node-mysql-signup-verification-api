@@ -82,6 +82,11 @@ async function updateSubject(id, params) {
       throw `Course with name "${params.courseName}" not found.`;
     }
 
+    // Validation: Ensure isActive is set to false before deleting
+    if (params.isDeleted && subject.isActive) {
+      throw `You must set the Status of "${subject.subjectDescription}" to Inactive before you can delete this subject.`;
+    }
+
     params.course_id = course.course_id;
   }
 

@@ -1,4 +1,4 @@
-const {Op} = require("sequelize");
+const {Op, literal} = require("sequelize");
 const db = require("_helpers/db");
 
 module.exports = {
@@ -43,28 +43,23 @@ async function createCourse(params) {
     throw "Either department_id or departmentName must be provided.";
   }
 
-  // Validate if courseCode exists in the same department
-  const existingCourseCode = await db.Course.findOne({
+  // Validate if courseCode or courseName exists in the same campus
+  const existingCourse = await db.Course.findOne({
     where: {
-      courseCode: params.courseCode,
-      department_id: params.department_id,
+      [Op.or]: [
+        {courseCode: params.courseCode},
+        {courseName: params.courseName},
+      ],
+      department_id: {
+        [Op.in]: literal(`(
+          SELECT department_id FROM departments WHERE campusName = '${department.campusName}'
+        )`),
+      },
     },
   });
 
-  if (existingCourseCode) {
-    throw `Course Code "${params.courseCode}" is already registered under the department "${department.departmentName}" on the campus "${department.campusName}".`;
-  }
-
-  // Validate if courseName exists in the same department
-  const existingCourseName = await db.Course.findOne({
-    where: {
-      courseName: params.courseName,
-      department_id: params.department_id,
-    },
-  });
-
-  if (existingCourseName) {
-    throw `Course Name "${params.courseName}" is already registered under the department "${department.departmentName}" on the campus "${department.campusName}".`;
+  if (existingCourse) {
+    throw `Either Course Code "${params.courseCode}" or Course Name "${params.courseName}" is already registered on the campus "${department.campusName}".`;
   }
 
   const course = new db.Course(params);
@@ -144,38 +139,28 @@ async function updateCourse(id, params) {
     params.departmentName = course.departmentName;
   }
 
-  // Validate if courseCode exists in the same department for another course
-  const existingCourseCode = await db.Course.findOne({
+  // Validate if courseCode or courseName exists in the same campus for another course
+  const existingCourse = await db.Course.findOne({
     where: {
-      courseCode: params.courseCode || course.courseCode,
-      department_id: params.department_id,
+      [Op.or]: [
+        {courseCode: params.courseCode || course.courseCode},
+        {courseName: params.courseName || course.courseName},
+      ],
+      department_id: {
+        [Op.in]: literal(`(
+          SELECT department_id FROM departments WHERE campusName = '${department.campusName}'
+        )`),
+      },
       course_id: {[Op.ne]: id}, // Ensure the course being updated is excluded from this check
     },
   });
 
-  if (existingCourseCode) {
-    throw `Course Code "${
+  if (existingCourse) {
+    throw `Either Course Code "${
       params.courseCode || course.courseCode
-    }" is already registered under the department "${
-      department.departmentName
-    }" on the campus "${department.campusName}".`;
-  }
-
-  // Validate if courseName exists in the same department for another course
-  const existingCourseName = await db.Course.findOne({
-    where: {
-      courseName: params.courseName || course.courseName,
-      department_id: params.department_id,
-      course_id: {[Op.ne]: id}, // Ensure the course being updated is excluded from this check
-    },
-  });
-
-  if (existingCourseName) {
-    throw `Course Name "${
+    }" or Course Name "${
       params.courseName || course.courseName
-    }" is already registered under the department "${
-      department.departmentName
-    }" on the campus "${department.campusName}".`;
+    }" is already registered on the campus "${department.campusName}".`;
   }
 
   // Update course with new params
