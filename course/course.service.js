@@ -106,6 +106,19 @@ async function updateCourse(id, params) {
   const course = await getCourseById(id);
   if (!course) throw "Course not found";
 
+  // Check if the action is only to delete the course
+  if (params.isDeleted !== undefined) {
+    // Validation: Ensure isActive is set to false before deleting
+    if (params.isDeleted && course.isActive) {
+      throw `You must set the Status of "${course.courseName}" to Inactive before you can delete this course.`;
+    }
+
+    // Proceed with deletion or reactivation
+    Object.assign(course, {isDeleted: params.isDeleted});
+    await course.save();
+    return;
+  }
+
   let department;
 
   // Fetch departmentName if department_id is provided
