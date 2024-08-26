@@ -1,4 +1,4 @@
-const {Op, literal} = require("sequelize");
+const {Op, literal, col} = require("sequelize");
 const db = require("_helpers/db");
 
 module.exports = {
@@ -68,38 +68,90 @@ async function createCourse(params) {
   await course.save();
 }
 
-async function getAllCourses() {
+// Common function to handle the transformation
+function transformCourseData(course) {
+  return {
+    ...course,
+    CourseCode: course.CourseCode || "Course code not found",
+    CourseName: course.CourseName || "Course name not found",
+    DepartmentCode: course.DepartmentCode || "Department code not found",
+    Department: course.Department || "Department not found",
+    Campus: course.Campus || "Campus not found",
+  };
+}
+
+// Common function to get courses based on filter conditions
+async function getCourses(whereClause) {
   const courses = await db.Course.findAll({
-    where: {
-      isDeleted: false,
+    where: whereClause,
+    include: [
+      {
+        model: db.Department,
+        include: [
+          {
+            model: db.Campus,
+            attributes: [],
+          },
+        ],
+        attributes: [],
+      },
+    ],
+    attributes: {
+      include: [
+        [col("courseCode"), "CourseCode"],
+        [col("courseName"), "CourseName"],
+        [col("Department.departmentCode"), "DepartmentCode"],
+        [col("Department.departmentName"), "Department"],
+        [col("Department.Campus.campusName"), "Campus"],
+      ],
     },
+    raw: true, // Ensure result is flattened and returned as plain objects
   });
-  return courses;
+
+  return courses.map(transformCourseData);
+}
+
+async function getAllCourses() {
+  return await getCourses({isDeleted: false});
 }
 
 async function getAllCoursesActive() {
-  const courses = await db.Course.findAll({
-    where: {
-      isActive: true,
-      isDeleted: false,
-    },
-  });
-  return courses;
+  return await getCourses({isActive: true, isDeleted: false});
 }
 
 async function getAllCoursesDeleted() {
-  const courses = await db.Course.findAll({
-    where: {
-      isDeleted: true,
-    },
-  });
-  return courses;
+  return await getCourses({isDeleted: true});
 }
 
 async function getCourseById(id) {
-  const course = await db.Course.findByPk(id);
-  if (!course) throw "Course not found";
-  return course;
+  const course = await db.Course.findByPk(id, {
+    include: [
+      {
+        model: db.Department,
+        include: [
+          {
+            model: db.Campus,
+            attributes: [],
+          },
+        ],
+        attributes: [],
+      },
+    ],
+    attributes: {
+      include: [
+        [col("courseCode"), "CourseCode"],
+        [col("courseName"), "CourseName"],
+        [col("Department.departmentCode"), "DepartmentCode"],
+        [col("Department.departmentName"), "Department"],
+        [col("Department.Campus.campusName"), "Campus"],
+      ],
+    },
+    // Removed raw: true to ensure we get a Sequelize instance
+  });
+
+  if (!course) throw new Error("Course not found");
+
+  return course; // Return the Sequelize instance
 }
 
 async function updateCourse(id, params) {

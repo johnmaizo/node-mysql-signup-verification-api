@@ -29,8 +29,7 @@ function model(sequelize) {
                 key: 'course_id'  // refers to the column name in the courses table
             }
         },
-        courseName: { type: DataTypes.STRING, allowNull: false },
-        
+
         isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
         isDeleted: { type: DataTypes.BOOLEAN, defaultValue: false }         
     };

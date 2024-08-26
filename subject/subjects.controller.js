@@ -70,11 +70,17 @@ function updateSubject(req, res, next) {
 // ! Schemas
 function addSubjectSchema(req, res, next) {
   const schema = Joi.object({
-    subject_code: Joi.string().required(),
+    subjectCode: Joi.string().required(),
     subjectDescription: Joi.string().required(),
     unit: Joi.number().required(),
-    
+    course_id: Joi.number().required(),
+
+    courseCode: Joi.string().required(),
     courseName: Joi.string().required(),
+    departmentCode: Joi.string().required(),
+    departmentName: Joi.string().required(),
+    campusName: Joi.string().required(),
+
   });
   validateRequest(req, next, schema);
 }
@@ -82,15 +88,19 @@ function addSubjectSchema(req, res, next) {
 
 function updateSubjectSchema(req, res, next) {
   const schema = Joi.object({
-    subject_code: Joi.string().empty(""),
+    subjectCode: Joi.string().empty(""),
     subjectDescription: Joi.string().empty(""),
     unit: Joi.number().empty(""),
-
-    courseName: Joi.string().empty(""),
+    course_id: Joi.number().empty(""),
 
     isActive: Joi.boolean().empty(""),
-    
     isDeleted: Joi.boolean().empty(""),
+
+    courseCode: Joi.string().empty(""),
+    courseName: Joi.string().empty(""),
+    departmentCode: Joi.string().empty(""),
+    departmentName: Joi.string().empty(""),
+    campusName: Joi.string().empty(""),
   });
   validateRequest(req, next, schema);
 }

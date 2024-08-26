@@ -1,4 +1,4 @@
-const {Op} = require("sequelize");
+const {Op, col} = require("sequelize");
 const db = require("_helpers/db");
 
 module.exports = {
@@ -11,57 +11,153 @@ module.exports = {
 };
 
 async function createSubject(params) {
-  // Fetch course_id based on courseName
+  // Find the course first based on course, department, and campus information
   const course = await db.Course.findOne({
     where: {
-      courseName: params.courseName, // Match the exact courseName
+      courseCode: params.courseCode,
+      courseName: params.courseName,
     },
+    include: [
+      {
+        model: db.Department,
+        where: {
+          departmentCode: params.departmentCode,
+          departmentName: params.departmentName,
+        },
+        include: [
+          {
+            model: db.Campus,
+            where: {
+              campusName: params.campusName,
+            },
+          },
+        ],
+      },
+    ],
   });
 
   if (!course) {
-    throw `Course with name "${params.courseName}" not found.`;
+    throw new Error(
+      `Course "${params.courseName}" not found in Department "${params.departmentName}" and Campus "${params.campusName}".`
+    );
   }
 
-  // Assign the course_id to params
+  // Check if the subjectCode already exists for the found course_id
+  const existingSubject = await db.SubjectInfo.findOne({
+    where: {
+      subjectCode: params.subjectCode,
+      course_id: course.course_id, // Ensure it checks within the correct course
+    },
+  });
+
+  if (existingSubject) {
+    throw new Error(
+      `Subject Code "${params.subjectCode}" already exists for Course "${params.courseName}" (Code: ${params.courseCode}), Department "${params.departmentName}" (Code: ${params.departmentCode}), Campus "${params.campusName}".`
+    );
+  }
+
+  // Set the course_id in the params before creating the subject
   params.course_id = course.course_id;
 
+  // Create new subject
   const subject = new db.SubjectInfo(params);
 
   // Save subject
   await subject.save();
 }
 
-async function getAllSubject() {
+// Common function to handle the transformation
+function transformSubjectData(subject) {
+  return {
+    ...subject,
+    CourseCode: subject.CourseCode || "Course code not found",
+    CourseName: subject.CourseName || "Course not found",
+    Department: subject.Department || "Department not found",
+    Campus: subject.Campus || "Campus not found",
+  };
+}
+
+// Common function to get subjects based on filter conditions
+async function getSubjects(whereClause) {
   const subjects = await db.SubjectInfo.findAll({
-    where: {
-      isDeleted: false,
+    where: whereClause,
+    include: [
+      {
+        model: db.Course,
+        include: [
+          {
+            model: db.Department,
+            include: [
+              {
+                model: db.Campus,
+                attributes: [],
+              },
+            ],
+            attributes: [],
+          },
+        ],
+        attributes: [],
+      },
+    ],
+    attributes: {
+      include: [
+        [col("Course.courseCode"), "CourseCode"],
+        [col("Course.courseName"), "CourseName"],
+        [col("Course.Department.departmentName"), "Department"],
+        [col("Course.Department.Campus.campusName"), "Campus"],
+      ],
     },
+    raw: true, // Enables raw output to flatten the result
   });
-  return subjects;
+
+  return subjects.map(transformSubjectData);
+}
+
+async function getAllSubject() {
+  return await getSubjects({isDeleted: false});
 }
 
 async function getAllSubjectActive() {
-  const subjects = await db.SubjectInfo.findAll({
-    where: {
-      isActive: true,
-      isDeleted: false,
-    },
-  });
-  return subjects;
+  return await getSubjects({isActive: true, isDeleted: false});
 }
 
 async function getAllSubjectDeleted() {
-  const subjects = await db.SubjectInfo.findAll({
-    where: {
-      isDeleted: true,
-    },
-  });
-  return subjects;
+  return await getSubjects({isDeleted: true});
 }
 
 async function getSubjectById(id) {
-  const subject = await db.SubjectInfo.findByPk(id);
-  if (!subject) throw "Subject not found";
+  const subject = await db.SubjectInfo.findByPk(id, {
+    include: [
+      {
+        model: db.Course,
+        include: [
+          {
+            model: db.Department,
+            include: [
+              {
+                model: db.Campus,
+                attributes: [],
+              },
+            ],
+            attributes: [],
+          },
+        ],
+        attributes: [],
+      },
+    ],
+    attributes: {
+      include: [
+        [col("Course.courseCode"), "CourseCode"],
+        [col("Course.courseName"), "Course"],
+        [col("Course.Department.departmentName"), "Department"],
+        [col("Course.Department.Campus.campusName"), "Campus"],
+      ],
+    },
+    // Remove raw: true to return a Sequelize instance
+  });
+
+  if (!subject) throw new Error("Subject not found");
+
   return subject;
 }
 
@@ -72,31 +168,63 @@ async function updateSubject(id, params) {
 
   // Check if the action is only to delete the subject
   if (params.isDeleted !== undefined) {
-    // Validation: Ensure isActive is set to false before deleting
     if (params.isDeleted && subject.isActive) {
       throw `You must set the Status of "${subject.subjectDescription}" to Inactive before you can delete this subject.`;
     }
 
-    // Proceed with deletion or reactivation
     Object.assign(subject, {isDeleted: params.isDeleted});
     await subject.save();
     return;
   }
 
-  // Fetch course_id based on updated courseName if provided
-  if (params.courseName) {
-    const course = await db.Course.findOne({
-      where: {
-        courseName: params.courseName, // Match the exact courseName
+  // Find the course first based on course, department, and campus information
+  const course = await db.Course.findOne({
+    where: {
+      courseCode: params.courseCode,
+      courseName: params.courseName,
+    },
+    include: [
+      {
+        model: db.Department,
+        where: {
+          departmentCode: params.departmentCode,
+          departmentName: params.departmentName,
+        },
+        include: [
+          {
+            model: db.Campus,
+            where: {
+              campusName: params.campusName,
+            },
+          },
+        ],
       },
-    });
+    ],
+  });
 
-    if (!course) {
-      throw `Course with name "${params.courseName}" not found.`;
-    }
-
-    params.course_id = course.course_id;
+  if (!course) {
+    throw new Error(
+      `Course "${params.courseName}" not found in Department "${params.departmentName}" and Campus "${params.campusName}".`
+    );
   }
+
+  // Check if the subjectCode already exists for the found course_id and it's not the same subject being updated
+  const existingSubject = await db.SubjectInfo.findOne({
+    where: {
+      subjectCode: params.subjectCode,
+      course_id: course.course_id,
+      subject_id: {[Op.ne]: id},
+    },
+  });
+
+  if (existingSubject) {
+    throw new Error(
+      `Subject Code "${params.subjectCode}" already exists for Course "${params.courseName}" (Code: ${params.courseCode}), Department "${params.departmentName}" (Code: ${params.departmentCode}), Campus "${params.campusName}".`
+    );
+  }
+
+  // Set the course_id in the params before updating the subject
+  params.course_id = course.course_id;
 
   // Update subject with new params
   Object.assign(subject, params);

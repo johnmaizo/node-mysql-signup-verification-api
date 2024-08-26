@@ -6,22 +6,12 @@ const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const courseService = require("./course.service");
 
-router.post(
-  "/add-course",
-  authorize(Role.Admin, Role.Staff),
-  addCourseSchema,
-  addCourse
-);
-router.get("/", authorize(Role.Admin, Role.Staff), getAllCourse);
+router.post("/add-course", authorize(Role.Admin, Role.Staff), addCourseSchema, addCourse);
+router.get("/", getAllCourse);
 router.get("/active", authorize(Role.Admin, Role.Staff), getAllCourseActive);
 router.get("/deleted", authorize(Role.Admin, Role.Staff), getAllCourseDeleted);
-router.get("/:id", authorize(Role.Admin, Role.Staff), getCourseById);
-router.put(
-  "/:id",
-  authorize(Role.Admin, Role.Staff),
-  updateCourseSchema,
-  updateCourse
-);
+router.get("/:id", getCourseById);
+router.put("/:id", updateCourseSchema, updateCourse);
 
 module.exports = router;
 
