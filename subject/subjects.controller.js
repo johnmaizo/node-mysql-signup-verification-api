@@ -8,12 +8,12 @@ const subjectService = require("./subject.service");
 
 // router.post("/add-subject", authorize(Role.Admin, Role.Staff), addSubjectSchema, addSubject);
 
-router.post("/add-subject", addSubjectSchema, addSubject);
-router.get('/', getAllSubject);
-router.get('/active', getAllSubjectActive);
-router.get('/deleted', getAllSubjectDeleted);
-router.get('/:id', getSubjectById);
-router.put("/:id", updateSubjectSchema, updateSubject); 
+router.post("/add-subject", authorize(Role.Admin, Role.Staff), addSubjectSchema, addSubject);
+router.get('/', authorize(Role.Admin, Role.Staff), getAllSubject);
+router.get('/active', authorize(Role.Admin, Role.Staff), getAllSubjectActive);
+router.get('/deleted', authorize(Role.Admin, Role.Staff), getAllSubjectDeleted);
+router.get('/:id', authorize(Role.Admin, Role.Staff), getSubjectById);
+router.put("/:id", authorize(Role.Admin, Role.Staff), updateSubjectSchema, updateSubject); 
 
 
 module.exports = router;

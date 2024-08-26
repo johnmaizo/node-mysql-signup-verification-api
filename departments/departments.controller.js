@@ -8,6 +8,7 @@ const departmentService = require("./department.service");
 
 router.post("/add-department", authorize(Role.Admin, Role.Staff), addDepartmentSchema, addDepartment);
 router.get('/', authorize(Role.Admin, Role.Staff), getAllDepartment);
+router.get('/count', authorize(Role.Admin, Role.Staff), getAllDepartmentCount);
 router.get('/active', authorize(Role.Admin, Role.Staff), getAllDepartmentsActive);
 router.get('/deleted', authorize(Role.Admin, Role.Staff), getAllDepartmentsDeleted);
 router.get('/:id', authorize(Role.Admin, Role.Staff), getDepartmentById);
@@ -30,6 +31,12 @@ function addDepartment(req, res, next) {
 
 function getAllDepartment(req, res, next) {
   departmentService.getAllDepartment()
+      .then(departments => res.json(departments))
+      .catch(next);
+}
+
+function getAllDepartmentCount(req, res, next) {
+  departmentService.getAllDepartmentCount()
       .then(departments => res.json(departments))
       .catch(next);
 }

@@ -4,6 +4,7 @@ const db = require("_helpers/db");
 module.exports = {
   createCourse,
   getAllCourses,
+  getAllCoursesCount,
   getAllCoursesActive,
   getAllCoursesDeleted,
   getCourseById,
@@ -68,18 +69,6 @@ async function createCourse(params) {
   await course.save();
 }
 
-// Common function to handle the transformation
-function transformCourseData(course) {
-  return {
-    ...course,
-    CourseCode: course.CourseCode || "Course code not found",
-    CourseName: course.CourseName || "Course name not found",
-    DepartmentCode: course.DepartmentCode || "Department code not found",
-    Department: course.Department || "Department not found",
-    Campus: course.Campus || "Campus not found",
-  };
-}
-
 // Common function to get courses based on filter conditions
 async function getCourses(whereClause) {
   const courses = await db.Course.findAll({
@@ -90,29 +79,25 @@ async function getCourses(whereClause) {
         include: [
           {
             model: db.Campus,
-            attributes: [],
+            attributes: ["campusName"], // Include only the campus name
           },
         ],
-        attributes: [],
+        attributes: ["departmentName", "departmentCode"], // Include department name and code
       },
     ],
-    attributes: {
-      include: [
-        [col("courseCode"), "CourseCode"],
-        [col("courseName"), "CourseName"],
-        [col("Department.departmentCode"), "DepartmentCode"],
-        [col("Department.departmentName"), "Department"],
-        [col("Department.Campus.campusName"), "Campus"],
-      ],
-    },
-    raw: true, // Ensure result is flattened and returned as plain objects
+    // No need to specify attributes for the Course model since we are spreading all fields
   });
 
-  return courses.map(transformCourseData);
+  // return courses.map(transformCourseData);
+  return courses;
 }
 
 async function getAllCourses() {
   return await getCourses({isDeleted: false});
+}
+
+async function getAllCoursesCount() {
+  return await db.Course.count({where: {isActive: true, isDeleted: false}});
 }
 
 async function getAllCoursesActive() {
@@ -131,27 +116,18 @@ async function getCourseById(id) {
         include: [
           {
             model: db.Campus,
-            attributes: [],
+            attributes: ["campusName"], // Include only the campus name
           },
         ],
-        attributes: [],
+        attributes: ["departmentName", "departmentCode"], // Include department name and code
       },
     ],
-    attributes: {
-      include: [
-        [col("courseCode"), "CourseCode"],
-        [col("courseName"), "CourseName"],
-        [col("Department.departmentCode"), "DepartmentCode"],
-        [col("Department.departmentName"), "Department"],
-        [col("Department.Campus.campusName"), "Campus"],
-      ],
-    },
-    // Removed raw: true to ensure we get a Sequelize instance
+    // No need to specify attributes for the Course model since we are spreading all fields
   });
 
   if (!course) throw new Error("Course not found");
 
-  return course; // Return the Sequelize instance
+  return course;
 }
 
 async function updateCourse(id, params) {

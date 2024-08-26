@@ -90,27 +90,18 @@ async function getSubjects(whereClause) {
             include: [
               {
                 model: db.Campus,
-                attributes: [],
+                attributes: ['campusName'], // Include only the campus name
               },
             ],
-            attributes: [],
+            attributes: ['departmentName'], // Include only the department name
           },
         ],
-        attributes: [],
+        attributes: ['courseCode', 'courseName'], // Include only the course code and name
       },
     ],
-    attributes: {
-      include: [
-        [col("Course.courseCode"), "CourseCode"],
-        [col("Course.courseName"), "CourseName"],
-        [col("Course.Department.departmentName"), "Department"],
-        [col("Course.Department.Campus.campusName"), "Campus"],
-      ],
-    },
-    raw: true, // Enables raw output to flatten the result
   });
 
-  return subjects.map(transformSubjectData);
+  return subjects;
 }
 
 async function getAllSubject() {
@@ -136,24 +127,15 @@ async function getSubjectById(id) {
             include: [
               {
                 model: db.Campus,
-                attributes: [],
+                attributes: ['campusName'], // Include only the campus name
               },
             ],
-            attributes: [],
+            attributes: ['departmentName'], // Include only the department name
           },
         ],
-        attributes: [],
+        attributes: ['courseCode', 'courseName'], // Include only the course code and name
       },
     ],
-    attributes: {
-      include: [
-        [col("Course.courseCode"), "CourseCode"],
-        [col("Course.courseName"), "Course"],
-        [col("Course.Department.departmentName"), "Department"],
-        [col("Course.Department.Campus.campusName"), "Campus"],
-      ],
-    },
-    // Remove raw: true to return a Sequelize instance
   });
 
   if (!subject) throw new Error("Subject not found");

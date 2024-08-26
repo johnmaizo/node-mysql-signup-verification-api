@@ -4,6 +4,7 @@ const db = require("_helpers/db");
 module.exports = {
   createDepartment,
   getAllDepartment,
+  getAllDepartmentCount,
   getAllDepartmentsActive,
   getAllDepartmentsDeleted,
   getDepartmentById,
@@ -57,6 +58,16 @@ async function getAllDepartment() {
     }
   });
   return department;
+}
+
+async function getAllDepartmentCount() {
+  const count = await db.Department.count({
+    where: {
+      isActive: true,
+      isDeleted: false,
+    },
+  });
+  return count;
 }
 
 async function getAllDepartmentsActive() {

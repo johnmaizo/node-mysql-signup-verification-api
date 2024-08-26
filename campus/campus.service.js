@@ -7,6 +7,7 @@ module.exports = {
   getAllCampus,
   getAllCampusActive,
   getAllCampusDeleted,
+  getAllCampusCount,
   getCampusById,
   updateCampus,
 };
@@ -27,7 +28,7 @@ async function getAllCampus() {
   const campus = await db.Campus.findAll({
     where: {
       isDeleted: false,
-    }
+    },
   });
 
   return campus;
@@ -43,10 +44,21 @@ async function getAllCampusActive() {
   return campuses;
 }
 
+
 async function getAllCampusDeleted() {
   const campuses = await db.Campus.findAll({
     where: {
       isDeleted: true,
+    },
+  });
+  return campuses;
+}
+
+async function getAllCampusCount() {
+  const campuses = await db.Campus.count({
+    where: {
+      isActive: true,
+      isDeleted: false,
     },
   });
   return campuses;
