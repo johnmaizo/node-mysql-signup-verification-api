@@ -9,11 +9,11 @@ function model(sequelize) {
             primaryKey: true,
             autoIncrement: true
         },
-        departmentName: { 
+        departmentCode: { 
             type: DataTypes.STRING, 
             allowNull: false 
         },
-        departmentCode: { 
+        departmentName: { 
             type: DataTypes.STRING, 
             allowNull: false 
         },

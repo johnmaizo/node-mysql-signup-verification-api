@@ -18,8 +18,16 @@ function model(sequelize) {
                 key: 'department_id'
             }
         },
-        course: { type: DataTypes.STRING(50), allowNull: false },
-        majorIn: { type: DataTypes.STRING(50), allowNull: true },
+
+        course_id: { 
+            type: DataTypes.INTEGER,
+            references: {
+                model: 'courses', 
+                key: 'course_id'  
+            }
+        },
+        // course: { type: DataTypes.STRING(50), allowNull: false },
+        // majorIn: { type: DataTypes.STRING(50), allowNull: true },
         studentType: { type: DataTypes.STRING, allowNull: false },
 
         semester_id: {
@@ -39,7 +47,6 @@ function model(sequelize) {
         // Application type have three choices either Freshmen, Transferee, and Cross Enrollee
 
         isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
-            
         isDeleted: { type: DataTypes.BOOLEAN, defaultValue: false }    
     };
 
@@ -52,5 +59,5 @@ function model(sequelize) {
         }        
     };
 
-    return sequelize.define('studentacademicbackground', attributes, options);
+    return sequelize.define('studentcurrentacademicbackground', attributes, options);
 }

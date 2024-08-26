@@ -13,6 +13,10 @@ function defineRelationships(db) {
     db.Course.hasMany(db.SubjectInfo, { foreignKey: 'course_id' });
     db.SubjectInfo.belongsTo(db.Course, { foreignKey: 'course_id' });
 
+    // ! Course -> Student Current Academic Background
+    db.Course.hasMany(db.StudentCurrentAcademic, { foreignKey: 'course_id' });
+    db.StudentCurrentAcademic.belongsTo(db.Course, { foreignKey: 'course_id' });
+
     // ! Students -> Student Contact
     db.Student.hasMany(db.StudentContact, { foreignKey: 'student_id' });
     db.StudentContact.belongsTo(db.Student, { foreignKey: 'student_id' });
@@ -54,8 +58,8 @@ function defineRelationships(db) {
     db.StudentSubject.belongsTo(db.Student, { foreignKey: 'student_id' });
 
     // ! Subject Info -> Student Subject
-    db.SubjectInfo.hasMany(db.StudentSubject, { foreignKey: 'subject_code' });
-    db.StudentSubject.belongsTo(db.SubjectInfo, { foreignKey: 'subject_code' });
+    db.SubjectInfo.hasMany(db.StudentSubject, { foreignKey: 'subject_id' });
+    db.StudentSubject.belongsTo(db.SubjectInfo, { foreignKey: 'subject_id' });
 
 
     // ! Department -> Teacher Info

@@ -4,9 +4,13 @@ module.exports = model;
 
 function model(sequelize) {
     const attributes = {
-        subject_code: { 
+        subject_id: { 
+            type: DataTypes.INTEGER, 
+            primaryKey: true,
+            autoIncrement: true
+        },
+        subjectCode: { 
             type: DataTypes.STRING, 
-            primaryKey: true, 
             allowNull: false 
         },
         subjectDescription: { 
@@ -17,7 +21,7 @@ function model(sequelize) {
             type: DataTypes.INTEGER, 
             allowNull: false 
         },
-        isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+        
         course_id: { 
             type: DataTypes.INTEGER,
             references: {
@@ -25,9 +29,9 @@ function model(sequelize) {
                 key: 'course_id'  // refers to the column name in the courses table
             }
         },
-
         courseName: { type: DataTypes.STRING, allowNull: false },
-            
+        
+        isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
         isDeleted: { type: DataTypes.BOOLEAN, defaultValue: false }         
     };
 
