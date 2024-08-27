@@ -10,6 +10,7 @@ const subjectService = require("./subject.service");
 
 router.post("/add-subject", authorize(Role.Admin, Role.Staff), addSubjectSchema, addSubject);
 router.get('/', authorize(Role.Admin, Role.Staff), getAllSubject);
+router.get('/count', authorize(Role.Admin, Role.Staff), getAllSubjectCount);
 router.get('/active', authorize(Role.Admin, Role.Staff), getAllSubjectActive);
 router.get('/deleted', authorize(Role.Admin, Role.Staff), getAllSubjectDeleted);
 router.get('/:id', authorize(Role.Admin, Role.Staff), getSubjectById);
@@ -32,6 +33,12 @@ function addSubject(req, res, next) {
 
 function getAllSubject(req, res, next) {
   subjectService.getAllSubject()
+      .then(subject => res.json(subject))
+      .catch(next);
+}
+
+function getAllSubjectCount(req, res, next) {
+  subjectService.getAllSubjectCount()
       .then(subject => res.json(subject))
       .catch(next);
 }

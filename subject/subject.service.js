@@ -4,6 +4,7 @@ const db = require("_helpers/db");
 module.exports = {
   createSubject,
   getAllSubject,
+  getAllSubjectCount,
   getAllSubjectActive,
   getAllSubjectDeleted,
   getSubjectById,
@@ -106,6 +107,10 @@ async function getSubjects(whereClause) {
 
 async function getAllSubject() {
   return await getSubjects({isDeleted: false});
+}
+
+async function getAllSubjectCount() {
+  return await db.SubjectInfo.count({where: {isActive: true, isDeleted: false}});
 }
 
 async function getAllSubjectActive() {
