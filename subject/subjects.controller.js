@@ -13,7 +13,7 @@ router.get('/', getAllSubject);
 router.get('/count', authorize(Role.Admin, Role.Staff), getAllSubjectCount);
 router.get('/active', authorize(Role.Admin, Role.Staff), getAllSubjectActive);
 router.get('/deleted', authorize(Role.Admin, Role.Staff), getAllSubjectDeleted);
-router.get('/:id', getSubjectById);
+router.get('/:id', authorize(Role.Admin, Role.Staff), getSubjectById);
 router.put("/:id", authorize(Role.Admin, Role.Staff), updateSubjectSchema, updateSubject); 
 
 

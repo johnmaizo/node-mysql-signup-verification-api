@@ -9,12 +9,6 @@ function model(sequelize) {
             primaryKey: true, 
             autoIncrement: true
         },
-        building: { type: DataTypes.STRING(25), allowNull: false },
-
-        floorLevel: { type: DataTypes.INTEGER, allowNull: false },
-
-        roomNumber: { type: DataTypes.INTEGER, allowNull: false },
-
         campus_id: { 
             type: DataTypes.INTEGER,
             references: {
@@ -23,11 +17,14 @@ function model(sequelize) {
             },
             allowNull: false // Room Info must belong to a campus
         },
+        
+        building: { type: DataTypes.STRING(25), allowNull: false },
 
-        campusName: { 
-            type: DataTypes.STRING, 
-            allowNull: false 
-        },
+        floorLevel: { type: DataTypes.INTEGER, allowNull: false },
+
+        roomNumber: { type: DataTypes.INTEGER, allowNull: false },
+
+        
 
         isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
             

@@ -9,6 +9,15 @@ function model(sequelize) {
             primaryKey: true,
             autoIncrement: true
         },
+        semester_id: {
+            type: DataTypes.INTEGER,
+            references: {
+                model: 'semesters',
+                key: 'semester_id'
+            },
+            allowNull: false
+        },
+        
         classDay: { type: DataTypes.STRING(15), allowNull: false },
         classHour: { type: DataTypes.INTEGER(10), allowNull: false },
         staff: { type: DataTypes.STRING(50), allowNull: false },
@@ -20,14 +29,7 @@ function model(sequelize) {
                 key: 'room_id'
             }
         },
-        semester_id: {
-            type: DataTypes.INTEGER,
-            references: {
-                model: 'semesters',
-                key: 'semester_id'
-            },
-            allowNull: false
-        },
+        
         isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
             
         isDeleted: { type: DataTypes.BOOLEAN, defaultValue: false }  

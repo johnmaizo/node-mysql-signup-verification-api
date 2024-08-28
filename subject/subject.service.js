@@ -150,14 +150,36 @@ async function getSubjectById(id) {
 }
 
 async function updateSubject(id, params) {
-  const subject = await getSubjectById(id);
+  // Fetch the subject as a Sequelize instance
+  const subject = await db.SubjectInfo.findByPk(id, {
+    include: [
+      {
+        model: db.Course,
+        include: [
+          {
+            model: db.Department,
+            include: [
+              {
+                model: db.Campus,
+                attributes: ["campusName"], // Include only the campus name
+              },
+            ],
+            attributes: ["departmentName", "departmentCode"], // Include only the department name
+          },
+        ],
+        attributes: ["courseCode", "courseName"], // Include only the course code and name
+      },
+    ],
+  });
 
-  if (!subject) throw "Subject not found";
+  if (!subject) throw new Error("Subject not found");
 
   // Check if the action is only to delete the subject
   if (params.isDeleted !== undefined) {
     if (params.isDeleted && subject.isActive) {
-      throw `You must set the Status of "${subject.subjectDescription}" to Inactive before you can delete this subject.`;
+      throw new Error(
+        `You must set the Status of "${subject.subjectDescription}" to Inactive before you can delete this subject.`
+      );
     }
 
     Object.assign(subject, {isDeleted: params.isDeleted});
@@ -165,7 +187,7 @@ async function updateSubject(id, params) {
     return;
   }
 
-  // Find the course first based on course, department, and campus information
+  // Find the course based on course, department, and campus information
   const course = await db.Course.findOne({
     where: {
       courseCode: params.courseCode,

@@ -9,36 +9,28 @@ function model(sequelize) {
       primaryKey: true,
       autoIncrement: true,
     },
-    staffRole: { type: DataTypes.STRING(25), allowNull: false },
+    staffRole: {type: DataTypes.STRING(25), allowNull: false},
 
     firstName: {type: DataTypes.STRING(35), allowNull: false},
     middleName: {type: DataTypes.STRING(15), allowNull: false},
     lastName: {type: DataTypes.STRING(35), allowNull: false},
-    
 
-    staffAddress: { type: DataTypes.STRING(95), allowNull: false },
-    contactNumber: { type: DataTypes.STRING(15), allowNull: false },
-    email: { type: DataTypes.STRING(62), allowNull: false, unique: true },
+    staffAddress: {type: DataTypes.STRING(95), allowNull: false},
+    contactNumber: {type: DataTypes.STRING(15), allowNull: false},
+    email: {type: DataTypes.STRING(62), allowNull: false, unique: true},
 
-    campus_id: { 
+    campus_id: {
       type: DataTypes.INTEGER,
       references: {
-          model: 'campuses',
-          key: 'campus_id'
+        model: "campuses",
+        key: "campus_id",
       },
-      allowNull: false // Staff must belong to a campus
-      },
-
-      campusName: { 
-          type: DataTypes.STRING, 
-          allowNull: false 
-      },
-
-
+      allowNull: false, // Staff must belong to a campus
+    },
 
     isActive: {type: DataTypes.BOOLEAN, defaultValue: true},
-    
-    isDeleted: { type: DataTypes.BOOLEAN, defaultValue: false }  
+
+    isDeleted: {type: DataTypes.BOOLEAN, defaultValue: false},
   };
 
   const options = {
