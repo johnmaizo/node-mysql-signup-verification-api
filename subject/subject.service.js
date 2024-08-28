@@ -70,11 +70,10 @@ async function createSubject(params) {
 // Common function to handle the transformation
 function transformSubjectData(subject) {
   return {
-    ...subject,
-    CourseCode: subject.CourseCode || "Course code not found",
-    CourseName: subject.CourseName || "Course not found",
-    Department: subject.Department || "Department not found",
-    Campus: subject.Campus || "Campus not found",
+    ...subject.toJSON(),
+    fullCourseNameWithCampus:
+      `${subject.course.courseCode} - ${subject.course.courseName} - ${subject.course.department.campus.campusName}` ||
+      "fullCourseNameWithCampus not found",
   };
 }
 
@@ -91,18 +90,18 @@ async function getSubjects(whereClause) {
             include: [
               {
                 model: db.Campus,
-                attributes: ['campusName'], // Include only the campus name
+                attributes: ["campusName"], // Include only the campus name
               },
             ],
-            attributes: ['departmentName'], // Include only the department name
+            attributes: ["departmentName", "departmentCode"],
           },
         ],
-        attributes: ['courseCode', 'courseName'], // Include only the course code and name
+        attributes: ["courseCode", "courseName"], // Include only the course code and name
       },
     ],
   });
 
-  return subjects;
+  return subjects.map(transformSubjectData);
 }
 
 async function getAllSubject() {
@@ -110,7 +109,9 @@ async function getAllSubject() {
 }
 
 async function getAllSubjectCount() {
-  return await db.SubjectInfo.count({where: {isActive: true, isDeleted: false}});
+  return await db.SubjectInfo.count({
+    where: {isActive: true, isDeleted: false},
+  });
 }
 
 async function getAllSubjectActive() {
@@ -132,20 +133,20 @@ async function getSubjectById(id) {
             include: [
               {
                 model: db.Campus,
-                attributes: ['campusName'], // Include only the campus name
+                attributes: ["campusName"], // Include only the campus name
               },
             ],
-            attributes: ['departmentName'], // Include only the department name
+            attributes: ["departmentName", "departmentCode"], // Include only the department name
           },
         ],
-        attributes: ['courseCode', 'courseName'], // Include only the course code and name
+        attributes: ["courseCode", "courseName"], // Include only the course code and name
       },
     ],
   });
 
   if (!subject) throw new Error("Subject not found");
 
-  return subject;
+  return transformSubjectData(subject);
 }
 
 async function updateSubject(id, params) {
