@@ -6,8 +6,8 @@ const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const programService = require("./program.service");
 
-router.post("/add-program",  addProgramSchema, addProgram);
-router.get("/",  getAllProgram);
+router.post("/add-program", authorize(Role.Admin, Role.Staff), addProgramSchema, addProgram);
+router.get("/", authorize(Role.Admin, Role.Staff), getAllProgram);
 router.get("/count", authorize(Role.Admin, Role.Staff), getAllProgramCount);
 router.get("/active",  authorize(Role.Admin, Role.Staff), getAllProgramActive);
 router.get("/deleted", authorize(Role.Admin, Role.Staff), getAllProgramDeleted);

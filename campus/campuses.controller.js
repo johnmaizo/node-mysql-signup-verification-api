@@ -7,7 +7,7 @@ const Role = require("_helpers/role");
 const campusService = require("./campus.service");
 
 router.post("/add-campus", authorize(Role.Admin, Role.Staff), addCampusSchema, addCampus);
-router.get('/',  getAllCampus);
+router.get('/', authorize(Role.Admin, Role.Staff), getAllCampus);
 router.get('/count',  authorize(Role.Admin, Role.Staff), getAllCampusCount);
 router.get('/active', authorize(Role.Admin, Role.Staff), getAllCampusActive);
 router.get('/deleted', authorize(Role.Admin, Role.Staff), getAllCampusDeleted);
