@@ -107,7 +107,7 @@ async function getDepartmentById(id) {
 }
 
 async function updateDepartment(id, params) {
-  const department = await getDepartmentById(id);
+  const department = await db.Department.findByPk(id);
 
   if (!department) throw "Department not found";
 
