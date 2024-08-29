@@ -22,11 +22,11 @@ function model(sequelize) {
             allowNull: false 
         },
         
-        course_id: { 
+        program_id: { 
             type: DataTypes.INTEGER,
             references: {
-                model: 'courses', // refers to the table name
-                key: 'course_id'  // refers to the column name in the courses table
+                model: 'programs', // refers to the table name
+                key: 'program_id'  // refers to the column name in the programs table
             }
         },
 

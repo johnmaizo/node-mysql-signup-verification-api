@@ -28,8 +28,8 @@ async function initialize() {
 
   // ! Department
   db.Department = require("../models/department.model")(sequelize);
-  // ! Course
-  db.Course = require("../models/course.model")(sequelize);
+  // ! Program
+  db.Program = require("../models/programs.model")(sequelize);
   // ! Subject Info
   db.SubjectInfo = require("../models/subject_info.model")(sequelize);
   // ! Room Info

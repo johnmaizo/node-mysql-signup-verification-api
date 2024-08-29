@@ -19,11 +19,11 @@ function model(sequelize) {
             }
         },
 
-        course_id: { 
+        program_id: { 
             type: DataTypes.INTEGER,
             references: {
-                model: 'courses', 
-                key: 'course_id'  
+                model: 'programs', // refers to the table name
+                key: 'program_id'  // refers to the column name in the programs table
             }
         },
         // course: { type: DataTypes.STRING(50), allowNull: false },

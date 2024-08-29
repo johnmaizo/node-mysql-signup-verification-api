@@ -5,17 +5,17 @@ function defineRelationships(db) {
     db.Account.hasMany(db.RefreshToken, { onDelete: 'CASCADE' });
     db.RefreshToken.belongsTo(db.Account);
 
-    // ! Department -> Course
-    db.Department.hasMany(db.Course, { foreignKey: 'department_id' });
-    db.Course.belongsTo(db.Department, { foreignKey: 'department_id' });
+    // ! Department -> Program
+    db.Department.hasMany(db.Program, { foreignKey: 'department_id' });
+    db.Program.belongsTo(db.Department, { foreignKey: 'department_id' });
     
-    // ! Course -> Subject Info
-    db.Course.hasMany(db.SubjectInfo, { foreignKey: 'course_id' });
-    db.SubjectInfo.belongsTo(db.Course, { foreignKey: 'course_id' });
+    // ! Program -> Subject Info
+    db.Program.hasMany(db.SubjectInfo, { foreignKey: 'program_id' });
+    db.SubjectInfo.belongsTo(db.Program, { foreignKey: 'program_id' });
 
-    // ! Course -> Student Current Academic Background
-    db.Course.hasMany(db.StudentCurrentAcademic, { foreignKey: 'course_id' });
-    db.StudentCurrentAcademic.belongsTo(db.Course, { foreignKey: 'course_id' });
+    // ! Program -> Student Current Academic Background
+    db.Program.hasMany(db.StudentCurrentAcademic, { foreignKey: 'program_id' });
+    db.StudentCurrentAcademic.belongsTo(db.Program, { foreignKey: 'program_id' });
 
     // ! Students -> Student Contact
     db.Student.hasMany(db.StudentContact, { foreignKey: 'student_id' });
@@ -45,9 +45,9 @@ function defineRelationships(db) {
     db.Student.hasMany(db.StudentSchoolDetail, { foreignKey: 'student_id' });
     db.StudentSchoolDetail.belongsTo(db.Student, { foreignKey: 'student_id' });
 
-    // ! Course -> Student School Details
-    db.Course.hasMany(db.StudentSchoolDetail, { foreignKey: 'course_id' });
-    db.StudentSchoolDetail.belongsTo(db.Course, { foreignKey: 'course_id' });
+    // ! Program -> Student School Details
+    db.Program.hasMany(db.StudentSchoolDetail, { foreignKey: 'program_id' });
+    db.StudentSchoolDetail.belongsTo(db.Program, { foreignKey: 'program_id' });
 
     // ! Department -> Student School Details
     db.Department.hasMany(db.StudentSchoolDetail, { foreignKey: 'department_id' });

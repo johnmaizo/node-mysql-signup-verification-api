@@ -4,7 +4,7 @@ module.exports = model;
 
 function model(sequelize) {
     const attributes = {
-        course_id: { 
+        program_id: { 
             type: DataTypes.INTEGER, 
             primaryKey: true,
             autoIncrement: true
@@ -18,8 +18,8 @@ function model(sequelize) {
             }
         }, 
         
-        courseName: { type: DataTypes.STRING, allowNull: false },
-        courseCode: { type: DataTypes.STRING(50), allowNull: false },
+        programCode: { type: DataTypes.STRING(50), allowNull: false },
+        programDescription: { type: DataTypes.STRING, allowNull: false },
               
         
         isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
@@ -38,5 +38,5 @@ function model(sequelize) {
         }        
     };
 
-    return sequelize.define('course', attributes, options);
+    return sequelize.define('program', attributes, options);
 }

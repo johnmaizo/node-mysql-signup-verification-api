@@ -34,7 +34,7 @@ app.use("/campus", require("./campus/campuses.controller"));
 app.use("/departments", require("./departments/departments.controller"));
 
 // ! Course
-app.use("/course", require("./course/courses.controller"));
+app.use("/programs", require("./program/programs.controller"));
 
 // ! Subject
 app.use("/subjects", require("./subject/subjects.controller"));
