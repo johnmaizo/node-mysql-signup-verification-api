@@ -1,4 +1,4 @@
-const { Op } = require("sequelize");
+const {Op} = require("sequelize");
 const db = require("_helpers/db");
 
 module.exports = {
@@ -16,16 +16,16 @@ async function createDepartment(params) {
   const existingDepartment = await db.Department.findOne({
     where: {
       departmentCode: params.departmentCode,
-      campus_id: params.campus_id
-    }
+      campus_id: params.campus_id,
+    },
   });
 
   // Validate if departmentName exists on the same campus_id
   const existingDepartmentName = await db.Department.findOne({
     where: {
       departmentName: params.departmentName,
-      campus_id: params.campus_id
-    }
+      campus_id: params.campus_id,
+    },
   });
 
   // Get the campusName based on campus_id
@@ -42,57 +42,68 @@ async function createDepartment(params) {
     throw `Department Name "${params.departmentName}" already exists on campus "${campus.campusName}".`;
   }
 
-  // Assign the campusName to params
-  params.campusName = campus.campusName;
-
   const department = new db.Department(params);
 
   // Save department
   await department.save();
 }
 
-async function getAllDepartment() {
-  const department = await db.Department.findAll({
-    where: {
-      isDeleted: false,
-    }
+// Common function to handle the transformation
+function transformDepartmentData(department) {
+  return {
+    ...department.toJSON(),
+    fullDepartmentNameWithCampus:
+      `${department.departmentCode} - ${department.departmentName} - ${department.campus.campusName}` ||
+      "fullDepartmentNameWithCampus not found",
+  };
+}
+
+// Common function to get departments based on filter conditions
+async function getDepartments(whereClause) {
+  const departments = await db.Department.findAll({
+    where: whereClause,
+    include: [
+      {
+        model: db.Campus,
+        attributes: ["campusName"], // Include only the campus name
+      },
+    ],
   });
-  return department;
+
+  return departments.map(transformDepartmentData);
+}
+
+async function getAllDepartment() {
+  return await getDepartments({isDeleted: false});
 }
 
 async function getAllDepartmentCount() {
-  const count = await db.Department.count({
-    where: {
-      isActive: true,
-      isDeleted: false,
-    },
+  return await db.Department.count({
+    where: {isActive: true, isDeleted: false},
   });
-  return count;
 }
 
 async function getAllDepartmentsActive() {
-  const departments = await db.Department.findAll({
-    where: {
-      isActive: true,
-      isDeleted: false,
-    },
-  });
-  return departments;
+  return await getDepartments({isActive: true, isDeleted: false});
 }
 
 async function getAllDepartmentsDeleted() {
-  const departments = await db.Department.findAll({
-    where: {
-      isDeleted: true,
-    },
-  });
-  return departments;
+  return await getDepartments({isDeleted: true});
 }
 
 async function getDepartmentById(id) {
-  const department = await db.Department.findByPk(id);
-  if (!department) throw "Department not found";
-  return department;
+  const department = await db.Department.findByPk(id, {
+    include: [
+      {
+        model: db.Campus,
+        attributes: ["campusName"], // Include only the campus name
+      },
+    ],
+  });
+
+  if (!department) throw new Error("Department not found");
+
+  return transformDepartmentData(department);
 }
 
 async function updateDepartment(id, params) {
@@ -109,8 +120,8 @@ async function updateDepartment(id, params) {
     where: {
       departmentCode: departmentCode,
       campus_id: campus_id,
-      department_id: { [Op.ne]: id }  // Ensure the department being updated is excluded from this check
-    }
+      department_id: {[Op.ne]: id}, // Ensure the department being updated is excluded from this check
+    },
   });
 
   // Validate if departmentName exists on the same campus_id for another department
@@ -118,8 +129,8 @@ async function updateDepartment(id, params) {
     where: {
       departmentName: params.departmentName || department.departmentName,
       campus_id: campus_id,
-      department_id: { [Op.ne]: id }  // Ensure the department being updated is excluded from this check
-    }
+      department_id: {[Op.ne]: id}, // Ensure the department being updated is excluded from this check
+    },
   });
 
   if (existingDepartment) {
@@ -132,15 +143,6 @@ async function updateDepartment(id, params) {
     const campus = await db.Campus.findByPk(campus_id);
     const campusName = campus ? campus.campusName : "Unknown";
     throw `Department Name "${params.departmentName}" already exists on campus "${campusName}".`;
-  }
-
-  // If campus_id is provided, get the campusName based on campus_id
-  if (params.campus_id) {
-    const campus = await db.Campus.findByPk(params.campus_id);
-    if (!campus) {
-      throw `Campus with ID "${params.campus_id}" not found.`;
-    }
-    params.campusName = campus.campusName;
   }
 
   // Validation: Ensure isActive is set to false before deleting

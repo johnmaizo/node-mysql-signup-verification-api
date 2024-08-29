@@ -7,7 +7,7 @@ const Role = require("_helpers/role");
 const departmentService = require("./department.service");
 
 router.post("/add-department", authorize(Role.Admin, Role.Staff), addDepartmentSchema, addDepartment);
-router.get('/', authorize(Role.Admin, Role.Staff), getAllDepartment);
+router.get('/',  getAllDepartment);
 router.get('/count', authorize(Role.Admin, Role.Staff), getAllDepartmentCount);
 router.get('/active', authorize(Role.Admin, Role.Staff), getAllDepartmentsActive);
 router.get('/deleted', authorize(Role.Admin, Role.Staff), getAllDepartmentsDeleted);

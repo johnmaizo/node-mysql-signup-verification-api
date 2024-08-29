@@ -9,18 +9,6 @@ function model(sequelize) {
             primaryKey: true,
             autoIncrement: true
         },
-        departmentCode: { 
-            type: DataTypes.STRING, 
-            allowNull: false 
-        },
-        departmentName: { 
-            type: DataTypes.STRING, 
-            allowNull: false 
-        },
-        departmentDean: { 
-            type: DataTypes.STRING, 
-            allowNull: false 
-        },
 
         campus_id: { 
             type: DataTypes.INTEGER,
@@ -30,8 +18,16 @@ function model(sequelize) {
             },
             allowNull: false // Department must belong to a campus
         },
-
-        campusName: { 
+        
+        departmentCode: { 
+            type: DataTypes.STRING, 
+            allowNull: false 
+        },
+        departmentName: { 
+            type: DataTypes.STRING, 
+            allowNull: false 
+        },
+        departmentDean: { 
             type: DataTypes.STRING, 
             allowNull: false 
         },

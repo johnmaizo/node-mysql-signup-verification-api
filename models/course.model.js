@@ -9,21 +9,18 @@ function model(sequelize) {
             primaryKey: true,
             autoIncrement: true
         },
-        courseName: { type: DataTypes.STRING, allowNull: false },
-        courseCode: { type: DataTypes.STRING(50), allowNull: false },
+
         department_id: { 
             type: DataTypes.INTEGER,
             references: {
                 model: 'departments', // refers to the table name
                 key: 'department_id'  // refers to the column name in the departments table
             }
-        },       
-
-        departmentName: { 
-            type: DataTypes.STRING, 
-            allowNull: false 
-        },
-
+        }, 
+        
+        courseName: { type: DataTypes.STRING, allowNull: false },
+        courseCode: { type: DataTypes.STRING(50), allowNull: false },
+              
         
         isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
             

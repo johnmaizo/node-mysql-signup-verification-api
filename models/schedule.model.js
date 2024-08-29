@@ -17,11 +17,7 @@ function model(sequelize) {
             },
             allowNull: false
         },
-        
-        classDay: { type: DataTypes.STRING(15), allowNull: false },
-        classHour: { type: DataTypes.INTEGER(10), allowNull: false },
-        staff: { type: DataTypes.STRING(50), allowNull: false },
-        courseCode: { type: DataTypes.STRING(20), allowNull: false },
+
         room_id: {
             type: DataTypes.INTEGER(3),
             references: {
@@ -29,6 +25,12 @@ function model(sequelize) {
                 key: 'room_id'
             }
         },
+
+        classDay: { type: DataTypes.STRING(15), allowNull: false },
+        classHour: { type: DataTypes.INTEGER(10), allowNull: false },
+        staff: { type: DataTypes.STRING(50), allowNull: false },
+        courseCode: { type: DataTypes.STRING(20), allowNull: false },
+        
         
         isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
             
