@@ -33,11 +33,11 @@ app.use("/campus", require("./campus/campuses.controller"));
 // ! Department
 app.use("/departments", require("./departments/departments.controller"));
 
-// ! Course
+// ! Programs
 app.use("/programs", require("./program/programs.controller"));
 
-// ! Subject
-app.use("/subjects", require("./subject/subjects.controller"));
+// ! Program Course
+// app.use("/program-courses", require("./program_course/program_courses.controller"));
 
 // swagger docs route
 app.use("/api-docs", require("_helpers/swagger"));

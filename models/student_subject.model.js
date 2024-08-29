@@ -11,11 +11,12 @@ function model(sequelize) {
                 key: 'student_id'
             }
         },
-        subject_id: { 
+
+        programCourse_id: { 
             type: DataTypes.INTEGER,
             references: {
-                model: 'subjectinfos',
-                key: 'subject_id'
+                model: 'programcourses',
+                key: 'programCourse_id'
             }
         },
 

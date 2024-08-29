@@ -30,8 +30,10 @@ async function initialize() {
   db.Department = require("../models/department.model")(sequelize);
   // ! Program
   db.Program = require("../models/programs.model")(sequelize);
-  // ! Subject Info
-  db.SubjectInfo = require("../models/subject_info.model")(sequelize);
+  // ! Course Info
+  db.CourseInfo = require("../models/course_info.model")(sequelize);
+  // ! Program Course
+  db.ProgramCourse = require("../models/program_course.model")(sequelize);
   // ! Room Info
   db.RoomInfo = require("../models/room_info.model")(sequelize);
 

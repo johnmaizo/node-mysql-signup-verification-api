@@ -2,16 +2,16 @@ const {Op, col} = require("sequelize");
 const db = require("_helpers/db");
 
 module.exports = {
-  createSubject,
-  getAllSubject,
-  getAllSubjectCount,
-  getAllSubjectActive,
-  getAllSubjectDeleted,
-  getSubjectById,
-  updateSubject,
+  createCourse,
+  getAllCourse,
+  getAllCourseCount,
+  getAllCourseActive,
+  getAllCourseDeleted,
+  getCourseById,
+  updateCourse,
 };
 
-async function createSubject(params) {
+async function createCourse(params) {
   // Find the course first based on course, department, and campus information
   const course = await db.Course.findOne({
     where: {
@@ -78,7 +78,7 @@ function transformSubjectData(subject) {
 }
 
 // Common function to get subjects based on filter conditions
-async function getSubjects(whereClause) {
+async function getCourses(whereClause) {
   const subjects = await db.SubjectInfo.findAll({
     where: whereClause,
     include: [
@@ -104,25 +104,25 @@ async function getSubjects(whereClause) {
   return subjects.map(transformSubjectData);
 }
 
-async function getAllSubject() {
-  return await getSubjects({isDeleted: false});
+async function getAllCourse() {
+  return await getCourses({isDeleted: false});
 }
 
-async function getAllSubjectCount() {
+async function getAllCourseCount() {
   return await db.SubjectInfo.count({
     where: {isActive: true, isDeleted: false},
   });
 }
 
-async function getAllSubjectActive() {
-  return await getSubjects({isActive: true, isDeleted: false});
+async function getAllCourseActive() {
+  return await getCourses({isActive: true, isDeleted: false});
 }
 
-async function getAllSubjectDeleted() {
-  return await getSubjects({isDeleted: true});
+async function getAllCourseDeleted() {
+  return await getCourses({isDeleted: true});
 }
 
-async function getSubjectById(id) {
+async function getCourseById(id) {
   const subject = await db.SubjectInfo.findByPk(id, {
     include: [
       {
@@ -149,7 +149,7 @@ async function getSubjectById(id) {
   return transformSubjectData(subject);
 }
 
-async function updateSubject(id, params) {
+async function updateCourse(id, params) {
   // Fetch the subject as a Sequelize instance
   const subject = await db.SubjectInfo.findByPk(id, {
     include: [
