@@ -2,6 +2,8 @@ const {Op, where} = require("sequelize");
 const db = require("_helpers/db");
 const Role = require("_helpers/role");
 
+const deepEqual = require("deep-equal"); // You may need to install this package
+
 module.exports = {
   createCourse,
   getAllCourse,
@@ -85,6 +87,29 @@ async function updateCourse(id, params, adminId) {
   const course = await db.CourseInfo.findByPk(id);
   if (!course) throw "Course not found";
 
+  // Check if the action is only to delete the course
+  if (params.isDeleted !== undefined) {
+    if (params.isDeleted && course.isActive) {
+      throw new Error(
+        `You must set the Status of "${course.courseDescription}" to Inactive before you can delete this course.`
+      );
+    }
+
+    Object.assign(course, {isDeleted: params.isDeleted});
+    await course.save();
+
+    // Log the update action
+    await db.History.create({
+      action: "update",
+      entity: "Course",
+      entityId: course.course_id,
+      changes: params,
+      adminId: adminId,
+    });
+
+    return;
+  }
+
   // Log the original state before update
   const originalData = {...course.dataValues};
 
@@ -107,17 +132,23 @@ async function updateCourse(id, params, adminId) {
   // Save the updated course
   await course.save();
 
-  // Log the update action with changes
-  const changes = {
-    original: originalData,
-    updated: params,
-  };
+  // Check if there are actual changes
+  const hasChanges = !deepEqual(originalData, course.dataValues);
 
-  await db.AdminActivityLog.create({
-    actionType: "update",
-    entityType: "Course",
-    entityId: course.id,
-    adminId: adminId,
-    changes: changes,
-  });
+  if (hasChanges) {
+    // Log the update action with changes
+    const changes = {
+      original: originalData,
+      updated: params,
+    };
+
+    // Log the update action
+    await db.History.create({
+      action: "update",
+      entity: "Course",
+      entityId: course.course_id,
+      changes: changes,
+      adminId: adminId,
+    });
+  }
 }
