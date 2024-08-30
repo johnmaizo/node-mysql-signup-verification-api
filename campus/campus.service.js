@@ -44,7 +44,6 @@ async function getAllCampusActive() {
   return campuses;
 }
 
-
 async function getAllCampusDeleted() {
   const campuses = await db.Campus.findAll({
     where: {
