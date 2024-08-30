@@ -2,7 +2,7 @@ const {Op, where} = require("sequelize");
 const db = require("_helpers/db");
 const Role = require("_helpers/role");
 
-const deepEqual = require("deep-equal"); // You may need to install this package
+const deepEqual = require("deep-equal");
 
 module.exports = {
   createCourse,
