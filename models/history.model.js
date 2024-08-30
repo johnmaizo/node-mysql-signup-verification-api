@@ -4,10 +4,10 @@ module.exports = (sequelize) => {
   const History = sequelize.define(
     "History",
     {
-      action: {type: DataTypes.STRING, allowNull: false},
-      entity: {type: DataTypes.STRING, allowNull: false},
-      entityId: {type: DataTypes.INTEGER, allowNull: false},
-      changes: {type: DataTypes.JSON, allowNull: false},
+      action: {type: DataTypes.STRING, allowNull: false}, // e.g., 'create', 'update', 'delete'
+      entity: {type: DataTypes.STRING, allowNull: false}, // e.g., 'Course', 'Department'
+      entityId: {type: DataTypes.INTEGER, allowNull: false}, // ID of the entity that was modified
+      changes: {type: DataTypes.JSON, allowNull: false}, // JSON object to store the changes
       timestamp: {
         type: DataTypes.DATE,
         allowNull: false,

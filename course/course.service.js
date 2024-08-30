@@ -26,12 +26,12 @@ async function createCourse(params, adminId) {
   const newCourse = await db.CourseInfo.create(params);
 
   // Log the creation action
-  await db.AdminActivityLog.create({
-    actionType: "create",
-    entityType: "Course",
-    entityId: newCourse.id,
-    adminId: adminId,
+  await db.History.create({
+    action: "create",
+    entity: "Course",
+    entityId: newCourse.course_id,
     changes: params,
+    adminId: adminId,
   });
 }
 
