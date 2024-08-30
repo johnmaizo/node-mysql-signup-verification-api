@@ -12,7 +12,7 @@ module.exports = {
   updateCourse,
 };
 
-async function createCourse(params) {
+async function createCourse(params, adminId) {
   // Check if courseCode already exists
   const existingCourse = await db.CourseInfo.findOne({
     where: {courseCode: params.courseCode},
@@ -23,7 +23,16 @@ async function createCourse(params) {
   }
 
   // Create the new course
-  await db.CourseInfo.create(params);
+  const newCourse = await db.CourseInfo.create(params);
+
+  // Log the creation action
+  await db.AdminActivityLog.create({
+    actionType: "create",
+    entityType: "Course",
+    entityId: newCourse.id,
+    adminId: adminId,
+    changes: params,
+  });
 }
 
 async function getAllCourse() {
@@ -71,30 +80,20 @@ async function getCourseById(id) {
   return course;
 }
 
-async function updateCourse(id, params) {
+async function updateCourse(id, params, adminId) {
   // Find the course to be updated
   const course = await db.CourseInfo.findByPk(id);
   if (!course) throw "Course not found";
 
-  // Check if the action is only to delete the course
-  if (params.isDeleted !== undefined) {
-    if (params.isDeleted && course.isActive) {
-      throw new Error(
-        `You must set the Status of "${course.courseDescription}" to Inactive before you can delete this course.`
-      );
-    }
-
-    Object.assign(course, {isDeleted: params.isDeleted});
-    await course.save();
-    return;
-  }
+  // Log the original state before update
+  const originalData = {...course.dataValues};
 
   // If the courseCode is being updated, check if the new courseCode already exists
   if (params.courseCode && params.courseCode !== course.courseCode) {
     const existingCourse = await db.CourseInfo.findOne({
       where: {
         courseCode: params.courseCode,
-        course_id: {[Op.ne]: id}, // Ensure we don't match the current course
+        course_id: {[Op.ne]: id},
       },
     });
     if (existingCourse) {
@@ -107,4 +106,18 @@ async function updateCourse(id, params) {
 
   // Save the updated course
   await course.save();
+
+  // Log the update action with changes
+  const changes = {
+    original: originalData,
+    updated: params,
+  };
+
+  await db.AdminActivityLog.create({
+    actionType: "update",
+    entityType: "Course",
+    entityId: course.id,
+    adminId: adminId,
+    changes: changes,
+  });
 }
