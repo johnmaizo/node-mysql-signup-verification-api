@@ -1,5 +1,8 @@
-const {Op, literal, col} = require("sequelize");
+const {Op} = require("sequelize");
 const db = require("_helpers/db");
+const Role = require("_helpers/role");
+
+const deepEqual = require("deep-equal");
 
 module.exports = {
   createProgram,
@@ -11,7 +14,7 @@ module.exports = {
   updateProgram,
 };
 
-async function createProgram(params) {
+async function createProgram(params, adminId) {
   // Find the department based on department code, department name, and campus information
   const department = await db.Department.findOne({
     where: {
@@ -56,6 +59,15 @@ async function createProgram(params) {
 
   // Save program
   await program.save();
+
+  // Log the creation action
+  await db.History.create({
+    action: "create",
+    entity: "Program",
+    entityId: program.program_id,
+    changes: params,
+    adminId: adminId,
+  });
 }
 
 // Common function to handle the transformation
@@ -131,7 +143,7 @@ async function getProgramById(id) {
   return transformProgramData(program);
 }
 
-async function updateProgram(id, params) {
+async function updateProgram(id, params, adminId) {
   // Fetch the program as a Sequelize instance
   const program = await db.Program.findByPk(id, {
     include: [
@@ -160,8 +172,21 @@ async function updateProgram(id, params) {
 
     Object.assign(program, {isDeleted: params.isDeleted});
     await program.save();
+
+    // Log the update action
+    await db.History.create({
+      action: "update",
+      entity: "Program",
+      entityId: program.program_id,
+      changes: params,
+      adminId: adminId,
+    });
+
     return;
   }
+
+  // Log the original state before update
+  const originalData = {...program.dataValues};
 
   // Find the department based on department code, department name, and campus information
   const department = await db.Department.findOne({
@@ -206,4 +231,24 @@ async function updateProgram(id, params) {
   // Update program with new params
   Object.assign(program, params);
   await program.save();
+
+  // Check if there are actual changes
+  const hasChanges = !deepEqual(originalData, program.dataValues);
+
+  if (hasChanges) {
+    // Log the update action with changes
+    const changes = {
+      original: originalData,
+      updated: params,
+    };
+
+    // Log the update action
+    await db.History.create({
+      action: "update",
+      entity: "Program",
+      entityId: program.program_id,
+      changes: changes,
+      adminId: adminId,
+    });
+  }
 }

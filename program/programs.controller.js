@@ -18,7 +18,7 @@ module.exports = router;
 
 function addProgram(req, res, next) {
   programService
-    .createProgram(req.body)
+    .createProgram(req.body, req.user.id)
     .then(() =>
       res.json({
         message: "Program Added Successfully.",
@@ -64,7 +64,7 @@ function getProgramById(req, res, next) {
 
 function updateProgram(req, res, next) {
   programService
-    .updateProgram(req.params.id, req.body)
+    .updateProgram(req.params.id, req.body, req.user.id)
     .then(() =>
       res.json({
         message: "Program Updated Successfully.",
