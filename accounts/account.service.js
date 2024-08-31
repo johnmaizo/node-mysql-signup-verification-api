@@ -164,56 +164,82 @@ async function resetPassword({token, password}) {
 }
 
 async function getAll() {
-  const accounts = await db.Account.findAll();
-  return accounts.map((x) => basicDetails(x));
+  const accounts = await db.Account.findAll({
+    include: [
+      {
+        model: db.Campus,
+        attributes: ["campusName"],
+      },
+    ],
+  });
+  return accounts.map((x) => basicDetails(x, x.campus));
 }
 
 async function getById(id) {
-  const account = await getAccount(id);
-  return basicDetails(account);
+  const account = await db.Account.findByPk(id, {
+    include: [
+      {
+        model: db.Campus,
+        attributes: ["campusName"],
+      },
+    ],
+  });
+  return basicDetails(account, account.campus);
 }
 
 async function create(params) {
-  // validate
+  // Validate if email is already registered
   if (await db.Account.findOne({where: {email: params.email}})) {
-    throw 'Email "' + params.email + '" is already registered';
+    throw `Email "${params.email}" is already registered`;
   }
 
   const account = new db.Account(params);
   account.verified = Date.now();
 
-  // hash password
+  // Hash password
   account.passwordHash = await hash(params.password);
 
-  // save account
+  // Save account
   await account.save();
 
-  return basicDetails(account);
+  // Retrieve the campus info if the role is not SuperAdmin
+  const campus =
+    account.role !== "SuperAdmin"
+      ? await account.getCampus({attributes: ["campusName"]})
+      : null;
+
+  return basicDetails(account, campus);
 }
 
 async function update(id, params) {
   const account = await getAccount(id);
 
-  // validate (if email was changed)
+  // Validate if email was changed
   if (
     params.email &&
     account.email !== params.email &&
     (await db.Account.findOne({where: {email: params.email}}))
   ) {
-    throw 'Email "' + params.email + '" is already taken';
+    throw `Email "${params.email}" is already taken`;
   }
 
-  // hash password if it was entered
+  // Hash password if it was entered
   if (params.password) {
     params.passwordHash = await hash(params.password);
   }
 
-  // copy params to account and save
+  // Copy params to account and save
   Object.assign(account, params);
   account.updated = Date.now();
   await account.save();
 
-  return basicDetails(account);
+  // Retrieve the campus info if the role is not SuperAdmin
+  const campus =
+    account.role !== "SuperAdmin"
+      ? await account.getCampus({attributes: ["campusName"]})
+      : null;
+
+  return basicDetails(account, campus);
 }
 
 async function _delete(id) {
@@ -285,7 +311,7 @@ function basicDetails(account, campus) {
     updated,
     isVerified,
     // Include campusName if the role is not SuperAdmin
-    ...(role !== "SuperAdmin" && campus ? { campusName: campus.campusName } : {}),
+    ...(role !== "SuperAdmin" && campus ? {campusName: campus.campusName} : {}),
   };
 }
 
