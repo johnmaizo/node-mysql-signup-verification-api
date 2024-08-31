@@ -39,7 +39,7 @@ async function authenticate({email, password, ipAddress}) {
   let campus = null;
   if (account.role !== "SuperAdmin") {
     campus = await account.getCampus({
-      attributes: ["campusName"],
+      attributes: ["campusName", "campus_id"],
     });
   }
 
@@ -168,7 +168,7 @@ async function getAll() {
     include: [
       {
         model: db.Campus,
-        attributes: ["campusName"],
+        attributes: ["campusName", "campus_id"],
       },
     ],
   });
@@ -180,7 +180,7 @@ async function getById(id) {
     include: [
       {
         model: db.Campus,
-        attributes: ["campusName"],
+        attributes: ["campusName", "campus_id"],
       },
     ],
   });
@@ -205,7 +205,7 @@ async function create(params) {
   // Retrieve the campus info if the role is not SuperAdmin
   const campus =
     account.role !== "SuperAdmin"
-      ? await account.getCampus({attributes: ["campusName"]})
+      ? await account.getCampus({attributes: ["campusName", "campus_id"]})
       : null;
 
   return basicDetails(account, campus);
@@ -236,7 +236,7 @@ async function update(id, params) {
   // Retrieve the campus info if the role is not SuperAdmin
   const campus =
     account.role !== "SuperAdmin"
-      ? await account.getCampus({attributes: ["campusName"]})
+      ? await account.getCampus({attributes: ["campusName", "campus_id"]})
       : null;
 
   return basicDetails(account, campus);
@@ -311,7 +311,9 @@ function basicDetails(account, campus) {
     updated,
     isVerified,
     // Include campusName if the role is not SuperAdmin
-    ...(role !== "SuperAdmin" && campus ? {campusName: campus.campusName} : {}),
+    ...(role !== "SuperAdmin" && campus
+      ? {campusName: campus.campusName, campus_id: campus.campus_id}
+      : {}),
   };
 }
 

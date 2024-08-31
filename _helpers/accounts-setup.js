@@ -20,15 +20,15 @@ async function setupAccounts(db) {
     });
 
     if (!superAdminUser) {
-      const superAdminPasswordHash = await bcrypt.hash("admin123", 10);
+      const superAdminPasswordHash = await bcrypt.hash("aw12345", 10);
 
       const newSuperAdmin = new db.Account({
         email: "admin@gmail.com",
         passwordHash: superAdminPasswordHash,
         role: Role.SuperAdmin,
         title: "Super Administrator",
-        firstName: "Admin",
-        lastName: "User",
+        firstName: "John Robert",
+        lastName: "Maizo",
         acceptTerms: true,
         verified: new Date(),
         created: new Date(),
@@ -46,15 +46,15 @@ async function setupAccounts(db) {
     });
 
     if (!adminUser) {
-      const adminPasswordHash = await bcrypt.hash("admin456", 10);
+      const adminPasswordHash = await bcrypt.hash("aw12345", 10);
 
       const newAdmin = new db.Account({
         email: "admin2@gmail.com",
         passwordHash: adminPasswordHash,
         role: Role.Admin,
         title: "Administrator",
-        firstName: "Admin",
-        lastName: "User2",
+        firstName: "Vonsleryl",
+        lastName: "Gwapo",
         acceptTerms: true,
         verified: new Date(),
         created: new Date(),
@@ -73,7 +73,7 @@ async function setupAccounts(db) {
     });
 
     if (!staffUser) {
-      const staffPasswordHash = await bcrypt.hash("staff123", 10);
+      const staffPasswordHash = await bcrypt.hash("aw12345", 10);
 
       const newStaff = new db.Account({
         email: "staff@gmail.com",
@@ -100,7 +100,7 @@ async function setupAccounts(db) {
     });
 
     if (!instructorUser) {
-      const instructorPasswordHash = await bcrypt.hash("instructor123", 10);
+      const instructorPasswordHash = await bcrypt.hash("aw1235", 10);
 
       const newInstructor = new db.Account({
         email: "instructor@gmail.com",
@@ -127,7 +127,7 @@ async function setupAccounts(db) {
     });
 
     if (!studentUser) {
-      const studentPasswordHash = await bcrypt.hash("student123", 10);
+      const studentPasswordHash = await bcrypt.hash("aw12345", 10);
 
       const newStudent = new db.Account({
         email: "student@gmail.com",

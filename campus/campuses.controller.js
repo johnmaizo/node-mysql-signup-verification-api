@@ -48,7 +48,7 @@ module.exports = router;
 
 function addCampus(req, res, next) {
   campusService
-    .createCampus(req.body)
+    .createCampus(req.body, req.user.id)
     .then(() =>
       res.json({
         message: "Campus Added Successfully.",
@@ -94,7 +94,7 @@ function getCampusById(req, res, next) {
 
 function updateCampus(req, res, next) {
   campusService
-    .updateCampus(req.params.id, req.body)
+    .updateCampus(req.params.id, req.body, req.user.id)
     .then(() =>
       res.json({
         message: "Campus Updated Successfully.",

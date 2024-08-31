@@ -1,6 +1,8 @@
 const {Op} = require("sequelize");
 const db = require("_helpers/db");
 
+const deepEqual = require("deep-equal");
+
 module.exports = {
   createSemester,
   getAllSemester,
@@ -10,14 +12,15 @@ module.exports = {
   updateSemester,
 };
 
-async function createSemester(params) {
-  const {semesterName, schoolYear} = params;
+async function createSemester(params, adminId) {
+  const {semesterName, schoolYear, campus_id} = params;
 
-  // Check if there's already an active semester
+  // Check if there's already an active semester on the same campus
   const activeSemester = await db.Semester.findOne({
     where: {
       isActive: true,
       isDeleted: false,
+      campus_id: campus_id,
     },
   });
 
@@ -25,10 +28,11 @@ async function createSemester(params) {
     throw `Error: There's currently an active semester: "${activeSemester.semesterName} - S.Y. "${activeSemester.schoolYear}". You must inactivate it in order to add a new semester.`;
   }
 
-  // Check existing semesters for the given school year, including deleted ones
+  // Check existing semesters for the given school year and campus_id, including deleted ones
   const existingSemesters = await db.Semester.findAll({
     where: {
       schoolYear: schoolYear,
+      campus_id: campus_id,
     },
     order: [["semesterName", "ASC"]],
   });
@@ -58,11 +62,12 @@ async function createSemester(params) {
     }
   }
 
-  // Validate if the same schoolYear and semesterName already exists
+  // Validate if the same schoolYear and semesterName already exists on the same campus
   const existingSemester = await db.Semester.findOne({
     where: {
       schoolYear: schoolYear,
       semesterName: semesterName,
+      campus_id: campus_id,
     },
   });
 
@@ -70,39 +75,80 @@ async function createSemester(params) {
     throw `Error: The semester "${semesterName}" for the school year "${schoolYear}" already exists.`;
   }
 
+  // Get the campusName based on campus_id
+  const campus = await db.Campus.findByPk(campus_id);
+  if (!campus) {
+    throw `Campus with ID "${campus_id}" not found.`;
+  }
+
   const semester = new db.Semester(params);
 
   // Save semester
   await semester.save();
-}
 
-async function getAllSemester() {
-  const semester = await db.Semester.findAll({
-    where: {
-      isDeleted: false,
-    },
+  // Log the creation action
+  await db.History.create({
+    action: "create",
+    entity: "Semester",
+    entityId: semester.semester_id,
+    changes: params,
+    adminId: adminId,
   });
-
-  return semester;
 }
 
-async function getAllSemesterActive() {
+// Common function to handle the transformation
+function transformSemesterData(semester) {
+  return {
+    ...semester.toJSON(),
+    fullSemesterNameWithCampus:
+      `${semester.schoolYear} - ${semester.semesterName} - ${semester.campus.campusName}` ||
+      "fullSemesterNameWithCampus not found",
+  };
+}
+
+// Common function to get semesters based on filter conditions
+async function getSemesters(whereClause) {
   const semesters = await db.Semester.findAll({
-    where: {
-      isActive: true,
-      isDeleted: false,
-    },
+    where: whereClause,
+    include: [
+      {
+        model: db.Campus,
+        attributes: ["campusName"], // Include only the campus name
+      },
+    ],
   });
-  return semesters;
+
+  return semesters.map(transformSemesterData);
 }
 
-async function getAllSemesterDeleted() {
-  const semesters = await db.Semester.findAll({
-    where: {
-      isDeleted: true,
-    },
-  });
-  return semesters;
+async function getAllSemester(campus_id = null) {
+  const whereClause = {isDeleted: false};
+
+  if (campus_id) {
+    whereClause.campus_id = campus_id;
+  }
+
+  return await getSemesters(whereClause);
+}
+
+async function getAllSemesterActive(campus_id = null) {
+  const whereClause = {isActive: true, isDeleted: false};
+
+  if (campus_id) {
+    whereClause.campus_id = campus_id;
+  }
+
+  return await getSemesters(whereClause);
+}
+
+async function getAllSemesterDeleted(campus_id = null) {
+  const whereClause = {isDeleted: true};
+
+  if (campus_id) {
+    whereClause.campus_id = campus_id;
+  }
+
+  return await getSemesters(whereClause);
 }
 
 async function getSemesterById(id) {
@@ -111,19 +157,49 @@ async function getSemesterById(id) {
   return semester;
 }
 
-async function updateSemester(id, params) {
+async function updateSemester(id, params, adminId) {
   const semester = await getSemesterById(id);
 
   if (!semester) throw "Semester not found";
 
-  const {semesterName, schoolYear, isActive, isDeleted} = params;
+  // Check if the action is only to delete the semester
+  if (params.isDeleted !== undefined) {
+    if (params.isDeleted && semester.isActive) {
+      throw new Error(
+        `You must set the Status of "${semester.semesterName} - S.Y. ${semester.schoolYear}" to Inactive before you can delete this semester.`
+      );
+    }
 
-  // Check if there's already an active semester (other than the one being updated)
-  if (isActive) {
+    Object.assign(semester, {isDeleted: params.isDeleted});
+    await semester.save();
+
+    // Log the update action
+    await db.History.create({
+      action: "update",
+      entity: "Semester",
+      entityId: semester.semester_id,
+      changes: params,
+      adminId: adminId,
+    });
+
+    return;
+  }
+
+  // Log the original state before update
+  const originalData = {...semester.dataValues};
+
+  // If semesterName, schoolYear, or campus_id are not provided, use existing values
+  const semesterName = params.semesterName || semester.semesterName;
+  const schoolYear = params.schoolYear || semester.schoolYear;
+  const campus_id = params.campus_id || semester.campus_id;
+
+  // Check if there's already an active semester (other than the one being updated) on the same campus
+  if (params.isActive) {
     const activeSemester = await db.Semester.findOne({
       where: {
         isActive: true,
         isDeleted: false,
+        campus_id: campus_id,
         semester_id: {[Op.ne]: id}, // Exclude the current semester from this check
       },
     });
@@ -133,21 +209,30 @@ async function updateSemester(id, params) {
     }
   }
 
-  // Validation: Ensure isActive is set to false before deleting
-  if (isDeleted && semester.isActive) {
-    throw `You must set the Status of "${semester.schoolYear} - ${semester.semesterName}" to Inactive before you can delete this semester.`;
+  // Validate if the same schoolYear and semesterName combination already exists on the same campus (other than the one being updated)
+  const duplicateSemester = await db.Semester.findOne({
+    where: {
+      schoolYear: schoolYear,
+      semesterName: semesterName,
+      campus_id: campus_id,
+      semester_id: {[Op.ne]: id},
+    },
+  });
+
+  if (duplicateSemester) {
+    throw `Error: The semester "${semesterName}" for the school year "${schoolYear}" already exists.`;
   }
 
-  // Check existing semesters for the given school year, including deleted ones
+  // Validation based on semesterName
   const existingSemesters = await db.Semester.findAll({
     where: {
-      schoolYear: schoolYear || semester.schoolYear,
-      semester_id: {[Op.ne]: id}, // Exclude the current semester from this check
+      schoolYear: schoolYear,
+      campus_id: campus_id,
+      semester_id: {[Op.ne]: id},
     },
     order: [["semesterName", "ASC"]],
   });
 
-  // Validation based on semesterName
   if (semesterName === "2nd Semester") {
     const firstSemesterExists = existingSemesters.some(
       (s) => s.semesterName === "1st Semester"
@@ -171,24 +256,33 @@ async function updateSemester(id, params) {
     }
   }
 
-  // Validate if the same schoolYear and semesterName combination already exists (other than the one being updated)
-  const duplicateSemester = await db.Semester.findOne({
-    where: {
-      schoolYear: schoolYear || semester.schoolYear,
-      semesterName: semesterName || semester.semesterName,
-      semester_id: {[Op.ne]: id},
-    },
-  });
-
-  if (duplicateSemester) {
-    throw `Error: The semester "${
-      semesterName || semester.semesterName
-    }" for the school year "${
-      schoolYear || semester.schoolYear
-    }" already exists.`;
+  // Get the campusName based on campus_id
+  const campus = await db.Campus.findByPk(campus_id);
+  if (!campus) {
+    throw `Campus with ID "${campus_id}" not found.`;
   }
 
   // If validation passes, update the semester
   Object.assign(semester, params);
   await semester.save();
+
+  // Check if there are actual changes
+  const hasChanges = !deepEqual(originalData, semester.dataValues);
+
+  if (hasChanges) {
+    // Log the update action with changes
+    const changes = {
+      original: originalData,
+      updated: params,
+    };
+
+    // Log the update action
+    await db.History.create({
+      action: "update",
+      entity: "Semester",
+      entityId: semester.semester_id,
+      changes: changes,
+      adminId: adminId,
+    });
+  }
 }

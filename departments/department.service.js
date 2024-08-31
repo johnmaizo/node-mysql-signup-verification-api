@@ -1,6 +1,8 @@
 const {Op} = require("sequelize");
 const db = require("_helpers/db");
 
+const deepEqual = require("deep-equal");
+
 module.exports = {
   createDepartment,
   getAllDepartment,
@@ -11,7 +13,7 @@ module.exports = {
   updateDepartment,
 };
 
-async function createDepartment(params) {
+async function createDepartment(params, adminId) {
   // Validate if departmentCode exists on the same campus_id
   const existingDepartment = await db.Department.findOne({
     where: {
@@ -46,6 +48,15 @@ async function createDepartment(params) {
 
   // Save department
   await department.save();
+
+  // Log the creation action
+  await db.History.create({
+    action: "create",
+    entity: "Deparment",
+    entityId: department.department_id,
+    changes: params,
+    adminId: adminId,
+  });
 }
 
 // Common function to handle the transformation
@@ -73,22 +84,46 @@ async function getDepartments(whereClause) {
   return departments.map(transformDepartmentData);
 }
 
-async function getAllDepartment() {
-  return await getDepartments({isDeleted: false});
+async function getAllDepartment(campus_id = null) {
+  const whereClause = {isDeleted: false};
+
+  if (campus_id) {
+    whereClause.campus_id = campus_id;
+  }
+
+  return await getDepartments(whereClause);
 }
 
-async function getAllDepartmentCount() {
+async function getAllDepartmentCount(campus_id = null) {
+  const whereClause = {isActive: true, isDeleted: false};
+
+  if (campus_id) {
+    whereClause.campus_id = campus_id;
+  }
+
   return await db.Department.count({
-    where: {isActive: true, isDeleted: false},
+    where: whereClause,
   });
 }
 
-async function getAllDepartmentsActive() {
-  return await getDepartments({isActive: true, isDeleted: false});
+async function getAllDepartmentsActive(campus_id = null) {
+  const whereClause = {isActive: true, isDeleted: false};
+
+  if (campus_id) {
+    whereClause.campus_id = campus_id;
+  }
+
+  return await getDepartments(whereClause);
 }
 
-async function getAllDepartmentsDeleted() {
-  return await getDepartments({isDeleted: true});
+async function getAllDepartmentsDeleted(campus_id = null) {
+  const whereClause = {isDeleted: true};
+
+  if (campus_id) {
+    whereClause.campus_id = campus_id;
+  }
+
+  return await getDepartments(whereClause);
 }
 
 async function getDepartmentById(id) {
@@ -106,10 +141,36 @@ async function getDepartmentById(id) {
   return transformDepartmentData(department);
 }
 
-async function updateDepartment(id, params) {
+async function updateDepartment(id, params, adminId) {
   const department = await db.Department.findByPk(id);
 
   if (!department) throw "Department not found";
+
+  // Check if the action is only to delete the department
+  if (params.isDeleted !== undefined) {
+    if (params.isDeleted && department.isActive) {
+      throw new Error(
+        `You must set the Status of "${department.departmentName}" to Inactive before you can delete this department.`
+      );
+    }
+
+    Object.assign(department, {isDeleted: params.isDeleted});
+    await department.save();
+
+    // Log the update action
+    await db.History.create({
+      action: "update",
+      entity: "Department",
+      entityId: department.department_id,
+      changes: params,
+      adminId: adminId,
+    });
+
+    return;
+  }
+
+  // Log the original state before update
+  const originalData = {...department.dataValues};
 
   // If departmentCode or campus_id are not provided, use existing values
   const departmentCode = params.departmentCode || department.departmentCode;
@@ -145,12 +206,27 @@ async function updateDepartment(id, params) {
     throw `Department Name "${params.departmentName}" already exists on campus "${campusName}".`;
   }
 
-  // Validation: Ensure isActive is set to false before deleting
-  if (params.isDeleted && department.isActive) {
-    throw `You must set the Status of "${department.departmentName}" to Inactive before you can delete this department.`;
-  }
-
   // Update department with new params
   Object.assign(department, params);
   await department.save();
+
+  // Check if there are actual changes
+  const hasChanges = !deepEqual(originalData, department.dataValues);
+
+  if (hasChanges) {
+    // Log the update action with changes
+    const changes = {
+      original: originalData,
+      updated: params,
+    };
+
+    // Log the update action
+    await db.History.create({
+      action: "update",
+      entity: "Department",
+      entityId: department.department_id,
+      changes: changes,
+      adminId: adminId,
+    });
+  }
 }

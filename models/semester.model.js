@@ -9,6 +9,16 @@ function model(sequelize) {
       primaryKey: true, 
       autoIncrement: true 
     },
+
+    campus_id: { 
+        type: DataTypes.INTEGER,
+        references: {
+            model: 'campuses',
+            key: 'campus_id'
+        },
+        allowNull: false // Department must belong to a campus
+    },
+
     semesterName: { 
       type: DataTypes.STRING(20), 
       allowNull: false 

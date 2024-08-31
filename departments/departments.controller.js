@@ -19,7 +19,7 @@ module.exports = router;
 
 function addDepartment(req, res, next) {
   departmentService
-    .createDepartment(req.body)
+    .createDepartment(req.body, req.user.id)
     .then(() =>
       res.json({
         message:
@@ -30,25 +30,33 @@ function addDepartment(req, res, next) {
 }
 
 function getAllDepartment(req, res, next) {
-  departmentService.getAllDepartment()
+  const campus_id = req.query.campus_id; // Extract campus_id from query parameters
+  
+  departmentService.getAllDepartment(campus_id) // Pass campus_id to the service function
       .then(departments => res.json(departments))
       .catch(next);
 }
 
 function getAllDepartmentCount(req, res, next) {
-  departmentService.getAllDepartmentCount()
+  const campus_id = req.query.campus_id; // Extract campus_id from query parameters
+  
+  departmentService.getAllDepartmentCount(campus_id)
       .then(departments => res.json(departments))
       .catch(next);
 }
 
 function getAllDepartmentsActive(req, res, next) {
-  departmentService.getAllDepartmentsActive()
+  const campus_id = req.query.campus_id; // Extract campus_id from query parameters
+  
+  departmentService.getAllDepartmentsActive(campus_id)
       .then(departments => res.json(departments))
       .catch(next);
 }
 
 function getAllDepartmentsDeleted(req, res, next) {
-  departmentService.getAllDepartmentsDeleted()
+  const campus_id = req.query.campus_id; // Extract campus_id from query parameters
+  
+  departmentService.getAllDepartmentsDeleted(campus_id)
       .then(departments => res.json(departments))
       .catch(next);
 }
@@ -62,7 +70,7 @@ function getDepartmentById(req, res, next) {
 
 function updateDepartment(req, res, next) {
   departmentService
-    .updateDepartment(req.params.id, req.body)
+    .updateDepartment(req.params.id, req.body, req.user.id)
     .then(() =>
       res.json({
         message:
@@ -80,8 +88,6 @@ function addDepartmentSchema(req, res, next) {
     departmentDean: Joi.string().required(),
     
     campus_id: Joi.number().required(),
-    // campusName: Joi.string().required(),
-    
   });
   validateRequest(req, next, schema);
 }

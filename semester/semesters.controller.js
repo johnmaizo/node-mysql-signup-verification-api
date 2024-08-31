@@ -17,7 +17,7 @@ module.exports = router;
 
 function addSemester(req, res, next) {
   semesterService
-    .createSemester(req.body)
+    .createSemester(req.body, req.user.id)
     .then(() =>
       res.json({
         message: "Semester Added Successfully.",
@@ -27,22 +27,28 @@ function addSemester(req, res, next) {
 }
 
 function getAllSemester(req, res, next) {
+  const campus_id = req.query.campus_id;
+
   semesterService
-    .getAllSemester()
+    .getAllSemester(campus_id)
     .then((semesters) => res.json(semesters))
     .catch(next);
 }
 
 function getAllSemesterActive(req, res, next) {
+  const campus_id = req.query.campus_id;
+
   semesterService
-    .getAllSemesterActive()
+    .getAllSemesterActive(campus_id)
     .then((semesters) => res.json(semesters))
     .catch(next);
 }
 
 function getAllSemesterDeleted(req, res, next) {
+  const campus_id = req.query.campus_id;
+
   semesterService
-    .getAllSemesterDeleted()
+    .getAllSemesterDeleted(campus_id)
     .then((semesters) => res.json(semesters))
     .catch(next);
 }
@@ -50,13 +56,13 @@ function getAllSemesterDeleted(req, res, next) {
 function getSemesterById(req, res, next) {
   semesterService
     .getSemesterById(req.params.id)
-    .then((Semester) => (Semester ? res.json(Semester) : res.sendStatus(404)))
+    .then((semester) => (semester ? res.json(semester) : res.sendStatus(404)))
     .catch(next);
 }
 
 function updateSemester(req, res, next) {
   semesterService
-    .updateSemester(req.params.id, req.body)
+    .updateSemester(req.params.id, req.body, req.user.id)
     .then(() =>
       res.json({
         message: "Semester Updated Successfully.",
@@ -85,6 +91,8 @@ function addSemesterSchema(req, res, next) {
         return value;
       }),
     semesterName: Joi.string().required(),
+
+    campus_id: Joi.number().required(),
   });
   validateRequest(req, next, schema);
 }
@@ -109,6 +117,10 @@ function updateSemesterSchema(req, res, next) {
         return value;
       }),
     semesterName: Joi.string().empty(""),
+
+    campus_id: Joi.number().empty(""),
+    campusName: Joi.string().empty(""),
+
     isActive: Joi.boolean().empty(""),
     isDeleted: Joi.boolean().empty(""),
   });

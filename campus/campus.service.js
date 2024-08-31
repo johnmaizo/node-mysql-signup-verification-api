@@ -2,6 +2,8 @@ const {Op, where} = require("sequelize");
 const db = require("_helpers/db");
 const Role = require("_helpers/role");
 
+const deepEqual = require("deep-equal");
+
 module.exports = {
   createCampus,
   getAllCampus,
@@ -12,7 +14,7 @@ module.exports = {
   updateCampus,
 };
 
-async function createCampus(params) {
+async function createCampus(params, adminId) {
   // validate
   if (await db.Campus.findOne({where: {campusName: params.campusName}})) {
     throw 'Campus name "' + params.campusName + '" is already registered';
@@ -22,6 +24,15 @@ async function createCampus(params) {
 
   // save campus
   await campus.save();
+
+  // Log the creation action
+  await db.History.create({
+    action: "create",
+    entity: "Campus",
+    entityId: campus.campus_id,
+    changes: params,
+    adminId: adminId,
+  });
 }
 
 async function getAllCampus() {
@@ -69,16 +80,57 @@ async function getCampusById(id) {
   return campus;
 }
 
-async function updateCampus(id, params) {
+async function updateCampus(id, params, adminId) {
   const campus = await getCampusById(id);
 
   if (!campus) throw "Campus not found";
 
-  // Validation: Ensure isActive is set to false before deleting
-  if (params.isDeleted && campus.isActive) {
-    throw `You must set the Status of "${campus.campusName}" to Inactive before you can delete this campus.`;
+  // Check if the action is only to delete the campus
+  if (params.isDeleted !== undefined) {
+    if (params.isDeleted && campus.isActive) {
+      throw new Error(
+        `You must set the Status of "${campus.campusName}" to Inactive before you can delete this campus.`
+      );
+    }
+
+    Object.assign(campus, {isDeleted: params.isDeleted});
+    await campus.save();
+
+    // Log the update action
+    await db.History.create({
+      action: "update",
+      entity: "Campus",
+      entityId: campus.campus_id,
+      changes: params,
+      adminId: adminId,
+    });
+
+    return;
   }
+
+  // Log the original state before update
+  const originalData = {...department.dataValues};
 
   Object.assign(campus, params);
   await campus.save();
+
+  // Check if there are actual changes
+  const hasChanges = !deepEqual(originalData, campus.dataValues);
+
+  if (hasChanges) {
+    // Log the update action with changes
+    const changes = {
+      original: originalData,
+      updated: params,
+    };
+
+    // Log the update action
+    await db.History.create({
+      action: "update",
+      entity: "Campus",
+      entityId: campus.campus_id,
+      changes: changes,
+      adminId: adminId,
+    });
+  }
 }
