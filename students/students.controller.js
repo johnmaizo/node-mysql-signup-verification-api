@@ -6,13 +6,13 @@ const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const studentService = require("./student.service");
 
-router.post("/add-student", authorize(Role.Admin, Role.Staff), addStudentSchema, addStudent);
-router.get('/', authorize(Role.Admin, Role.Staff), getAllStudents);
-router.get('/active', authorize(Role.Admin, Role.Staff), getAllStudentsActive);
-router.get('/previous', authorize(Role.Admin, Role.Staff), getPreviousTotalStudents);
-router.get('/previous-active', authorize(Role.Admin, Role.Staff), getPreviousTotalStudentsActive);
-router.get('/:id', authorize(Role.Admin, Role.Staff), getStudentById);
-router.put("/:id", authorize(Role.Admin, Role.Staff), updateStudentSchema, updateStudent); 
+router.post("/add-student", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), addStudentSchema, addStudent);
+router.get('/', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllStudents);
+router.get('/active', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllStudentsActive);
+router.get('/previous', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getPreviousTotalStudents);
+router.get('/previous-active', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getPreviousTotalStudentsActive);
+router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getStudentById);
+router.put("/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), updateStudentSchema, updateStudent); 
 
 
 module.exports = router;

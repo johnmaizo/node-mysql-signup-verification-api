@@ -6,10 +6,10 @@ const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const staffService = require("./staff.service");
 
-router.post("/add-staff", authorize(Role.Admin, Role.Staff), addStaffSchema, addStaff);
-router.get('/', authorize(Role.Admin, Role.Staff), getAllStaff);
-router.get('/:id', authorize(Role.Admin, Role.Staff), getStaffById);
-router.put("/:id", authorize(Role.Admin, Role.Staff), updateStaffSchema, updateStaff); 
+router.post("/add-staff", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), addStaffSchema, addStaff);
+router.get('/', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllStaff);
+router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getStaffById);
+router.put("/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), updateStaffSchema, updateStaff); 
 
 
 module.exports = router;

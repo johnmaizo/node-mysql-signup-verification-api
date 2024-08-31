@@ -3,8 +3,7 @@ const mysql = require("mysql2/promise");
 const {Sequelize} = require("sequelize");
 const defineRelationships = require("./relationship");
 
-const bcrypt = require("bcryptjs");
-const Role = require("./role");
+const setupAccounts = require("./accounts-setup");
 
 module.exports = db = {};
 
@@ -73,38 +72,6 @@ async function initialize() {
   // sync all models with database
   await sequelize.sync();
 
-  // Setup the admin user
-  await setupAdmin();
-}
-
-async function setupAdmin() {
-  try {
-    // Check if the admin user already exists
-    const adminUser = await db.Account.findOne({
-      where: {email: "admin@gmail.com"},
-    });
-
-    if (!adminUser) {
-      // If not, create the admin user
-      const adminPasswordHash = await bcrypt.hash("admin123", 10);
-
-      const newAdmin = new db.Account({
-        email: "admin@gmail.com",
-        passwordHash: adminPasswordHash,
-        role: Role.Admin,
-        firstName: "Admin",
-        lastName: "User",
-        title: "Administrator", // Add a title here
-        verified: new Date(), // Auto-verify the admin user
-        created: new Date(),
-      });
-
-      await newAdmin.save();
-      console.log("Admin user created successfully.");
-    } else {
-      console.log("Admin user already exists.");
-    }
-  } catch (error) {
-    console.error("Error setting up admin user:", error);
-  }
+  // Setup the accounts
+  await setupAccounts(db); 
 }

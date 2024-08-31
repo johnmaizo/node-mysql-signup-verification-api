@@ -6,10 +6,10 @@ const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const scheduleService = require("./schedule.service");
 
-router.post("/add-schedule", authorize(Role.Admin, Role.Staff), addScheduleSchema, addSchedule);
-router.get('/', authorize(Role.Admin, Role.Staff), getAllSchedule);
-router.get('/:id', authorize(Role.Admin, Role.Staff), getScheduleById);
-router.put("/:id", authorize(Role.Admin, Role.Staff), updateScheduleSchema, updateSchedule); 
+router.post("/add-schedule", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), addScheduleSchema, addSchedule);
+router.get('/', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllSchedule);
+router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getScheduleById);
+router.put("/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), updateScheduleSchema, updateSchedule); 
 
 
 module.exports = router;

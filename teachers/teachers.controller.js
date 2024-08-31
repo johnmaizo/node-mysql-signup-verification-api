@@ -6,11 +6,11 @@ const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const teacherService = require("./teacher.service");
 
-router.post("/add-teacher", authorize(Role.Admin, Role.Staff), addTeacherSchema, addTeacher);
-router.get('/', authorize(Role.Admin, Role.Staff), getAllTeachers);
-router.get('/previous', authorize(Role.Admin, Role.Staff), getPreviousTotalTeachers);
-router.get('/:id', authorize(Role.Admin, Role.Staff), getTeacherById);
-router.put("/:id", authorize(Role.Admin, Role.Staff), updateTeacherSchema, updateTeacher); 
+router.post("/add-teacher", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), addTeacherSchema, addTeacher);
+router.get('/', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllTeachers);
+router.get('/previous', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getPreviousTotalTeachers);
+router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getTeacherById);
+router.put("/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), updateTeacherSchema, updateTeacher); 
 
 
 module.exports = router;

@@ -6,13 +6,13 @@ const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const departmentService = require("./department.service");
 
-router.post("/add-department", authorize(Role.Admin, Role.Staff), addDepartmentSchema, addDepartment);
-router.get('/', authorize(Role.Admin, Role.Staff), getAllDepartment);
-router.get('/count', authorize(Role.Admin, Role.Staff), getAllDepartmentCount);
-router.get('/active', authorize(Role.Admin, Role.Staff), getAllDepartmentsActive);
-router.get('/deleted', authorize(Role.Admin, Role.Staff), getAllDepartmentsDeleted);
-router.get('/:id', authorize(Role.Admin, Role.Staff), getDepartmentById);
-router.put("/:id", authorize(Role.Admin, Role.Staff), updateDepartmentSchema, updateDepartment); 
+router.post("/add-department", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), addDepartmentSchema, addDepartment);
+router.get('/', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllDepartment);
+router.get('/count', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllDepartmentCount);
+router.get('/active', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllDepartmentsActive);
+router.get('/deleted', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllDepartmentsDeleted);
+router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getDepartmentById);
+router.put("/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), updateDepartmentSchema, updateDepartment); 
 
 
 module.exports = router;

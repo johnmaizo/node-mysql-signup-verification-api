@@ -6,15 +6,15 @@ const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const courseService = require("./program_course.service");
 
-// router.post("/add-course", authorize(Role.Admin, Role.Staff), addCourseSchema, addCourse);
+// router.post("/add-course", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), addCourseSchema, addCourse);
 
-router.post("/add-course",  addCourseSchema, addCourse);
-router.get('/', getAllCourse);
-router.get('/count', authorize(Role.Admin, Role.Staff), getAllCourseCount);
-router.get('/active', authorize(Role.Admin, Role.Staff), getAllCourseActive);
-router.get('/deleted', authorize(Role.Admin, Role.Staff), getAllCourseDeleted);
-router.get('/:id', authorize(Role.Admin, Role.Staff), getCourseById);
-router.put("/:id", authorize(Role.Admin, Role.Staff), updateCourseSchema, updateCourse); 
+router.post("/add-course", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), addCourseSchema, addCourse);
+router.get('/', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllCourse);
+router.get('/count', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllCourseCount);
+router.get('/active', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllCourseActive);
+router.get('/deleted', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllCourseDeleted);
+router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getCourseById);
+router.put("/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), updateCourseSchema, updateCourse); 
 
 
 module.exports = router;

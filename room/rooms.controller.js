@@ -6,10 +6,10 @@ const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const roomService = require("./room.service");
 
-router.post("/add-room", authorize(Role.Admin, Role.Staff), addRoomSchema, addRoom);
-router.get('/', authorize(Role.Admin, Role.Staff), getAllRoom);
-router.get('/:id', authorize(Role.Admin, Role.Staff), getRoomById);
-router.put("/:id", authorize(Role.Admin, Role.Staff), updateRoomSchema, updateRoom); 
+router.post("/add-room", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), addRoomSchema, addRoom);
+router.get('/', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllRoom);
+router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getRoomById);
+router.put("/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), updateRoomSchema, updateRoom); 
 
 
 module.exports = router;
