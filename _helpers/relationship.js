@@ -108,6 +108,9 @@ function defineRelationships(db) {
   // ! Account -> History (Tracking which admin performed which action)
   db.Account.hasMany(db.History, {foreignKey: "adminId", as: "actions"});
   db.History.belongsTo(db.Account, {foreignKey: "adminId", as: "admin"});
+
+  // ! Account -> Campus
+  db.Account.belongsTo(db.Campus, {foreignKey: "campus_id"});
 }
 
 module.exports = defineRelationships;

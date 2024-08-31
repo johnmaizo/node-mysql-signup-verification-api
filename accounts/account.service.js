@@ -24,6 +24,7 @@ module.exports = {
 };
 
 async function authenticate({email, password, ipAddress}) {
+  // Find the account without any associations first
   const account = await db.Account.scope("withHash").findOne({where: {email}});
 
   if (
@@ -34,16 +35,24 @@ async function authenticate({email, password, ipAddress}) {
     throw "Email or password is incorrect";
   }
 
-  // authentication successful so generate jwt and refresh tokens
+  // If the account is not SuperAdmin, fetch the campus information
+  let campus = null;
+  if (account.role !== "SuperAdmin") {
+    campus = await account.getCampus({
+      attributes: ["campusName"],
+    });
+  }
+
+  // Generate jwt and refresh tokens
   const jwtToken = generateJwtToken(account);
   const refreshToken = generateRefreshToken(account, ipAddress);
 
-  // save refresh token
+  // Save refresh token
   await refreshToken.save();
 
-  // return basic details and tokens
+  // Return basic details and tokens
   return {
-    ...basicDetails(account),
+    ...basicDetails(account, campus),
     jwtToken,
     refreshToken: refreshToken.token,
   };
@@ -252,7 +261,7 @@ function randomTokenString() {
   return crypto.randomBytes(40).toString("hex");
 }
 
-function basicDetails(account) {
+function basicDetails(account, campus) {
   const {
     id,
     title,
@@ -264,6 +273,7 @@ function basicDetails(account) {
     updated,
     isVerified,
   } = account;
+
   return {
     id,
     title,
@@ -274,6 +284,8 @@ function basicDetails(account) {
     created,
     updated,
     isVerified,
+    // Include campusName if the role is not SuperAdmin
+    ...(role !== "SuperAdmin" && campus ? { campusName: campus.campusName } : {}),
   };
 }
 

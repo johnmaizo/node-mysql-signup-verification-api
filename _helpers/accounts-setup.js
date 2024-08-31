@@ -3,6 +3,17 @@ const Role = require("./role");
 
 async function setupAccounts(db) {
   try {
+    // Ensure there's at least one campus in the database
+    let defaultCampus = await db.Campus.findOne();
+    if (!defaultCampus) {
+      defaultCampus = await db.Campus.create({
+        campusName: "Mandaue Campus",
+        campusAddress:
+          "AS Fortuna Street, Mandaue City 6014, Metro Cebu, Philippines",
+      });
+      console.log("Default campus created successfully.");
+    }
+
     // SuperAdmin Setup
     const superAdminUser = await db.Account.findOne({
       where: {email: "admin@gmail.com"},
@@ -47,6 +58,7 @@ async function setupAccounts(db) {
         acceptTerms: true,
         verified: new Date(),
         created: new Date(),
+        campus_id: 1, // Add a valid campus_id here
       });
 
       await newAdmin.save();
@@ -73,6 +85,7 @@ async function setupAccounts(db) {
         acceptTerms: true,
         verified: new Date(),
         created: new Date(),
+        campus_id: 1, // Add a valid campus_id here
       });
 
       await newStaff.save();
@@ -99,6 +112,7 @@ async function setupAccounts(db) {
         acceptTerms: true,
         verified: new Date(),
         created: new Date(),
+        campus_id: 1, // Add a valid campus_id here
       });
 
       await newInstructor.save();
@@ -125,6 +139,7 @@ async function setupAccounts(db) {
         acceptTerms: true,
         verified: new Date(),
         created: new Date(),
+        campus_id: 1, // Add a valid campus_id here
       });
 
       await newStudent.save();
