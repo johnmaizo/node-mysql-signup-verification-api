@@ -15,13 +15,22 @@ module.exports = {
 };
 
 async function createCourse(params, adminId) {
-  // Check if courseCode already exists
-  const existingCourse = await db.CourseInfo.findOne({
-    where: {courseCode: params.courseCode},
+  // Validate if courseCode exists on the same campus_id
+  const existingCourseCode = await db.CourseInfo.findOne({
+    where: {
+      courseCode: params.courseCode,
+      campus_id: params.campus_id,
+    },
   });
 
-  if (existingCourse) {
-    throw `Course with code "${params.courseCode}" already exists.`;
+  // Get the campusName based on campus_id
+  const campus = await db.Campus.findByPk(params.campus_id);
+  if (!campus) {
+    throw `Campus with ID "${params.campus_id}" not found.`;
+  }
+
+  if (existingCourseCode) {
+    throw `Course with code "${params.courseCode}" already exists on campus "${campus.campusName}".`;
   }
 
   // Create the new course
@@ -37,43 +46,71 @@ async function createCourse(params, adminId) {
   });
 }
 
-async function getAllCourse() {
-  const CourseInfo = await db.CourseInfo.findAll({
-    where: {
-      isDeleted: false,
-    },
-  });
-
-  return CourseInfo;
+// Common function to handle the transformation
+function transformCourseData(course) {
+  return {
+    ...course.toJSON(),
+    fullCourseNameWithCampus:
+      `${course.courseCode} - ${course.courseDescription} - ${course.campus.campusName}` ||
+      "fullCourseNameWithCampus not found",
+  };
 }
 
-async function getAllCourseActive() {
+// Common function to get courses based on filter conditions
+async function getCourses(whereClause) {
   const courses = await db.CourseInfo.findAll({
-    where: {
-      isActive: true,
-      isDeleted: false,
-    },
+    where: whereClause,
+    include: [
+      {
+        model: db.Campus,
+        attributes: ["campusName"], // Include only the campus name
+      },
+    ],
   });
-  return courses;
+
+  return courses.map(transformCourseData);
 }
 
-async function getAllCourseDeleted() {
-  const courses = await db.CourseInfo.findAll({
-    where: {
-      isDeleted: true,
-    },
-  });
-  return courses;
+async function getAllCourse(campus_id = null) {
+  const whereClause = {isDeleted: false};
+
+  if (campus_id) {
+    whereClause.campus_id = campus_id;
+  }
+
+  return await getCourses(whereClause);
 }
 
-async function getAllCourseCount() {
-  const courses = await db.CourseInfo.count({
-    where: {
-      isActive: true,
-      isDeleted: false,
-    },
+async function getAllCourseActive(campus_id = null) {
+  const whereClause = {isActive: true, isDeleted: false};
+
+  if (campus_id) {
+    whereClause.campus_id = campus_id;
+  }
+
+  return await getCourses(whereClause);
+}
+
+async function getAllCourseDeleted(campus_id = null) {
+  const whereClause = {isDeleted: true};
+
+  if (campus_id) {
+    whereClause.campus_id = campus_id;
+  }
+
+  return await getCourses(whereClause);
+}
+
+async function getAllCourseCount(campus_id = null) {
+  const whereClause = {isActive: true, isDeleted: false};
+
+  if (campus_id) {
+    whereClause.campus_id = campus_id;
+  }
+
+  return await db.CourseInfo.count({
+    where: whereClause,
   });
-  return courses;
 }
 
 async function getCourseById(id) {
@@ -113,17 +150,23 @@ async function updateCourse(id, params, adminId) {
   // Log the original state before update
   const originalData = {...course.dataValues};
 
-  // If the courseCode is being updated, check if the new courseCode already exists
-  if (params.courseCode && params.courseCode !== course.courseCode) {
-    const existingCourse = await db.CourseInfo.findOne({
-      where: {
-        courseCode: params.courseCode,
-        course_id: {[Op.ne]: id},
-      },
-    });
-    if (existingCourse) {
-      throw `Course with code "${params.courseCode}" already exists.`;
-    }
+  // If courseCode or campus_id are not provided, use existing values
+  const courseCode = params.courseCode || course.courseCode;
+  const campus_id = params.campus_id || course.campus_id;
+
+  // Validate if courseCode exists on the same campus_id for another course
+  const existingCourseCode = await db.CourseInfo.findOne({
+    where: {
+      courseCode: courseCode,
+      campus_id: campus_id,
+      course_id: {[Op.ne]: id}, // Ensure the course being updated is excluded from this check
+    },
+  });
+
+  if (existingCourseCode) {
+    const campus = await db.Campus.findByPk(campus_id);
+    const campusName = campus ? campus.campusName : "Unknown";
+    throw `Course Code "${courseCode}" is already registered on campus "${campusName}".`;
   }
 
   // Update the course with new parameters

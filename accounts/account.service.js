@@ -307,8 +307,8 @@ function basicDetails(account, campus) {
     lastName,
     email,
     role,
-    created,
-    updated,
+    created: created ? created.toISOString() : null,
+    updated: updated ? updated.toISOString() : null,
     isVerified,
     // Include campusName if the role is not SuperAdmin
     ...(role !== "SuperAdmin" && campus

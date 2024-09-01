@@ -25,29 +25,37 @@ function addCourse(req, res, next) {
 }
 
 function getAllCourse(req, res, next) {
+  const campus_id = req.query.campus_id;
+
   courseService
-    .getAllCourse()
+    .getAllCourse(campus_id)
     .then((courses) => res.json(courses))
     .catch(next);
 }
 
 function getAllCourseActive(req, res, next) {
+  const campus_id = req.query.campus_id;
+
   courseService
-    .getAllCourseActive()
+    .getAllCourseActive(campus_id)
     .then((courses) => res.json(courses))
     .catch(next);
 }
 
 function getAllCourseDeleted(req, res, next) {
+  const campus_id = req.query.campus_id;
+
   courseService
-    .getAllCourseDeleted()
+    .getAllCourseDeleted(campus_id)
     .then((courses) => res.json(courses))
     .catch(next);
 }
 
 function getAllCourseCount(req, res, next) {
+  const campus_id = req.query.campus_id;
+
   courseService
-    .getAllCourseCount()
+    .getAllCourseCount(campus_id)
     .then((courses) => res.json(courses))
     .catch(next);
 }
@@ -72,6 +80,8 @@ function addCourseSchema(req, res, next) {
     courseCode: Joi.string().required(),
     courseDescription: Joi.string().required(),
     unit: Joi.number().required(),
+    
+    campus_id: Joi.number().required(),
   });
   validateRequest(req, next, schema);
 }
@@ -81,6 +91,8 @@ function updateCourseSchema(req, res, next) {
     courseCode: Joi.string().empty(""),
     courseDescription: Joi.string().empty(""),
     unit: Joi.number().empty(""),
+
+    campus_id: Joi.number().empty(""),
 
     isActive: Joi.boolean().empty(""),
     isDeleted: Joi.boolean().empty(""),
