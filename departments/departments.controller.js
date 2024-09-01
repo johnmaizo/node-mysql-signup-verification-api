@@ -38,7 +38,7 @@ function getAllDepartment(req, res, next) {
 }
 
 function getAllDepartmentCount(req, res, next) {
-  const campus_id = req.query.campus_id; // Extract campus_id from query parameters
+  const campus_id = req.query.campus_id;
   
   departmentService.getAllDepartmentCount(campus_id)
       .then(departments => res.json(departments))
@@ -46,7 +46,7 @@ function getAllDepartmentCount(req, res, next) {
 }
 
 function getAllDepartmentsActive(req, res, next) {
-  const campus_id = req.query.campus_id; // Extract campus_id from query parameters
+  const campus_id = req.query.campus_id;
   
   departmentService.getAllDepartmentsActive(campus_id)
       .then(departments => res.json(departments))

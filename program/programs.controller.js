@@ -28,29 +28,37 @@ function addProgram(req, res, next) {
 }
 
 function getAllProgram(req, res, next) {
+  const campus_id = req.query.campus_id; // Extract campus_id from query parameters
+  
   programService
-    .getAllPrograms()
+    .getAllPrograms(campus_id) // Pass campus_id to the service function
     .then((program) => res.json(program))
     .catch(next);
 }
 
 function getAllProgramCount(req, res, next) {
+  const campus_id = req.query.campus_id;
+
   programService
-    .getAllProgramsCount()
+    .getAllProgramsCount(campus_id)
     .then((program) => res.json(program))
     .catch(next);
 }
 
 function getAllProgramActive(req, res, next) {
+  const campus_id = req.query.campus_id;
+
   programService
-    .getAllProgramsActive()
+    .getAllProgramsActive(campus_id)
     .then((program) => res.json(program))
     .catch(next);
 }
 
 function getAllProgramDeleted(req, res, next) {
+  const campus_id = req.query.campus_id;
+
   programService
-    .getAllProgramsDeleted()
+    .getAllProgramsDeleted(campus_id)
     .then((program) => res.json(program))
     .catch(next);
 }
@@ -83,6 +91,7 @@ function addProgramSchema(req, res, next) {
     departmentName: Joi.string().empty(""),
     campusName: Joi.string().empty(""),
 
+    campus_id: Joi.number().empty(""),
   });
   validateRequest(req, next, schema);
 }
@@ -95,8 +104,10 @@ function updateProgramSchema(req, res, next) {
 
     departmentCode: Joi.string().empty(""),
     departmentName: Joi.string().empty(""),
+    
+    campus_id: Joi.number().empty(""),
     campusName: Joi.string().empty(""),
-
+    
     isActive: Joi.boolean().empty(""),
     isDeleted: Joi.boolean().empty(""),
   });

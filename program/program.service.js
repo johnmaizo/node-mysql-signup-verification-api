@@ -83,43 +83,67 @@ function transformProgramData(program) {
   };
 }
 
-// Common function to get programs based on filter conditions
-async function getPrograms(whereClause) {
+// Reuse the existing getPrograms function
+async function getPrograms(whereClause, campus_id = null) {
+  const includeConditions = getIncludeConditionsForCampus(campus_id);
+
   const programs = await db.Program.findAll({
     where: whereClause,
-    include: [
-      {
-        model: db.Department,
-        include: [
-          {
-            model: db.Campus,
-            attributes: ["campusName"], // Include only the campus name
-          },
-        ],
-        attributes: ["departmentName", "departmentCode"], // Include department name and code
-      },
-    ],
+    include: includeConditions,
   });
 
   return programs.map(transformProgramData);
 }
 
-async function getAllPrograms() {
-  return await getPrograms({isDeleted: false});
+// Helper function to generate include conditions for campus filtering
+function getIncludeConditionsForCampus(campus_id) {
+  const includeConditions = [
+    {
+      model: db.Department,
+      include: [
+        {
+          model: db.Campus,
+          attributes: ["campusName"], // Include only the campus name
+        },
+      ],
+      attributes: ["departmentName", "departmentCode"], // Include department name and code
+    },
+  ];
+
+  if (campus_id) {
+    includeConditions[0].where = {campus_id: campus_id};
+  }
+
+  return includeConditions;
 }
 
-async function getAllProgramsCount() {
+async function getAllPrograms(campus_id = null) {
+  const whereClause = {isDeleted: false};
+
+  return await getPrograms(whereClause, campus_id);
+}
+
+async function getAllProgramsCount(campus_id = null) {
+  const whereClause = {isActive: true, isDeleted: false};
+
+  const includeConditions = getIncludeConditionsForCampus(campus_id);
+
   return await db.Program.count({
-    where: {isActive: true, isDeleted: false},
+    where: whereClause,
+    include: includeConditions,
   });
 }
 
-async function getAllProgramsActive() {
-  return await getPrograms({isActive: true, isDeleted: false});
+async function getAllProgramsActive(campus_id = null) {
+  const whereClause = {isActive: true, isDeleted: false};
+
+  return await getPrograms(whereClause, campus_id);
 }
 
-async function getAllProgramsDeleted() {
-  return await getPrograms({isDeleted: true});
+async function getAllProgramsDeleted(campus_id = null) {
+  const whereClause = {isDeleted: true};
+
+  return await getPrograms(whereClause, campus_id);
 }
 
 async function getProgramById(id) {
