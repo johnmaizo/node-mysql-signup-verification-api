@@ -109,7 +109,7 @@ async function updateCampus(id, params, adminId) {
   }
 
   // Log the original state before update
-  const originalData = {...department.dataValues};
+  const originalData = {...campus.dataValues};
 
   Object.assign(campus, params);
   await campus.save();
