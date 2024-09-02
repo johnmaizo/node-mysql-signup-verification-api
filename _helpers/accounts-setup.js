@@ -66,6 +66,33 @@ async function setupAccounts(db) {
     } else {
       console.log("Admin user already exists.");
     }
+    
+    // Admin Setup - Cebu
+    const adminUserCebu = await db.Account.findOne({
+      where: {email: "cebu@gmail.com"},
+    });
+
+    if (!adminUserCebu) {
+      const adminPasswordHash = await bcrypt.hash("aw12345", 10);
+
+      const newAdmin = new db.Account({
+        email: "cebu@gmail.com",
+        passwordHash: adminPasswordHash,
+        role: Role.Admin,
+        title: "Mr",
+        firstName: "John",
+        lastName: "Doe",
+        acceptTerms: true,
+        verified: new Date(),
+        created: new Date(),
+        campus_id: 2, // Add a valid campus_id here
+      });
+
+      await newAdmin.save();
+      console.log("Admin user (CEBU) created successfully.");
+    } else {
+      console.log("Admin user (CEBU) already exists.");
+    }
 
     // Staff Setup
     const staffUser = await db.Account.findOne({

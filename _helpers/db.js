@@ -4,6 +4,7 @@ const {Sequelize} = require("sequelize");
 const defineRelationships = require("./relationship");
 
 const setupAccounts = require("./accounts-setup");
+const InsertSampleData = require("./sample_data");
 
 module.exports = db = {};
 
@@ -71,6 +72,9 @@ async function initialize() {
 
   // sync all models with database
   await sequelize.sync();
+
+  // Setup dummy values
+  await InsertSampleData(db);
 
   // Setup the accounts
   await setupAccounts(db); 
