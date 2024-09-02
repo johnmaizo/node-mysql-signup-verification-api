@@ -43,54 +43,80 @@ async function createProgramAssignCourse(params, adminId) {
     );
   }
 
-  console.log(program);
+  // Handle both single and multiple courseCode inputs
+  const courseCodes = Array.isArray(courseCode) ? courseCode : [courseCode];
 
-  // Find the course based on courseCode and campus_id
-  const course = await db.CourseInfo.findOne({
-    where: {
-      courseCode: courseCode,
-      campus_id: campus_id, // Ensure the course belongs to the specified campus
-    },
-  });
+  // Validation step: Check all course codes before making any changes
+  const courseValidationResults = await Promise.all(
+    courseCodes.map(async (code) => {
+      const course = await db.CourseInfo.findOne({
+        where: {
+          courseCode: code,
+          campus_id: campus_id, // Ensure the course belongs to the specified campus
+        },
+      });
 
-  if (!course) {
-    throw new Error(
-      `Course "${courseCode}" not found on campus "${program.department.campus.campusName}".`
-    );
+      if (!course) {
+        return {
+          error: `Course "${code}" not found on campus "${program.department.campus.campusName}".`,
+        };
+      }
+
+      // Check if the course is already assigned to the program on the same campus
+      const existingProgramCourse = await db.ProgramCourse.findOne({
+        where: {
+          program_id: program.program_id,
+          course_id: course.course_id,
+          // isDeleted: false,
+        },
+      });
+
+      if (existingProgramCourse) {
+        return {
+          error: `Course "${code}" is already assigned to Program "${programCode}" on campus "${program.department.campus.campusName}".`,
+        };
+      }
+
+      // If validation passes, return the course object
+      return {course};
+    })
+  );
+
+  // Check if any validation errors occurred
+  const validationError = courseValidationResults.find(
+    (result) => result.error
+  );
+
+  if (validationError) {
+    throw new Error(validationError.error);
   }
 
-  // Check if the course is already assigned to the program on the same campus
-  const existingProgramCourse = await db.ProgramCourse.findOne({
-    where: {
+  // Proceed to create associations after all validations pass
+  for (const result of courseValidationResults) {
+    const {course} = result;
+
+    // Create the new program-course association
+    const programCourse = new db.ProgramCourse({
       program_id: program.program_id,
       course_id: course.course_id,
-      // isDeleted: false,
-    },
-  });
+    });
 
-  if (existingProgramCourse) {
-    throw new Error(
-      `Course "${courseCode}" is already assigned to Program "${programCode}" on campus "${program.department.campus.campusName}".`
-    );
+    // Save the association
+    await programCourse.save();
+
+    // Log the creation action
+    await db.History.create({
+      action: "create",
+      entity: "ProgramCourse",
+      entityId: programCourse.programCourse_id,
+      changes: {
+        programCode,
+        courseCode: course.courseCode,
+        campus_id,
+      },
+      adminId: adminId,
+    });
   }
-
-  // Create the new program-course association
-  const programCourse = new db.ProgramCourse({
-    program_id: program.program_id,
-    course_id: course.course_id,
-  });
-
-  // Save the association
-  await programCourse.save();
-
-  // Log the creation action
-  await db.History.create({
-    action: "create",
-    entity: "ProgramCourse",
-    entityId: programCourse.programCourse_id,
-    changes: params,
-    adminId: adminId,
-  });
 }
 
 // Common function to handle the transformation

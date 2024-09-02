@@ -90,10 +90,11 @@ function updateCourse(req, res, next) {
 function addProgramAssignCourseSchema(req, res, next) {
   const schema = Joi.object({
     campus_id: Joi.number().required(),
-
     programCode: Joi.string().required(),
-    courseCode: Joi.string().required(),
-    
+    courseCode: Joi.alternatives().try(
+      Joi.string(),
+      Joi.array().items(Joi.string())
+    ).required(),
   });
   validateRequest(req, next, schema);
 }
