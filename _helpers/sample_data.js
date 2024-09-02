@@ -13,7 +13,7 @@ async function InsertSampleData(db) {
       { campusName: "Cebu Campus", campusAddress: "B. Benedicto St, Cebu City, 6000 Cebu, Philippines" }
     ], { returning: true }); // Returning allows us to use the created campus IDs for the next inserts
 
-    // Insert sample semesters
+    // Insert sample semesters 
     const semesters = await db.Semester.bulkCreate([
       { campus_id: campuses[1].campus_id, semesterName: "1st Semester", schoolYear: "2024-2025", isActive: true },
       { campus_id: campuses[1].campus_id, semesterName: "2nd Semester", schoolYear: "2024-2025", isActive: false },
