@@ -40,7 +40,7 @@ app.use("/programs", require("./program/programs.controller"));
 app.use("/course", require("./course/courses.controller"));
 
 // ! Program Course
-// app.use("/program-courses", require("./program_course/program_courses.controller"));
+app.use("/program-courses", require("./program_course/program_courses.controller"));
 
 // swagger docs route
 app.use("/api-docs", require("_helpers/swagger"));
