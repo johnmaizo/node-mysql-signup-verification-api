@@ -14,17 +14,23 @@ module.exports = {
 };
 
 async function createProgramAssignCourse(params, adminId) {
-  // Find the program based on programCode
+  const {programCode, courseCode, campus_id} = params;
+
+  // Find the program based on programCode and campus_id via department association
   const program = await db.Program.findOne({
     where: {
-      programCode: params.programCode,
+      programCode: programCode,
     },
     include: [
       {
         model: db.Department,
+        where: {
+          campus_id: campus_id, // Ensure the department belongs to the specified campus
+        },
         include: [
           {
             model: db.Campus,
+            attributes: ["campusName"], // Include campus name for error messages
           },
         ],
       },
@@ -32,22 +38,24 @@ async function createProgramAssignCourse(params, adminId) {
   });
 
   if (!program) {
-    throw new Error(`Program "${params.programCode}" not found.`);
+    throw new Error(
+      `Program "${programCode}" not found for the specified campus.`
+    );
   }
 
-  const campus_id = program.Department.campus_id;
+  console.log(program);
 
   // Find the course based on courseCode and campus_id
   const course = await db.CourseInfo.findOne({
     where: {
-      courseCode: params.courseCode,
-      campus_id: campus_id, // Ensure the course belongs to the same campus
+      courseCode: courseCode,
+      campus_id: campus_id, // Ensure the course belongs to the specified campus
     },
   });
 
   if (!course) {
     throw new Error(
-      `Course "${params.courseCode}" not found on the same campus as the program "${params.programCode}".`
+      `Course "${courseCode}" not found on campus "${program.department.campus.campusName}".`
     );
   }
 
@@ -56,13 +64,13 @@ async function createProgramAssignCourse(params, adminId) {
     where: {
       program_id: program.program_id,
       course_id: course.course_id,
-      isDeleted: false,
+      // isDeleted: false,
     },
   });
 
   if (existingProgramCourse) {
     throw new Error(
-      `Course "${params.courseCode}" is already assigned to Program "${params.programCode}" on the same campus.`
+      `Course "${courseCode}" is already assigned to Program "${programCode}" on campus "${program.department.campus.campusName}".`
     );
   }
 
@@ -70,7 +78,6 @@ async function createProgramAssignCourse(params, adminId) {
   const programCourse = new db.ProgramCourse({
     program_id: program.program_id,
     course_id: course.course_id,
-    isActive: params.isActive !== undefined ? params.isActive : true, // Default to active if not specified
   });
 
   // Save the association
@@ -91,7 +98,7 @@ function transformProgramCourseData(programCourse) {
   return {
     ...programCourse.toJSON(),
     fullProgramDescriptionWithCourseAndCampus:
-      `${programCourse.Program.programCode} - ${programCourse.Program.programDescription} - ${programCourse.CourseInfo.courseCode} - ${programCourse.CourseInfo.courseDescription} - ${programCourse.Program.Department.campus.campusName}` ||
+      `${programCourse.program.programCode} - ${programCourse.program.programDescription} - ${programCourse.courseinfo.courseCode} - ${programCourse.courseinfo.courseDescription} - ${programCourse.program.department.campus.campusName}` ||
       "fullProgramDescriptionWithCourseAndCampus not found",
   };
 }
@@ -101,7 +108,7 @@ function getIncludeConditionsForProgramCourse(program_id, campus_id) {
   const includeConditions = [
     {
       model: db.Program,
-      where: program_id ? { program_id: program_id } : undefined,
+      where: program_id ? {program_id: program_id} : undefined,
       include: [
         {
           model: db.Department,
@@ -123,7 +130,7 @@ function getIncludeConditionsForProgramCourse(program_id, campus_id) {
   ];
 
   if (campus_id) {
-    includeConditions[0].include[0].where = { campus_id: campus_id };
+    includeConditions[0].include[0].where = {campus_id: campus_id};
   }
 
   return includeConditions;
@@ -131,11 +138,12 @@ function getIncludeConditionsForProgramCourse(program_id, campus_id) {
 
 // Reuse the existing getPrograms function
 
-
-
 async function getAllProgramAssignCourse(program_id = null, campus_id = null) {
-  const whereClause = { isDeleted: false };
-  const includeConditions = getIncludeConditionsForProgramCourse(program_id, campus_id);
+  const whereClause = {isDeleted: false};
+  const includeConditions = getIncludeConditionsForProgramCourse(
+    program_id,
+    campus_id
+  );
 
   const programCourses = await db.ProgramCourse.findAll({
     where: whereClause,
@@ -145,9 +153,15 @@ async function getAllProgramAssignCourse(program_id = null, campus_id = null) {
   return programCourses.map(transformProgramCourseData);
 }
 
-async function getProgramAssignCourseCount(program_id = null, campus_id = null) {
-  const whereClause = { isActive: true, isDeleted: false };
-  const includeConditions = getIncludeConditionsForProgramCourse(program_id, campus_id);
+async function getProgramAssignCourseCount(
+  program_id = null,
+  campus_id = null
+) {
+  const whereClause = {isActive: true, isDeleted: false};
+  const includeConditions = getIncludeConditionsForProgramCourse(
+    program_id,
+    campus_id
+  );
 
   return await db.ProgramCourse.count({
     where: whereClause,
@@ -155,9 +169,15 @@ async function getProgramAssignCourseCount(program_id = null, campus_id = null) 
   });
 }
 
-async function getAllProgramAssignCourseActive(program_id = null, campus_id = null) {
-  const whereClause = { isActive: true, isDeleted: false };
-  const includeConditions = getIncludeConditionsForProgramCourse(program_id, campus_id);
+async function getAllProgramAssignCourseActive(
+  program_id = null,
+  campus_id = null
+) {
+  const whereClause = {isActive: true, isDeleted: false};
+  const includeConditions = getIncludeConditionsForProgramCourse(
+    program_id,
+    campus_id
+  );
 
   const programCourses = await db.ProgramCourse.findAll({
     where: whereClause,
@@ -167,9 +187,15 @@ async function getAllProgramAssignCourseActive(program_id = null, campus_id = nu
   return programCourses.map(transformProgramCourseData);
 }
 
-async function getAllProgramAssignCourseDeleted(program_id = null, campus_id = null) {
-  const whereClause = { isDeleted: true };
-  const includeConditions = getIncludeConditionsForProgramCourse(program_id, campus_id);
+async function getAllProgramAssignCourseDeleted(
+  program_id = null,
+  campus_id = null
+) {
+  const whereClause = {isDeleted: true};
+  const includeConditions = getIncludeConditionsForProgramCourse(
+    program_id,
+    campus_id
+  );
 
   const programCourses = await db.ProgramCourse.findAll({
     where: whereClause,
@@ -178,9 +204,10 @@ async function getAllProgramAssignCourseDeleted(program_id = null, campus_id = n
 
   return programCourses.map(transformProgramCourseData);
 }
-
 
 async function updateProgramAssignCourse(id, params, adminId) {
+  const {courseCode, campus_id, isDeleted} = params;
+
   // Fetch the program-course association as a Sequelize instance
   const programCourse = await db.ProgramCourse.findByPk(id, {
     include: [
@@ -189,16 +216,17 @@ async function updateProgramAssignCourse(id, params, adminId) {
         include: [
           {
             model: db.Department,
+            where: {
+              campus_id: campus_id, // Ensure the department belongs to the specified campus
+            },
             include: [
               {
                 model: db.Campus,
-                attributes: ["campusName"], // Include only the campus name
+                attributes: ["campusName"], // Include campus name for error messages
               },
             ],
-            attributes: ["departmentName", "departmentCode"], // Include only the department name and code
           },
         ],
-        attributes: ["programCode", "programDescription"], // Include only the program code and description
       },
       {
         model: db.CourseInfo,
@@ -209,21 +237,17 @@ async function updateProgramAssignCourse(id, params, adminId) {
 
   if (!programCourse) throw new Error("Program-Course association not found");
 
-  // Log the original state before update
-  const originalData = {...programCourse.dataValues};
-
   const program = programCourse.Program;
-  const campus_id = program.Department.campus_id;
 
   // Check if the action is only to delete the program-course association
-  if (params.isDeleted !== undefined) {
-    if (params.isDeleted && programCourse.isActive) {
+  if (isDeleted !== undefined) {
+    if (isDeleted && programCourse.isActive) {
       throw new Error(
         `You must set the Status of the Program-Course association to Inactive before you can delete it.`
       );
     }
 
-    Object.assign(programCourse, {isDeleted: params.isDeleted});
+    programCourse.isDeleted = isDeleted;
     await programCourse.save();
 
     // Log the update action
@@ -241,14 +265,14 @@ async function updateProgramAssignCourse(id, params, adminId) {
   // Find the course based on courseCode and campus_id
   const course = await db.CourseInfo.findOne({
     where: {
-      courseCode: params.courseCode,
-      campus_id: campus_id, // Ensure the course belongs to the same campus
+      courseCode: courseCode,
+      campus_id: campus_id, // Ensure the course belongs to the specified campus
     },
   });
 
   if (!course) {
     throw new Error(
-      `Course "${params.courseCode}" not found on the same campus as the program "${program.programCode}".`
+      `Course "${courseCode}" not found on campus "${program.department.campus.campusName}".`
     );
   }
 
@@ -258,23 +282,22 @@ async function updateProgramAssignCourse(id, params, adminId) {
       program_id: program.program_id,
       course_id: course.course_id,
       programCourse_id: {[Op.ne]: id},
-      isDeleted: false,
+      // isDeleted: false,
     },
   });
 
   if (existingProgramCourse) {
     throw new Error(
-      `Course "${params.courseCode}" is already assigned to Program "${program.programCode}" on the same campus.`
+      `Course "${courseCode}" is already assigned to Program "${program.programCode}" on campus "${program.department.campus.campusName}".`
     );
   }
 
-  // Update program-course association with new params
-  Object.assign(programCourse, {
-    program_id: program.program_id,
-    course_id: course.course_id,
-    isActive: params.isActive !== undefined ? params.isActive : true, // Default to active if not specified
-  });
+  // Log the original state before the update
+  const originalData = {...programCourse.dataValues};
 
+  // Update program-course association with new params
+  programCourse.program_id = program.program_id;
+  programCourse.course_id = course.course_id;
   await programCourse.save();
 
   // Check if there are actual changes

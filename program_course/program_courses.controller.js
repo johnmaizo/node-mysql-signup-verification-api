@@ -32,25 +32,37 @@ function addProgramAssignCourse(req, res, next) {
 }
 
 function getAllProgramAssignCourse(req, res, next) {
-  programCourseService.getAllProgramAssignCourse()
+  const campus_id = req.query.campus_id; // Extract campus_id from query parameters
+  const program_id = req.query.program_id; // Extract program_id from query parameters
+  
+  programCourseService.getAllProgramAssignCourse(program_id, campus_id)
       .then(programcourse => res.json(programcourse))
       .catch(next);
 }
 
 function getAllProgramAssignCourseCount(req, res, next) {
-  programCourseService.getProgramAssignCourseCount()
+  const campus_id = req.query.campus_id; 
+  const program_id = req.query.program_id; 
+  
+  programCourseService.getProgramAssignCourseCount(program_id, campus_id)
       .then(programcourse => res.json(programcourse))
       .catch(next);
 }
 
 function getAllProgramAssignCourseActive(req, res, next) {
-  programCourseService.getAllProgramAssignCourseActive()
+  const campus_id = req.query.campus_id; 
+  const program_id = req.query.program_id; 
+
+  programCourseService.getAllProgramAssignCourseActive(program_id, campus_id)
       .then(programcourse => res.json(programcourse))
       .catch(next);
 }
 
 function getAllProgramAssignCourseDeleted(req, res, next) {
-  programCourseService.getAllProgramAssignCourseDeleted()
+  const campus_id = req.query.campus_id; 
+  const program_id = req.query.program_id;  
+
+  programCourseService.getAllProgramAssignCourseDeleted(program_id, campus_id)
       .then(programcourse => res.json(programcourse))
       .catch(next);
 }
@@ -77,17 +89,11 @@ function updateCourse(req, res, next) {
 // ! Schemas
 function addProgramAssignCourseSchema(req, res, next) {
   const schema = Joi.object({
-    subjectCode: Joi.string().required(),
-    subjectDescription: Joi.string().required(),
-    unit: Joi.number().required(),
-    course_id: Joi.number().required(),
+    campus_id: Joi.number().required(),
 
+    programCode: Joi.string().required(),
     courseCode: Joi.string().required(),
-    courseName: Joi.string().required(),
-    departmentCode: Joi.string().required(),
-    departmentName: Joi.string().required(),
-    campusName: Joi.string().required(),
-
+    
   });
   validateRequest(req, next, schema);
 }
@@ -95,19 +101,12 @@ function addProgramAssignCourseSchema(req, res, next) {
 
 function updateCourseSchema(req, res, next) {
   const schema = Joi.object({
-    subjectCode: Joi.string().empty(""),
-    subjectDescription: Joi.string().empty(""),
-    unit: Joi.number().empty(""),
-    course_id: Joi.number().empty(""),
-
-    isActive: Joi.boolean().empty(""),
-    isDeleted: Joi.boolean().empty(""),
+    campus_id: Joi.number().empty(""),
 
     courseCode: Joi.string().empty(""),
-    courseName: Joi.string().empty(""),
-    departmentCode: Joi.string().empty(""),
-    departmentName: Joi.string().empty(""),
-    campusName: Joi.string().empty(""),
+    
+    isActive: Joi.boolean().empty(""),
+    isDeleted: Joi.boolean().empty(""),
   });
   validateRequest(req, next, schema);
 }
