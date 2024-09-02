@@ -4,78 +4,78 @@ const Joi = require("joi");
 const validateRequest = require("_middleware/validate-request");
 const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
-const courseService = require("./program_course.service");
+const programCourseService = require("./program_course.service");
 
-// router.post("/add-course", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), addCourseSchema, addCourse);
+// router.post("/add-course", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), addProgramAssignCourseSchema, addProgramAssignCourse);
 
-router.post("/add-course", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), addCourseSchema, addCourse);
-router.get('/', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllCourse);
-router.get('/count', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllCourseCount);
-router.get('/active', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllCourseActive);
-router.get('/deleted', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllCourseDeleted);
-router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getCourseById);
+router.post("/assign-program-course", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), addProgramAssignCourseSchema, addProgramAssignCourse);
+router.get('/', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllProgramAssignCourse);
+router.get('/count', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllProgramAssignCourseCount);
+router.get('/active', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllProgramAssignCourseActive);
+router.get('/deleted', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllProgramAssignCourseDeleted);
+// router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getCourseById);
 router.put("/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), updateCourseSchema, updateCourse); 
 
 
 module.exports = router;
 
-function addCourse(req, res, next) {
-  courseService
-    .createCourse(req.body)
+function addProgramAssignCourse(req, res, next) {
+  programCourseService
+    .createProgramAssignCourse(req.body, req.user.id)
     .then(() =>
       res.json({
         message:
-          "Course Added Successfully.",
+          "Program assigned Course Successfully.",
       })
     )
     .catch(next);
 }
 
-function getAllCourse(req, res, next) {
-  courseService.getAllCourse()
-      .then(course => res.json(course))
+function getAllProgramAssignCourse(req, res, next) {
+  programCourseService.getAllProgramAssignCourse()
+      .then(programcourse => res.json(programcourse))
       .catch(next);
 }
 
-function getAllCourseCount(req, res, next) {
-  courseService.getAllCourseCount()
-      .then(course => res.json(course))
+function getAllProgramAssignCourseCount(req, res, next) {
+  programCourseService.getProgramAssignCourseCount()
+      .then(programcourse => res.json(programcourse))
       .catch(next);
 }
 
-function getAllCourseActive(req, res, next) {
-  courseService.getAllCourseActive()
-      .then(course => res.json(course))
+function getAllProgramAssignCourseActive(req, res, next) {
+  programCourseService.getAllProgramAssignCourseActive()
+      .then(programcourse => res.json(programcourse))
       .catch(next);
 }
 
-function getAllCourseDeleted(req, res, next) {
-  courseService.getAllCourseDeleted()
-      .then(course => res.json(course))
+function getAllProgramAssignCourseDeleted(req, res, next) {
+  programCourseService.getAllProgramAssignCourseDeleted()
+      .then(programcourse => res.json(programcourse))
       .catch(next);
 }
 
 
-function getCourseById(req, res, next) {
-  courseService.getCourseById(req.params.id)
-      .then(course => course ? res.json(course) : res.sendStatus(404))
-      .catch(next);
-}
+// function getCourseById(req, res, next) {
+//   programCourseService.getCourseById(req.params.id)
+//       .then(programcourse => programcourse ? res.json(programcourse) : res.sendStatus(404))
+//       .catch(next);
+// }
 
 function updateCourse(req, res, next) {
-  courseService
-    .updateCourse(req.params.id, req.body)
+  programCourseService
+    .updateProgramAssignCourse(req.params.id, req.body, req.user.id)
     .then(() =>
       res.json({
         message:
-          "Course Updated Successfully.",
+          "Program assigned Course Updated Successfully.",
       })
     )
     .catch(next);
 }
 
 // ! Schemas
-function addCourseSchema(req, res, next) {
+function addProgramAssignCourseSchema(req, res, next) {
   const schema = Joi.object({
     subjectCode: Joi.string().required(),
     subjectDescription: Joi.string().required(),
