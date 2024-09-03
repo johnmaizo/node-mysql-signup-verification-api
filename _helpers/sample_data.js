@@ -18,7 +18,7 @@ async function InsertSampleData(db) {
       { campus_id: campuses[1].campus_id, semesterName: "1st Semester", schoolYear: "2024-2025", isActive: true },
       { campus_id: campuses[1].campus_id, semesterName: "2nd Semester", schoolYear: "2024-2025", isActive: false },
       { campus_id: campuses[1].campus_id, semesterName: "Summer", schoolYear: "2024-2025", isActive: false },
-      { campus_id: campuses[0].campus_id, semesterName: "1st Semester", schoolYear: "2024-2025", isActive: false },
+      { campus_id: campuses[0].campus_id, semesterName: "1st Semester", schoolYear: "2024-2025", isActive: true },
       { campus_id: campuses[0].campus_id, semesterName: "2nd Semester", schoolYear: "2024-2025", isActive: false },
       { campus_id: campuses[0].campus_id, semesterName: "Summer", schoolYear: "2024-2025", isActive: false }
     ]);
