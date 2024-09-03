@@ -86,7 +86,7 @@ async function InsertSampleData(db) {
       { campus_id: campuses[0].campus_id, courseCode: "PCS1", courseDescription: "Project Construction and Management", unit: 3},
       { campus_id: campuses[0].campus_id, courseCode: "PCS2", courseDescription: "Construction Cost Engineering", unit: 3},
       { campus_id: campuses[0].campus_id, courseCode: "CE400", courseDescription: "On-the-Job Training (240 Hours) - Lec", unit: 2},
-      { campus_id: campuses[0].campus_id, courseCode: "CE400", courseDescription: "On-the-Job Training (240 Hours) - Lab", unit: 1},
+      { campus_id: campuses[0].campus_id, courseCode: "CE400L", courseDescription: "On-the-Job Training (240 Hours) - Lab", unit: 1},
       { campus_id: campuses[0].campus_id, courseCode: "EE400", courseDescription: "On-the-Job Training (240 Hours)", unit: 3},
       { campus_id: campuses[0].campus_id, courseCode: "IE400", courseDescription: "On-the-Job Training (240 Hours)", unit: 3},
       { campus_id: campuses[0].campus_id, courseCode: "ME400", courseDescription: "On-the-Job Training (240 Hours)", unit: 3},
