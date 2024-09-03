@@ -156,7 +156,7 @@ function getIncludeConditionsForProgramCourse(
     },
     {
       model: db.CourseInfo,
-      attributes: ["courseCode", "courseDescription"], // Include course code and description
+      attributes: ["courseCode", "courseDescription", "unit"], // Include course code and description
     },
   ];
 
