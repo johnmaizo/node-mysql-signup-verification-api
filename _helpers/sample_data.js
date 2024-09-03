@@ -42,6 +42,7 @@ async function InsertSampleData(db) {
       {department_id: departments[3].department_id, programCode: "BSBA-MM", programDescription: "Bachelor of Science in Business Administration major in Marketing Management"},
       {department_id: departments[3].department_id, programCode: "BSA", programDescription: "Bachelor of Science in Accountancy"},
       {department_id: departments[4].department_id, programCode: "BEED", programDescription: "Bachelor of Elementary Education major in General Content"},
+      {department_id: departments[4].department_id, programCode: "BSED", programDescription: "Bachelor of Secondary Education major in English"},
       {department_id: departments[4].department_id, programCode: "BA-COMM", programDescription: "Bachelor of Arts in Communication"},
       {department_id: departments[5].department_id, programCode: "BSME", programDescription: "Bachelor of Science in Civil Engineering"},
       {department_id: departments[5].department_id, programCode: "BSEE", programDescription: "Bachelor of Science in Electrical Engineering"},
