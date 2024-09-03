@@ -34,8 +34,9 @@ function addProgramAssignCourse(req, res, next) {
 function getAllProgramAssignCourse(req, res, next) {
   const campus_id = req.query.campus_id; // Extract campus_id from query parameters
   const program_id = req.query.program_id; // Extract program_id from query parameters
+  const campusName = req.query.campusName; // Extract campusName from query parameters
   
-  programCourseService.getAllProgramAssignCourse(program_id, campus_id)
+  programCourseService.getAllProgramAssignCourse(program_id, campus_id, campusName)
       .then(programcourse => res.json(programcourse))
       .catch(next);
 }
@@ -43,8 +44,9 @@ function getAllProgramAssignCourse(req, res, next) {
 function getAllProgramAssignCourseCount(req, res, next) {
   const campus_id = req.query.campus_id; 
   const program_id = req.query.program_id; 
+  const campusName = req.query.campusName;
   
-  programCourseService.getProgramAssignCourseCount(program_id, campus_id)
+  programCourseService.getProgramAssignCourseCount(program_id, campus_id, campusName)
       .then(programcourse => res.json(programcourse))
       .catch(next);
 }
@@ -52,8 +54,9 @@ function getAllProgramAssignCourseCount(req, res, next) {
 function getAllProgramAssignCourseActive(req, res, next) {
   const campus_id = req.query.campus_id; 
   const program_id = req.query.program_id; 
+  const campusName = req.query.campusName;
 
-  programCourseService.getAllProgramAssignCourseActive(program_id, campus_id)
+  programCourseService.getAllProgramAssignCourseActive(program_id, campus_id, campusName)
       .then(programcourse => res.json(programcourse))
       .catch(next);
 }
@@ -61,8 +64,9 @@ function getAllProgramAssignCourseActive(req, res, next) {
 function getAllProgramAssignCourseDeleted(req, res, next) {
   const campus_id = req.query.campus_id; 
   const program_id = req.query.program_id;  
+  const campusName = req.query.campusName;
 
-  programCourseService.getAllProgramAssignCourseDeleted(program_id, campus_id)
+  programCourseService.getAllProgramAssignCourseDeleted(program_id, campus_id, campusName)
       .then(programcourse => res.json(programcourse))
       .catch(next);
 }

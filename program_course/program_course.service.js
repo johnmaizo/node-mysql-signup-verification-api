@@ -130,7 +130,11 @@ function transformProgramCourseData(programCourse) {
 }
 
 // Helper function to generate include conditions
-function getIncludeConditionsForProgramCourse(program_id, campus_id) {
+function getIncludeConditionsForProgramCourse(
+  program_id,
+  campus_id,
+  campusName
+) {
   const includeConditions = [
     {
       model: db.Program,
@@ -142,6 +146,7 @@ function getIncludeConditionsForProgramCourse(program_id, campus_id) {
             {
               model: db.Campus,
               attributes: ["campusName"], // Include only the campus name
+              where: campusName ? {campusName: campusName} : undefined,
             },
           ],
           attributes: ["departmentName", "departmentCode"], // Include department name and code
@@ -156,20 +161,48 @@ function getIncludeConditionsForProgramCourse(program_id, campus_id) {
   ];
 
   if (campus_id) {
-    includeConditions[0].include[0].where = {campus_id: campus_id};
+    includeConditions[0].include[0].where = {
+      ...includeConditions[0].include[0].where,
+      campus_id: campus_id,
+    };
+  }
+
+  if (campusName && !(campus_id && campusName)) {
+    throw new Error(`It doesn't work.. ("${campusName}")`);
   }
 
   return includeConditions;
 }
 
-// Reuse the existing getPrograms function
+// Function to validate campus_id and campusName match
+async function validateCampus(campus_id, campusName) {
+  if (campus_id && campusName) {
+    const campus = await db.Campus.findOne({
+      where: {campus_id, campusName},
+    });
 
-async function getAllProgramAssignCourse(program_id = null, campus_id = null) {
-  const whereClause = {isDeleted: false};
+    if (!campus) {
+      throw new Error(
+        `Campus with ID "${campus_id}" and Name "${campusName}" does not match.`
+      );
+    }
+  }
+}
+
+// Reuse the existing getProgramCourses function
+async function getProgramCourses(
+  whereClause,
+  program_id = null,
+  campus_id = null,
+  campusName = null
+) {
   const includeConditions = getIncludeConditionsForProgramCourse(
     program_id,
-    campus_id
+    campus_id,
+    campusName
   );
+
+  await validateCampus(campus_id, campusName);
 
   const programCourses = await db.ProgramCourse.findAll({
     where: whereClause,
@@ -179,14 +212,34 @@ async function getAllProgramAssignCourse(program_id = null, campus_id = null) {
   return programCourses.map(transformProgramCourseData);
 }
 
+async function getAllProgramAssignCourse(
+  program_id = null,
+  campus_id = null,
+  campusName = null
+) {
+  const whereClause = {isDeleted: false};
+
+  return await getProgramCourses(
+    whereClause,
+    program_id,
+    campus_id,
+    campusName
+  );
+}
+
 async function getProgramAssignCourseCount(
   program_id = null,
-  campus_id = null
+  campus_id = null,
+  campusName = null
 ) {
   const whereClause = {isActive: true, isDeleted: false};
+
+  await validateCampus(campus_id, campusName);
+
   const includeConditions = getIncludeConditionsForProgramCourse(
     program_id,
-    campus_id
+    campus_id,
+    campusName
   );
 
   return await db.ProgramCourse.count({
@@ -197,38 +250,32 @@ async function getProgramAssignCourseCount(
 
 async function getAllProgramAssignCourseActive(
   program_id = null,
-  campus_id = null
+  campus_id = null,
+  campusName = null
 ) {
   const whereClause = {isActive: true, isDeleted: false};
-  const includeConditions = getIncludeConditionsForProgramCourse(
+
+  return await getProgramCourses(
+    whereClause,
     program_id,
-    campus_id
+    campus_id,
+    campusName
   );
-
-  const programCourses = await db.ProgramCourse.findAll({
-    where: whereClause,
-    include: includeConditions,
-  });
-
-  return programCourses.map(transformProgramCourseData);
 }
 
 async function getAllProgramAssignCourseDeleted(
   program_id = null,
-  campus_id = null
+  campus_id = null,
+  campusName = null
 ) {
   const whereClause = {isDeleted: true};
-  const includeConditions = getIncludeConditionsForProgramCourse(
+
+  return await getProgramCourses(
+    whereClause,
     program_id,
-    campus_id
+    campus_id,
+    campusName
   );
-
-  const programCourses = await db.ProgramCourse.findAll({
-    where: whereClause,
-    include: includeConditions,
-  });
-
-  return programCourses.map(transformProgramCourseData);
 }
 
 async function updateProgramAssignCourse(id, params, adminId) {

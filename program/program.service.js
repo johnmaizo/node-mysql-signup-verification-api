@@ -83,20 +83,8 @@ function transformProgramData(program) {
   };
 }
 
-// Reuse the existing getPrograms function
-async function getPrograms(whereClause, campus_id = null) {
-  const includeConditions = getIncludeConditionsForCampus(campus_id);
-
-  const programs = await db.Program.findAll({
-    where: whereClause,
-    include: includeConditions,
-  });
-
-  return programs.map(transformProgramData);
-}
-
 // Helper function to generate include conditions for campus filtering
-function getIncludeConditionsForCampus(campus_id) {
+function getIncludeConditionsForCampus(campus_id, campusName) {
   const includeConditions = [
     {
       model: db.Department,
@@ -112,21 +100,63 @@ function getIncludeConditionsForCampus(campus_id) {
 
   if (campus_id) {
     includeConditions[0].where = {campus_id: campus_id};
+  } else if (campus_id && campusName) {
+    includeConditions[0].where = {campus_id: campus_id};
+    includeConditions[0].where = {campusName: campusName};
+  } else if (campusName && !(campus_id && campusName)) {
+    throw new Error(`You cannot put only one parameter ("${campusName}")`);
   }
 
   return includeConditions;
 }
 
-async function getAllPrograms(campus_id = null) {
-  const whereClause = {isDeleted: false};
+// Function to validate campusName and campus_id match
+async function validateCampus(campus_id, campusName) {
+  if (campus_id && campusName) {
+    const campus = await db.Campus.findOne({
+      where: {campus_id, campusName},
+    });
 
-  return await getPrograms(whereClause, campus_id);
+    if (!campus) {
+      throw new Error(
+        `Campus with ID "${campus_id}" and Name "${campusName}" does not match.`
+      );
+    }
+  }
 }
 
-async function getAllProgramsCount(campus_id = null) {
+// Reuse the existing getPrograms function
+async function getPrograms(whereClause, campus_id = null, campusName = null) {
+  const includeConditions = getIncludeConditionsForCampus(
+    campus_id,
+    campusName
+  );
+
+  await validateCampus(campus_id, campusName);
+
+  const programs = await db.Program.findAll({
+    where: whereClause,
+    include: includeConditions,
+  });
+
+  return programs.map(transformProgramData);
+}
+
+async function getAllPrograms(campus_id = null, campusName = null) {
+  const whereClause = {isDeleted: false};
+
+  return await getPrograms(whereClause, campus_id, campusName);
+}
+
+async function getAllProgramsCount(campus_id = null, campusName = null) {
   const whereClause = {isActive: true, isDeleted: false};
 
-  const includeConditions = getIncludeConditionsForCampus(campus_id);
+  await validateCampus(campus_id, campusName);
+
+  const includeConditions = getIncludeConditionsForCampus(
+    campus_id,
+    campusName
+  );
 
   return await db.Program.count({
     where: whereClause,
@@ -134,16 +164,16 @@ async function getAllProgramsCount(campus_id = null) {
   });
 }
 
-async function getAllProgramsActive(campus_id = null) {
+async function getAllProgramsActive(campus_id = null, campusName = null) {
   const whereClause = {isActive: true, isDeleted: false};
 
-  return await getPrograms(whereClause, campus_id);
+  return await getPrograms(whereClause, campus_id, campusName);
 }
 
-async function getAllProgramsDeleted(campus_id = null) {
+async function getAllProgramsDeleted(campus_id = null, campusName = null) {
   const whereClause = {isDeleted: true};
 
-  return await getPrograms(whereClause, campus_id);
+  return await getPrograms(whereClause, campus_id, campusName);
 }
 
 async function getProgramById(id) {

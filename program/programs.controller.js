@@ -29,36 +29,40 @@ function addProgram(req, res, next) {
 
 function getAllProgram(req, res, next) {
   const campus_id = req.query.campus_id; // Extract campus_id from query parameters
+  const campusName = req.query.campusName; // Extract campusName from query parameters
   
   programService
-    .getAllPrograms(campus_id) // Pass campus_id to the service function
+    .getAllPrograms(campus_id, campusName) // Pass campus_id and campusName to the service function
     .then((program) => res.json(program))
     .catch(next);
 }
 
 function getAllProgramCount(req, res, next) {
   const campus_id = req.query.campus_id;
+  const campusName = req.query.campusName;
 
   programService
-    .getAllProgramsCount(campus_id)
+    .getAllProgramsCount(campus_id, campusName)
     .then((program) => res.json(program))
     .catch(next);
 }
 
 function getAllProgramActive(req, res, next) {
   const campus_id = req.query.campus_id;
+  const campusName = req.query.campusName;
 
   programService
-    .getAllProgramsActive(campus_id)
+    .getAllProgramsActive(campus_id, campusName)
     .then((program) => res.json(program))
     .catch(next);
 }
 
 function getAllProgramDeleted(req, res, next) {
   const campus_id = req.query.campus_id;
+  const campusName = req.query.campusName;
 
   programService
-    .getAllProgramsDeleted(campus_id)
+    .getAllProgramsDeleted(campus_id, campusName)
     .then((program) => res.json(program))
     .catch(next);
 }
