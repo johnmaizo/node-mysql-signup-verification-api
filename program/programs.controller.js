@@ -11,6 +11,7 @@ router.get("/", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllProg
 router.get("/count", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllProgramCount);
 router.get("/active",  authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllProgramActive);
 router.get("/deleted", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllProgramDeleted);
+router.get("/get-program",  authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getProgramByProgramCode);
 router.get("/:id",  authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getProgramById);
 router.put("/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), updateProgramSchema, updateProgram);
 
@@ -60,17 +61,29 @@ function getAllProgramActive(req, res, next) {
 function getAllProgramDeleted(req, res, next) {
   const campus_id = req.query.campus_id;
   const campusName = req.query.campusName;
-
+  
   programService
-    .getAllProgramsDeleted(campus_id, campusName)
-    .then((program) => res.json(program))
-    .catch(next);
+  .getAllProgramsDeleted(campus_id, campusName)
+  .then((program) => res.json(program))
+  .catch(next);
 }
 
 function getProgramById(req, res, next) {
+  const campusName = req.query.campusName;
+
   programService
-    .getProgramById(req.params.id)
+    .getProgramById(req.params.id, campusName)
     .then((program) => (program ? res.json(program) : res.sendStatus(404)))
+    .catch(next);
+}
+
+function getProgramByProgramCode(req, res, next) {
+  const campus_id = req.query.campus_id;
+  const programCode = req.query.programCode;
+  
+  programService
+    .getProgramByProgramCode(programCode, campus_id)
+    .then((program) => res.json(program))
     .catch(next);
 }
 

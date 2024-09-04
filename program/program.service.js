@@ -10,6 +10,7 @@ module.exports = {
   getAllProgramsCount,
   getAllProgramsActive,
   getAllProgramsDeleted,
+  getProgramByProgramCode,
   getProgramById,
   updateProgram,
 };
@@ -176,23 +177,80 @@ async function getAllProgramsDeleted(campus_id = null, campusName = null) {
   return await getPrograms(whereClause, campus_id, campusName);
 }
 
-async function getProgramById(id) {
-  const program = await db.Program.findByPk(id, {
-    include: [
-      {
-        model: db.Department,
-        include: [
-          {
-            model: db.Campus,
-            attributes: ["campusName"], // Include only the campus name
-          },
-        ],
-        attributes: ["departmentName", "departmentCode"], // Include department name and code
-      },
-    ],
-  });
+async function getProgramById(id, campusName = null) {
+  let program;
+
+  if (campusName) {
+    program = await db.Program.findOne({
+      where: {program_id: id}, // Ensure the program ID matches
+      include: [
+        {
+          model: db.Department,
+          include: [
+            {
+              model: db.Campus,
+              where: {campusName}, // Ensure the program is on the specific campus
+              attributes: ["campusName", "campus_id"], // Include only the campus name
+            },
+          ],
+          attributes: ["departmentName", "departmentCode"], // Include department name and code
+        },
+      ],
+    });
+
+    if (!program.department) {
+      throw new Error(`No program found with id "${id}" on campus ${campusName}`);
+    }
+  } else {
+    program = await db.Program.findByPk(id, {
+      include: [
+        {
+          model: db.Department,
+          include: [
+            {
+              model: db.Campus,
+              attributes: ["campusName"], // Include only the campus name
+            },
+          ],
+          attributes: ["departmentName", "departmentCode"], // Include department name and code
+        },
+      ],
+    });
+  }
 
   if (!program) throw new Error("Program not found");
+
+  return transformProgramData(program);
+}
+
+async function getProgramByProgramCode(programCode = null, campus_id = null) {
+  let program;
+
+  if (programCode) {
+    if (!campus_id) {
+      throw new Error("Campus ID is required when searching by program.");
+    }
+    program = await db.Program.findOne({
+      where: {programCode},
+      include: [
+        {
+          model: db.Department,
+          where: {campus_id}, // Ensure the program is on the specific campus
+          include: [
+            {
+              model: db.Campus,
+              attributes: ["campusName"], // Include only the campus name
+            },
+          ],
+          attributes: ["departmentName", "departmentCode"], // Include department name and code
+        },
+      ],
+    });
+  } else if (!programCode) {
+    throw new Error("Program code is required when searching by program.");
+  }
+
+  if (!program) throw new Error("Program not found HAHAHA");
 
   return transformProgramData(program);
 }
