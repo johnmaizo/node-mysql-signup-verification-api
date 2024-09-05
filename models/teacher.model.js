@@ -17,11 +17,12 @@ function model(sequelize) {
       },
     },
 
-    firstName: {type: DataTypes.STRING(35), allowNull: false},
-    middleName: {type: DataTypes.STRING(15), allowNull: false},
-    lastName: {type: DataTypes.STRING(35), allowNull: false},
+    firstName: {type: DataTypes.STRING(50), allowNull: false},
+    middleName: {type: DataTypes.STRING(50), allowNull: false},
+    lastName: {type: DataTypes.STRING(50), allowNull: false},
     
 
+    gender: { type: DataTypes.STRING(10), allowNull: false },
     teacherAddress: { type: DataTypes.STRING(95), allowNull: false },
     contactNumber: { type: DataTypes.STRING(15), allowNull: false },
     email: { type: DataTypes.STRING(62), allowNull: false, unique: true },

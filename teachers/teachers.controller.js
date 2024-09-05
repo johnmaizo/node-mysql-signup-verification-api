@@ -7,51 +7,81 @@ const Role = require("_helpers/role");
 const teacherService = require("./teacher.service");
 
 router.post("/add-teacher", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), addTeacherSchema, addTeacher);
-router.get('/', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllTeachers);
-router.get('/previous', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getPreviousTotalTeachers);
-router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getTeacherById);
-router.put("/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), updateTeacherSchema, updateTeacher); 
-
+router.get("/", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllTeacher);
+router.get("/count", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllTeacherCount);
+router.get("/active",  authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllTeacherActive);
+router.get("/deleted", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllTeacherDeleted);
+router.get("/:id",  authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getTeacherById);
+router.put("/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), updateTeacherSchema, updateTeacher);
 
 module.exports = router;
 
 function addTeacher(req, res, next) {
   teacherService
-    .createTeacher(req.body)
+    .createTeacher(req.body, req.user.id)
     .then(() =>
       res.json({
-        message:
-          "Teacher Added Successfully.",
+        message: "Teacher Added Successfully.",
       })
     )
     .catch(next);
 }
 
-function getAllTeachers(req, res, next) {
-  teacherService.getAllTeachers()
-      .then(teachers => res.json(teachers))
-      .catch(next);
-}
-
-function getPreviousTotalTeachers(req, res, next) {
-  teacherService.getPreviousTotalTeachers()
-    .then(previousTotal => res.json({ total: previousTotal }))
+function getAllTeacher(req, res, next) {
+  const campus_id = req.query.campus_id; // Extract campus_id from query parameters
+  const campusName = req.query.campusName; // Extract campusName from query parameters
+  
+  teacherService
+    .getAllTeachers(campus_id, campusName) // Pass campus_id and campusName to the service function
+    .then((teacher) => res.json(teacher))
     .catch(next);
 }
 
+function getAllTeacherCount(req, res, next) {
+  const campus_id = req.query.campus_id;
+  const campusName = req.query.campusName;
+
+  teacherService
+    .getAllTeachersCount(campus_id, campusName)
+    .then((teacher) => res.json(teacher))
+    .catch(next);
+}
+
+function getAllTeacherActive(req, res, next) {
+  const campus_id = req.query.campus_id;
+  const campusName = req.query.campusName;
+
+  teacherService
+    .getAllTeachersActive(campus_id, campusName)
+    .then((teacher) => res.json(teacher))
+    .catch(next);
+}
+
+function getAllTeacherDeleted(req, res, next) {
+  const campus_id = req.query.campus_id;
+  const campusName = req.query.campusName;
+  
+  teacherService
+  .getAllTeachersDeleted(campus_id, campusName)
+  .then((teacher) => res.json(teacher))
+  .catch(next);
+}
+
 function getTeacherById(req, res, next) {
-  teacherService.getTeacherById(req.params.id)
-      .then(teacher => teacher ? res.json(teacher) : res.sendStatus(404))
-      .catch(next);
+  const campusName = req.query.campusName;
+
+  teacherService
+    .getTeacherById(req.params.id, campusName)
+    .then((teacher) => (teacher ? res.json(teacher) : res.sendStatus(404)))
+    .catch(next);
 }
 
 function updateTeacher(req, res, next) {
   teacherService
-    .updateTeacher(req.params.id, req.body)
+    .updateTeacher(req.params.id, req.body, req.user.id)
     .then(() =>
       res.json({
-        message:
-          "Teacher Updated Successfully.",
+        message: "Teacher Updated Successfully.",
       })
     )
     .catch(next);
@@ -61,31 +91,41 @@ function updateTeacher(req, res, next) {
 function addTeacherSchema(req, res, next) {
   const schema = Joi.object({
     firstName: Joi.string().required(),
-    middleName: [Joi.string().optional(), Joi.allow(null)],
+    middleName: Joi.string().required(),
     lastName: Joi.string().required(),
     teacherAddress: Joi.string().required(),
     contactNumber: Joi.string().required(),
-    email: Joi.string().email().required(),
+    email: Joi.string().email.required(),
+    gender: Joi.string().required(),
 
-    department_id: Joi.number().required(),
+    // need for validation
+    departmentCode: Joi.string().empty(""),
+    departmentName: Joi.string().empty(""),
+
+    campus_id: Joi.number().empty(""),
+    campusName: Joi.string().empty(""),
   });
   validateRequest(req, next, schema);
 }
 
-
 function updateTeacherSchema(req, res, next) {
   const schema = Joi.object({
     firstName: Joi.string().empty(""),
-    middleName: [Joi.string().optional(), Joi.allow(null)],
+    middleName: Joi.string().empty(""),
     lastName: Joi.string().empty(""),
     teacherAddress: Joi.string().empty(""),
     contactNumber: Joi.string().empty(""),
-    email: Joi.string().email().empty(""),
+    email: Joi.string().email.empty(""),
+    gender: Joi.string().empty(""),
 
-    department_id: Joi.number().empty(""),
+    // for validation
+    departmentCode: Joi.string().empty(""),
+    departmentName: Joi.string().empty(""),
+    
+    campus_id: Joi.number().empty(""),
+    campusName: Joi.string().empty(""),
     
     isActive: Joi.boolean().empty(""),
-    
     isDeleted: Joi.boolean().empty(""),
   });
   validateRequest(req, next, schema);
