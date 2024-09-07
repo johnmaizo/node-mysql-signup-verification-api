@@ -173,7 +173,9 @@ function resetPassword(req, res, next) {
 }
 
 function getAll(req, res, next) {
-    accountService.getAll()
+    const campus_id = req.query.campus_id;
+
+    accountService.getAll(campus_id)
         .then(accounts => res.json(accounts))
         .catch(next);
 }

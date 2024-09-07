@@ -2,7 +2,7 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
-const {Op} = require("sequelize");
+const {Op, where} = require("sequelize");
 const sendEmail = require("_helpers/send-email");
 const db = require("_helpers/db");
 const Role = require("_helpers/role");
@@ -163,8 +163,9 @@ async function resetPassword({token, password}) {
   await account.save();
 }
 
-async function getAll() {
+async function getAll(campus_id = null) {
   const accounts = await db.Account.findAll({
+    where: campus_id ? {campus_id: campus_id} : undefined,
     include: [
       {
         model: db.Campus,
