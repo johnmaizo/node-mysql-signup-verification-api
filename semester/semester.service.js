@@ -12,7 +12,7 @@ module.exports = {
   updateSemester,
 };
 
-async function createSemester(params, adminId) {
+async function createSemester(params, accountId) {
   const {semesterName, schoolYear, campus_id} = params;
 
   // Check if there's already an active semester on the same campus
@@ -92,7 +92,7 @@ async function createSemester(params, adminId) {
     entity: "Semester",
     entityId: semester.semester_id,
     changes: params,
-    adminId: adminId,
+    accountId: accountId,
   });
 }
 
@@ -157,7 +157,7 @@ async function getSemesterById(id) {
   return semester;
 }
 
-async function updateSemester(id, params, adminId) {
+async function updateSemester(id, params, accountId) {
   const semester = await getSemesterById(id);
 
   if (!semester) throw "Semester not found";
@@ -179,7 +179,7 @@ async function updateSemester(id, params, adminId) {
       entity: "Semester",
       entityId: semester.semester_id,
       changes: params,
-      adminId: adminId,
+      accountId: accountId,
     });
 
     return;
@@ -282,7 +282,7 @@ async function updateSemester(id, params, adminId) {
       entity: "Semester",
       entityId: semester.semester_id,
       changes: changes,
-      adminId: adminId,
+      accountId: accountId,
     });
   }
 }

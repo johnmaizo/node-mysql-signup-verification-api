@@ -14,7 +14,7 @@ module.exports = {
   updateCampus,
 };
 
-async function createCampus(params, adminId) {
+async function createCampus(params, accountId) {
   // validate
   if (await db.Campus.findOne({where: {campusName: params.campusName}})) {
     throw 'Campus name "' + params.campusName + '" is already registered';
@@ -31,7 +31,7 @@ async function createCampus(params, adminId) {
     entity: "Campus",
     entityId: campus.campus_id,
     changes: params,
-    adminId: adminId,
+    accountId: accountId,
   });
 }
 
@@ -80,7 +80,7 @@ async function getCampusById(id) {
   return campus;
 }
 
-async function updateCampus(id, params, adminId) {
+async function updateCampus(id, params, accountId) {
   const campus = await getCampusById(id);
 
   if (!campus) throw "Campus not found";
@@ -102,7 +102,7 @@ async function updateCampus(id, params, adminId) {
       entity: "Campus",
       entityId: campus.campus_id,
       changes: params,
-      adminId: adminId,
+      accountId: accountId,
     });
 
     return;
@@ -130,7 +130,7 @@ async function updateCampus(id, params, adminId) {
       entity: "Campus",
       entityId: campus.campus_id,
       changes: changes,
-      adminId: adminId,
+      accountId: accountId,
     });
   }
 }

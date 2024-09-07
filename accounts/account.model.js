@@ -4,14 +4,6 @@ module.exports = model;
 
 function model(sequelize) {
   const attributes = {
-    email: {type: DataTypes.STRING, allowNull: false},
-    passwordHash: {type: DataTypes.STRING, allowNull: false},
-    title: {type: DataTypes.STRING, allowNull: false},
-    firstName: {type: DataTypes.STRING, allowNull: false},
-    lastName: {type: DataTypes.STRING, allowNull: false},
-    acceptTerms: {type: DataTypes.BOOLEAN},
-    role: {type: DataTypes.STRING, allowNull: false},
-
     campus_id: {
       type: DataTypes.INTEGER,
       allowNull: true, // SuperAdmin won't have a campus_id
@@ -31,11 +23,29 @@ function model(sequelize) {
       },
     },
 
+    email: {type: DataTypes.STRING, allowNull: false},
+    passwordHash: {type: DataTypes.STRING, allowNull: false},
+    title: {type: DataTypes.STRING, allowNull: false},
+    firstName: {type: DataTypes.STRING, allowNull: false},
+    middleName: {type: DataTypes.STRING, allowNull: false},
+    lastName: {type: DataTypes.STRING, allowNull: false},
+    
+    gender: { type: DataTypes.STRING(10), allowNull: false },
+    address: {type: DataTypes.STRING(95), allowNull: false},
+    contactNumber: { type: DataTypes.STRING(15), allowNull: false },
+
+    role: {type: DataTypes.STRING, allowNull: false},
+    roleType: {type: DataTypes.STRING, allowNull: true},
+    
+    
+    
+    acceptTerms: {type: DataTypes.BOOLEAN},
     verificationToken: {type: DataTypes.STRING},
     verified: {type: DataTypes.DATE},
     resetToken: {type: DataTypes.STRING},
     resetTokenExpires: {type: DataTypes.DATE},
     passwordReset: {type: DataTypes.DATE},
+
     created: {
       type: DataTypes.DATE,
       allowNull: false,

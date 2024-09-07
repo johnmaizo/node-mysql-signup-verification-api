@@ -28,7 +28,12 @@ async function setupAccounts(db) {
         role: Role.SuperAdmin,
         title: "Super Administrator",
         firstName: "John Robert",
+        middleName: "Libaton",
         lastName: "Maizo",
+        gender: "Male",
+        address: "C.D. Seno St., Tipolo, Mandaue City",
+        contactNumber: "09324568499",
+
         acceptTerms: true,
         verified: new Date(),
         created: new Date(),
@@ -53,8 +58,13 @@ async function setupAccounts(db) {
         passwordHash: adminPasswordHash,
         role: Role.Admin,
         title: "Administrator",
-        firstName: "Vonsleryl",
+        firstName: "John Robert",
+        middleName: "Dope",
         lastName: "Gwapo",
+        gender: "Male",
+        address: "Banilad, Mandaue City",
+        contactNumber: "09324568324",
+
         acceptTerms: true,
         verified: new Date(),
         created: new Date(),
@@ -80,8 +90,14 @@ async function setupAccounts(db) {
         passwordHash: adminPasswordHash,
         role: Role.Admin,
         title: "Mr",
-        firstName: "John",
-        lastName: "Doe",
+        firstName: "Johnny",
+        middleName: "gwapo",
+        lastName: "Bravo",
+        gender: "Male",
+        address: "Benedicto St., Cebu City",
+        contactNumber: "09324568546",
+
+
         acceptTerms: true,
         verified: new Date(),
         created: new Date(),
@@ -107,8 +123,13 @@ async function setupAccounts(db) {
         passwordHash: staffPasswordHash,
         role: Role.Staff,
         title: "Staff Member",
-        firstName: "Staff",
-        lastName: "User",
+        firstName: "Juan",
+        middleName: "makabugto",
+        lastName: "Tamad",
+        gender: "Male",
+        address: "Jmall, Mandaue City",
+        contactNumber: "09554568324",
+        
         acceptTerms: true,
         verified: new Date(),
         created: new Date(),
@@ -121,59 +142,6 @@ async function setupAccounts(db) {
       console.log("Staff user already exists.");
     }
 
-    // Instructor Setup
-    const instructorUser = await db.Account.findOne({
-      where: {email: "instructor@gmail.com"},
-    });
-
-    if (!instructorUser) {
-      const instructorPasswordHash = await bcrypt.hash("aw1235", 10);
-
-      const newInstructor = new db.Account({
-        email: "instructor@gmail.com",
-        passwordHash: instructorPasswordHash,
-        role: Role.Instructor,
-        title: "Instructor",
-        firstName: "Instructor",
-        lastName: "User",
-        acceptTerms: true,
-        verified: new Date(),
-        created: new Date(),
-        campus_id: 1, // Add a valid campus_id here
-      });
-
-      await newInstructor.save();
-      console.log("Instructor user created successfully.");
-    } else {
-      console.log("Instructor user already exists.");
-    }
-
-    // Student Setup
-    const studentUser = await db.Account.findOne({
-      where: {email: "student@gmail.com"},
-    });
-
-    if (!studentUser) {
-      const studentPasswordHash = await bcrypt.hash("aw12345", 10);
-
-      const newStudent = new db.Account({
-        email: "student@gmail.com",
-        passwordHash: studentPasswordHash,
-        role: Role.Student,
-        title: "Student",
-        firstName: "Student",
-        lastName: "User",
-        acceptTerms: true,
-        verified: new Date(),
-        created: new Date(),
-        campus_id: 1, // Add a valid campus_id here
-      });
-
-      await newStudent.save();
-      console.log("Student user created successfully.");
-    } else {
-      console.log("Student user already exists.");
-    }
   } catch (error) {
     console.error("Error setting up accounts:", error);
   }

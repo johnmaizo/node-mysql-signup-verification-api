@@ -61,12 +61,6 @@ async function initialize() {
   // ! Schedule
   db.Schedule = require("../models/schedule.model")(sequelize);
 
-  // ! Staff
-  db.StaffInfo = require("../models/staff.model")(sequelize);
-
-  // ! Teacher
-  db.TeacherInfo = require("../models/teacher.model")(sequelize);
-
   // define relationships using the imported function
   defineRelationships(db);
 

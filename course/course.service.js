@@ -14,7 +14,7 @@ module.exports = {
   updateCourse,
 };
 
-async function createCourse(params, adminId) {
+async function createCourse(params, accountId) {
   // Validate if courseCode exists on the same campus_id
   const existingCourseCode = await db.CourseInfo.findOne({
     where: {
@@ -42,7 +42,7 @@ async function createCourse(params, adminId) {
     entity: "Course",
     entityId: newCourse.course_id,
     changes: params,
-    adminId: adminId,
+    accountId: accountId,
   });
 }
 
@@ -119,7 +119,7 @@ async function getCourseById(id) {
   return course;
 }
 
-async function updateCourse(id, params, adminId) {
+async function updateCourse(id, params, accountId) {
   // Find the course to be updated
   const course = await db.CourseInfo.findByPk(id);
   if (!course) throw "Course not found";
@@ -141,7 +141,7 @@ async function updateCourse(id, params, adminId) {
       entity: "Course",
       entityId: course.course_id,
       changes: params,
-      adminId: adminId,
+      accountId: accountId,
     });
 
     return;
@@ -191,7 +191,7 @@ async function updateCourse(id, params, adminId) {
       entity: "Course",
       entityId: course.course_id,
       changes: changes,
-      adminId: adminId,
+      accountId: accountId,
     });
   }
 }

@@ -13,7 +13,7 @@ module.exports = {
   updateDepartment,
 };
 
-async function createDepartment(params, adminId) {
+async function createDepartment(params, accountId) {
   // Validate if departmentCode exists on the same campus_id
   const existingDepartment = await db.Department.findOne({
     where: {
@@ -55,7 +55,7 @@ async function createDepartment(params, adminId) {
     entity: "Deparment",
     entityId: department.department_id,
     changes: params,
-    adminId: adminId,
+    accountId: accountId,
   });
 }
 
@@ -141,7 +141,7 @@ async function getDepartmentById(id) {
   return transformDepartmentData(department);
 }
 
-async function updateDepartment(id, params, adminId) {
+async function updateDepartment(id, params, accountId) {
   const department = await db.Department.findByPk(id);
 
   if (!department) throw "Department not found";
@@ -163,7 +163,7 @@ async function updateDepartment(id, params, adminId) {
       entity: "Department",
       entityId: department.department_id,
       changes: params,
-      adminId: adminId,
+      accountId: accountId,
     });
 
     return;
@@ -226,7 +226,7 @@ async function updateDepartment(id, params, adminId) {
       entity: "Department",
       entityId: department.department_id,
       changes: changes,
-      adminId: adminId,
+      accountId: accountId,
     });
   }
 }

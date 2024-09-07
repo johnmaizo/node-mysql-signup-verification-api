@@ -15,7 +15,7 @@ module.exports = {
   updateProgram,
 };
 
-async function createProgram(params, adminId) {
+async function createProgram(params, accountId) {
   // Find the department based on department code, department name, and campus information
   const department = await db.Department.findOne({
     where: {
@@ -67,7 +67,7 @@ async function createProgram(params, adminId) {
     entity: "Program",
     entityId: program.program_id,
     changes: params,
-    adminId: adminId,
+    accountId: accountId,
   });
 }
 
@@ -199,7 +199,9 @@ async function getProgramById(id, campusName = null) {
     });
 
     if (!program.department) {
-      throw new Error(`No program found with id "${id}" on campus ${campusName}`);
+      throw new Error(
+        `No program found with id "${id}" on campus ${campusName}`
+      );
     }
   } else {
     program = await db.Program.findByPk(id, {
@@ -255,7 +257,7 @@ async function getProgramByProgramCode(programCode = null, campus_id = null) {
   return transformProgramData(program);
 }
 
-async function updateProgram(id, params, adminId) {
+async function updateProgram(id, params, accountId) {
   // Fetch the program as a Sequelize instance
   const program = await db.Program.findByPk(id, {
     include: [
@@ -291,7 +293,7 @@ async function updateProgram(id, params, adminId) {
       entity: "Program",
       entityId: program.program_id,
       changes: params,
-      adminId: adminId,
+      accountId: accountId,
     });
 
     return;
@@ -360,7 +362,7 @@ async function updateProgram(id, params, adminId) {
       entity: "Program",
       entityId: program.program_id,
       changes: changes,
-      adminId: adminId,
+      accountId: accountId,
     });
   }
 }

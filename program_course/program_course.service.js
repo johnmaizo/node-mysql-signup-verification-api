@@ -13,7 +13,7 @@ module.exports = {
   updateProgramAssignCourse,
 };
 
-async function createProgramAssignCourse(params, adminId) {
+async function createProgramAssignCourse(params, accountId) {
   const {programCode, courseCode, campus_id} = params;
 
   // Find the program based on programCode and campus_id via department association
@@ -114,7 +114,7 @@ async function createProgramAssignCourse(params, adminId) {
         courseCode: course.courseCode,
         campus_id,
       },
-      adminId: adminId,
+      accountId: accountId,
     });
   }
 }
@@ -278,7 +278,7 @@ async function getAllProgramAssignCourseDeleted(
   );
 }
 
-async function updateProgramAssignCourse(id, params, adminId) {
+async function updateProgramAssignCourse(id, params, accountId) {
   const {courseCode, campus_id, isDeleted} = params;
 
   // Fetch the program-course association as a Sequelize instance
@@ -329,7 +329,7 @@ async function updateProgramAssignCourse(id, params, adminId) {
       entity: "ProgramCourse",
       entityId: programCourse.programCourse_id,
       changes: params,
-      adminId: adminId,
+      accountId: accountId,
     });
 
     return;
@@ -389,7 +389,7 @@ async function updateProgramAssignCourse(id, params, adminId) {
       entity: "ProgramCourse",
       entityId: programCourse.programCourse_id,
       changes: changes,
-      adminId: adminId,
+      accountId: accountId,
     });
   }
 }

@@ -13,7 +13,7 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: DataTypes.NOW,
       },
-      adminId: {type: DataTypes.INTEGER, allowNull: false}, // Foreign key to Account
+      accountId: {type: DataTypes.INTEGER, allowNull: false}, // Foreign key to Account
     },
     {
       timestamps: false,

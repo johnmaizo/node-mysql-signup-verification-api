@@ -6,17 +6,47 @@ const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const courseService = require("./course.service");
 
-router.post("/add-course", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), addCourseSchema, addCourse);
-router.get("/", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllCourse);
-router.get("/count", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllCourseCount);
-router.get("/active", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllCourseActive);
-router.get("/deleted", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllCourseDeleted);
-router.get("/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getCourseById);
-router.put("/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), updateCourseSchema, updateCourse);
+router.post(
+  "/add-course",
+  authorize([Role.SuperAdmin, Role.Admin, Role.Staff]),
+  addCourseSchema,
+  addCourse
+);
+router.get(
+  "/",
+  authorize([Role.SuperAdmin, Role.Admin, Role.Staff]),
+  getAllCourse
+);
+router.get(
+  "/count",
+  authorize([Role.SuperAdmin, Role.Admin, Role.Staff]),
+  getAllCourseCount
+);
+router.get(
+  "/active",
+  authorize([Role.SuperAdmin, Role.Admin, Role.Staff]),
+  getAllCourseActive
+);
+router.get(
+  "/deleted",
+  authorize([Role.SuperAdmin, Role.Admin, Role.Staff]),
+  getAllCourseDeleted
+);
+router.get(
+  "/:id",
+  authorize([Role.SuperAdmin, Role.Admin, Role.Staff]),
+  getCourseById
+);
+router.put(
+  "/:id",
+  authorize([Role.SuperAdmin, Role.Admin, Role.Staff]),
+  updateCourseSchema,
+  updateCourse
+);
 
 module.exports = router;
 
-// Modify existing functions to pass the adminId
+// Modify existing functions to pass the accountId
 function addCourse(req, res, next) {
   courseService
     .createCourse(req.body, req.user.id) // Assuming req.user contains the authenticated admin
@@ -69,7 +99,7 @@ function getCourseById(req, res, next) {
 
 function updateCourse(req, res, next) {
   courseService
-    .updateCourse(req.params.id, req.body, req.user.id) // Pass adminId here
+    .updateCourse(req.params.id, req.body, req.user.id) // Pass accountId here
     .then(() => res.json({message: "Course Updated Successfully."}))
     .catch(next);
 }
@@ -80,7 +110,7 @@ function addCourseSchema(req, res, next) {
     courseCode: Joi.string().required(),
     courseDescription: Joi.string().required(),
     unit: Joi.number().required(),
-    
+
     campus_id: Joi.number().required(),
   });
   validateRequest(req, next, schema);

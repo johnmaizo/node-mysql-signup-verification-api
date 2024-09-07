@@ -73,10 +73,6 @@ function defineRelationships(db) {
     foreignKey: "programCourse_id",
   });
 
-  // ! Department -> Teacher Info
-  db.Department.hasMany(db.TeacherInfo, {foreignKey: "department_id"});
-  db.TeacherInfo.belongsTo(db.Department, {foreignKey: "department_id"});
-
   // ! Semester -> Schedule
   db.Semester.hasMany(db.Schedule, {foreignKey: "semester_id"});
   db.Schedule.belongsTo(db.Semester, {foreignKey: "semester_id"});
@@ -96,7 +92,7 @@ function defineRelationships(db) {
   // ! Campus -> Semester
   db.Campus.hasMany(db.Semester, {foreignKey: "campus_id"});
   db.Semester.belongsTo(db.Campus, {foreignKey: "campus_id"});
-  
+
   // ! Campus -> Course Info
   db.Campus.hasMany(db.CourseInfo, {foreignKey: "campus_id"});
   db.CourseInfo.belongsTo(db.Campus, {foreignKey: "campus_id"});
@@ -109,13 +105,9 @@ function defineRelationships(db) {
   db.Campus.hasMany(db.RoomInfo, {foreignKey: "campus_id"});
   db.RoomInfo.belongsTo(db.Campus, {foreignKey: "campus_id"});
 
-  // ! Campus -> Staffs
-  db.Campus.hasMany(db.StaffInfo, {foreignKey: "campus_id"});
-  db.StaffInfo.belongsTo(db.Campus, {foreignKey: "campus_id"});
-
   // ! Account -> History (Tracking which admin performed which action)
-  db.Account.hasMany(db.History, {foreignKey: "adminId", as: "actions"});
-  db.History.belongsTo(db.Account, {foreignKey: "adminId", as: "admin"});
+  db.Account.hasMany(db.History, {foreignKey: "accountId"});
+  db.History.belongsTo(db.Account, {foreignKey: "accountId"});
 
   // ! Account -> Campus
   db.Account.belongsTo(db.Campus, {foreignKey: "campus_id"});
