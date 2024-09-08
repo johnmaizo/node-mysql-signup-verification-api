@@ -195,7 +195,13 @@ function createSchema(req, res, next) {
     const schema = Joi.object({
         title: Joi.string().required(),
         firstName: Joi.string().required(),
+        middleName: Joi.string().empty(""),
         lastName: Joi.string().required(),
+
+        address: Joi.string().required(),
+        contactNumber: Joi.string().required(),
+        gender: Joi.string().required(),
+
         email: Joi.string().email().required(),
         password: Joi.string().min(6).required(),
         confirmPassword: Joi.string().valid(Joi.ref('password')).required(),
@@ -222,10 +228,25 @@ function updateSchema(req, res, next) {
     const schemaRules = {
         title: Joi.string().empty(''),
         firstName: Joi.string().empty(''),
+        middleName: Joi.string().empty(""),
         lastName: Joi.string().empty(''),
+
+        address: Joi.string().empty(''),
+        contactNumber: Joi.string().empty(''),
+        gender: Joi.string().empty(''),
+
+
         email: Joi.string().email().empty(''),
         password: Joi.string().min(6).empty(''),
         confirmPassword: Joi.string().valid(Joi.ref('password')).empty(''),
+
+        role: Joi.alternatives().try(
+            // Joi.string().valid(Role.Admin, Role.SuperAdmin, Role.Registart, Role.DataCenter, Role.Staff, Ro),
+            // Joi.array().items(Joi.string().valid(Role.Admin, Role.Staff, Role.User, Role.Student))
+            Joi.string(),
+            Joi.array().items(Joi.string())
+        ).empty(''),
+
         campus_id: Joi.number().empty(''),
     };
 
