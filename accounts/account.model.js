@@ -30,7 +30,7 @@ function model(sequelize) {
     passwordHash: {type: DataTypes.STRING, allowNull: false},
     title: {type: DataTypes.STRING, allowNull: false},
     firstName: {type: DataTypes.STRING, allowNull: false},
-    middleName: {type: DataTypes.STRING, allowNull: false},
+    middleName: {type: DataTypes.STRING, allowNull: true},
     lastName: {type: DataTypes.STRING, allowNull: false},
     
     gender: { type: DataTypes.STRING(10), allowNull: false },
