@@ -41,8 +41,8 @@ async function initialize() {
   db.CourseInfo = require("../models/course_info.model")(sequelize);
   // ! Program Course
   db.ProgramCourse = require("../models/program_course.model")(sequelize);
-  // ! Room Info
-  db.RoomInfo = require("../models/room_info.model")(sequelize);
+  // ! Building Structure
+  db.BuildingStructure = require("../models/building_structure.model")(sequelize);
 
   // ! Student
   db.Student = require("../models/student.model")(sequelize);
@@ -57,9 +57,6 @@ async function initialize() {
     sequelize
   );
   db.StudentSubject = require("../models/student_subject.model")(sequelize);
-
-  // ! Schedule
-  db.Schedule = require("../models/schedule.model")(sequelize);
 
   // define relationships using the imported function
   defineRelationships(db);

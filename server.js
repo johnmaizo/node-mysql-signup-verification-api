@@ -16,6 +16,7 @@ app.use(
 );
 
 // api routes
+// ! Accounts
 app.use("/accounts", require("./accounts/accounts.controller"));
 
 // ! Student
@@ -38,6 +39,9 @@ app.use("/course", require("./course/courses.controller"));
 
 // ! Program Course
 app.use("/program-courses", require("./program_course/program_courses.controller"));
+
+// ! Building Structure
+app.use("/building-structure", require("./buildingStructure/buildingstructures.controller"));
 
 // swagger docs route
 app.use("/api-docs", require("_helpers/swagger"));

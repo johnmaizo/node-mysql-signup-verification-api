@@ -38,8 +38,8 @@ function defineRelationships(db) {
   });
 
   // ! Room -> Schedule
-  db.RoomInfo.hasMany(db.Schedule, {foreignKey: "room_id"});
-  db.Schedule.belongsTo(db.RoomInfo, {foreignKey: "room_id"});
+  // db.RoomInfo.hasMany(db.Schedule, {foreignKey: "room_id"});
+  // db.Schedule.belongsTo(db.RoomInfo, {foreignKey: "room_id"});
 
   // ! Student -> Students School Details
   db.Student.hasMany(db.StudentSchoolDetail, {foreignKey: "student_id"});
@@ -74,8 +74,8 @@ function defineRelationships(db) {
   });
 
   // ! Semester -> Schedule
-  db.Semester.hasMany(db.Schedule, {foreignKey: "semester_id"});
-  db.Schedule.belongsTo(db.Semester, {foreignKey: "semester_id"});
+  // db.Semester.hasMany(db.Schedule, {foreignKey: "semester_id"});
+  // db.Schedule.belongsTo(db.Semester, {foreignKey: "semester_id"});
 
   // ! Semester -> Student Current Academic Background
   db.Semester.hasMany(db.StudentCurrentAcademic, {foreignKey: "semester_id"});
@@ -101,9 +101,9 @@ function defineRelationships(db) {
   db.Campus.hasMany(db.Department, {foreignKey: "campus_id"});
   db.Department.belongsTo(db.Campus, {foreignKey: "campus_id"});
 
-  // ! Campus -> Room Info
-  db.Campus.hasMany(db.RoomInfo, {foreignKey: "campus_id"});
-  db.RoomInfo.belongsTo(db.Campus, {foreignKey: "campus_id"});
+  // ! Campus -> Building Structure
+  db.Campus.hasMany(db.BuildingStructure, {foreignKey: "campus_id"});
+  db.BuildingStructure.belongsTo(db.Campus, {foreignKey: "campus_id"});
 
   // ! Account -> History (Tracking which admin performed which action)
   db.Account.hasMany(db.History, {foreignKey: "accountId"});
