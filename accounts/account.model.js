@@ -23,6 +23,9 @@ function model(sequelize) {
       },
     },
 
+    role: {type: DataTypes.STRING, allowNull: false},
+    roleType: {type: DataTypes.STRING, allowNull: true},
+
     email: {type: DataTypes.STRING, allowNull: false},
     passwordHash: {type: DataTypes.STRING, allowNull: false},
     title: {type: DataTypes.STRING, allowNull: false},
@@ -34,11 +37,6 @@ function model(sequelize) {
     address: {type: DataTypes.STRING(95), allowNull: false},
     contactNumber: { type: DataTypes.STRING(15), allowNull: false },
 
-    role: {type: DataTypes.STRING, allowNull: false},
-    roleType: {type: DataTypes.STRING, allowNull: true},
-    
-    
-    
     acceptTerms: {type: DataTypes.BOOLEAN},
     verificationToken: {type: DataTypes.STRING},
     verified: {type: DataTypes.DATE},

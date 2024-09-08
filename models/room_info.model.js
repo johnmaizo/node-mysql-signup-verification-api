@@ -18,6 +18,7 @@ function model(sequelize) {
             allowNull: false // Room Info must belong to a campus
         },
         
+        lot: { type: DataTypes.STRING(25), allowNull: true }, //For Future purposes
         building: { type: DataTypes.STRING(25), allowNull: false },
 
         floorLevel: { type: DataTypes.INTEGER, allowNull: false },

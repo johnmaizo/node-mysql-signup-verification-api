@@ -56,7 +56,7 @@ async function setupAccounts(db) {
       const newAdmin = new db.Account({
         email: "admin2@gmail.com",
         passwordHash: adminPasswordHash,
-        role: Role.Admin,
+        role: `${Role.Admin}, ${Role.Instructor}, ${Role.Staff}, ${Role.Student}`,
         title: "Administrator",
         firstName: "John Robert",
         middleName: "Dope",
@@ -88,7 +88,7 @@ async function setupAccounts(db) {
       const newAdmin = new db.Account({
         email: "cebu@gmail.com",
         passwordHash: adminPasswordHash,
-        role: Role.Admin,
+        role: `${Role.Admin}, ${Role.Instructor}, ${Role.Student}`,
         title: "Mr",
         firstName: "Johnny",
         middleName: "gwapo",
@@ -111,18 +111,18 @@ async function setupAccounts(db) {
     }
 
     // Staff Setup
-    const staffUser = await db.Account.findOne({
-      where: {email: "staff@gmail.com"},
+    const registrarUser = await db.Account.findOne({
+      where: {email: "registrar@gmail.com"},
     });
 
-    if (!staffUser) {
-      const staffPasswordHash = await bcrypt.hash("aw12345", 10);
+    if (!registrarUser) {
+      const registrarPasswordHash = await bcrypt.hash("aw12345", 10);
 
-      const newStaff = new db.Account({
-        email: "staff@gmail.com",
-        passwordHash: staffPasswordHash,
-        role: Role.Staff,
-        title: "Staff Member",
+      const newRegistrar = new db.Account({
+        email: "registrar@gmail.com",
+        passwordHash: registrarPasswordHash,
+        role: `${Role.Instructor}, ${Role.Staff}, ${Role.Registrar}`,
+        title: "Registrar Member",
         firstName: "Juan",
         middleName: "makabugto",
         lastName: "Tamad",
@@ -136,10 +136,10 @@ async function setupAccounts(db) {
         campus_id: 1, // Add a valid campus_id here
       });
 
-      await newStaff.save();
-      console.log("Staff user created successfully.");
+      await newRegistrar.save();
+      console.log("Registrar user created successfully.");
     } else {
-      console.log("Staff user already exists.");
+      console.log("Registrar user already exists.");
     }
 
   } catch (error) {

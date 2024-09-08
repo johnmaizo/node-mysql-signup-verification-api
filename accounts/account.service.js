@@ -189,9 +189,19 @@ async function getById(id) {
 }
 
 async function create(params) {
+  // Restrict account creation to specific roles
+  if (![Role.SuperAdmin, Role.Admin, Role.Registrar].includes(params.role)) {
+    throw `Cannot create an account for the role "${params.role}"`;
+  }
+  
   // Validate if email is already registered
-  if (await db.Account.findOne({where: {email: params.email}})) {
+  if (await db.Account.findOne({ where: { email: params.email } })) {
     throw `Email "${params.email}" is already registered`;
+  }
+
+  // Check if role is an array of strings and convert to comma-separated string
+  if (Array.isArray(params.role)) {
+    params.role = params.role.join(', ');
   }
 
   const account = new db.Account(params);
@@ -206,7 +216,7 @@ async function create(params) {
   // Retrieve the campus info if the role is not SuperAdmin
   const campus =
     account.role !== "SuperAdmin"
-      ? await account.getCampus({attributes: ["campusName", "campus_id"]})
+      ? await account.getCampus({ attributes: ["campusName", "campus_id"] })
       : null;
 
   return basicDetails(account, campus);

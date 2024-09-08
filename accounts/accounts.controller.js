@@ -199,11 +199,18 @@ function createSchema(req, res, next) {
         email: Joi.string().email().required(),
         password: Joi.string().min(6).required(),
         confirmPassword: Joi.string().valid(Joi.ref('password')).required(),
-        role: Joi.string().valid(Role.Admin, Role.Staff, Role.User, Role.Student).required(),
+        role: Joi.alternatives().try(
+            // Joi.string().valid(Role.Admin, Role.SuperAdmin, Role.Registart, Role.DataCenter, Role.Staff, Ro),
+            // Joi.array().items(Joi.string().valid(Role.Admin, Role.Staff, Role.User, Role.Student))
+            Joi.string(),
+            Joi.array().items(Joi.string())
+        ).required(),
         campus_id: Joi.number().required(),
     });
+
     validateRequest(req, next, schema);
 }
+
 
 function create(req, res, next) {
     accountService.create(req.body)
@@ -224,7 +231,7 @@ function updateSchema(req, res, next) {
 
     // only admins can update role
     if (req.user.role === Role.Admin) {
-        schemaRules.role = Joi.string().valid(Role.SuperAdmin, Role.Admin, Role.Staff, Role.User).empty('');
+        schemaRules.role = Joi.string().empty('');
     }
 
     const schema = Joi.object(schemaRules).with('password', 'confirmPassword');
