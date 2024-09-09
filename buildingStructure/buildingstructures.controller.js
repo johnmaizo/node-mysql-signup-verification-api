@@ -27,9 +27,9 @@ function addStructure(req, res, next) {
 }
 
 function getAllStructure(req, res, next) {
-  const {campus_id, buildingName, floorName, roomName} = req.query;
+  const {campus_id, filterBuilding, filterFloor, filterRoom, buildingName, floorName} = req.query;
   
-  buildingStructureService.getAllStructure(campus_id, buildingName, floorName, roomName)
+  buildingStructureService.getAllStructure(campus_id, filterBuilding, filterFloor, filterRoom, buildingName, floorName)
       .then(structure => res.json(structure))
       .catch(next);
 }

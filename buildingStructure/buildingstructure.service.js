@@ -4,7 +4,7 @@ const Role = require("_helpers/role");
 
 module.exports = {
   createStructure,
-  getAllStructure
+  getAllStructure,
 };
 
 async function createStructure(params, accountId) {
@@ -135,7 +135,11 @@ async function createStructure(params, accountId) {
 function transformStructureData(structure) {
   return {
     ...structure.toJSON(),
-    fullStructureDetails: `${structure.buildingName || ''} - ${structure.floorName || ''} - ${structure.roomName || ''}`,
+    fullStructureDetails: `${
+      (structure.buildingName && `${structure.buildingName} `) || ""
+    }${(structure.floorName && `- ${structure.floorName} `) || ""}${
+      (structure.roomName && `- ${structure.roomName}`) || ""
+    }`,
   };
 }
 
@@ -154,30 +158,33 @@ async function getStructures(whereClause) {
   return structures.map(transformStructureData);
 }
 
-async function getAllStructure(campus_id = null, buildingName = null, floorName = null, roomName = null ) {
-  const whereClause = { isDeleted: false };
+async function getAllStructure(
+  campus_id = null,
+  filterBuilding = null,
+  filterFloor = null,
+  filterRoom = null,
+  buildingName = null,
+  floorName = null
+) {
+  const whereClause = {isDeleted: false};
 
   // Apply filtering based on the parameters
   if (campus_id) {
     whereClause.campus_id = campus_id;
   }
-  if (buildingName && !floorName && !roomName) {
-    // Get all buildings
+  if (buildingName) {
+    whereClause.buildingName = buildingName;
+  }
+  if (filterBuilding === "true") {
     whereClause.isBuilding = true;
-    whereClause.buildingName = buildingName;
-  } else if (buildingName && floorName && !roomName) {
-    // Get all floors for a specific building
+  } else if (filterFloor === "true") {
     whereClause.isFloor = true;
-    whereClause.buildingName = buildingName;
-    // whereClause.floorName = floorName;
-  } else if (buildingName && floorName && roomName) {
-    // Get all rooms for a specific floor in a building
+  } else if (filterRoom === "true") {
     whereClause.isRoom = true;
-    whereClause.buildingName = buildingName;
-    whereClause.floorName = floorName;
-    whereClause.roomName = roomName;
-  } 
+    if (floorName) {
+      whereClause.floorName = floorName;
+    }
+  }
 
   return await getStructures(whereClause);
 }
-
