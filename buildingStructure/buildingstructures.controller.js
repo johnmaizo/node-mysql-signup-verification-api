@@ -8,7 +8,10 @@ const buildingStructureService = require("./buildingstructure.service");
 
 router.post("/add-structure", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), addStructureSchema, addStructure);
 router.get('/', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllStructure);
-// router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getRoomById);
+router.get('/count', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllStructureCount);
+router.get('/active', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllStructuresActive);
+router.get('/deleted', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllStructuresDeleted);
+router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getStructureById);
 // router.put("/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), updateRoomSchema, updateRoom); 
 
 
@@ -34,10 +37,34 @@ function getAllStructure(req, res, next) {
       .catch(next);
 }
 
+function getAllStructureCount(req, res, next) {
+  const {campus_id, filterBuilding, filterFloor, filterRoom, buildingName, floorName} = req.query;
+  
+  buildingStructureService.getAllStructureCount(campus_id, filterBuilding, filterFloor, filterRoom, buildingName, floorName)
+      .then(structures => res.json(structures))
+      .catch(next);
+}
 
-function getRoomById(req, res, next) {
-  buildingStructureService.getDepartmentById(req.params.id)
-      .then(room => room ? res.json(room) : res.sendStatus(404))
+function getAllStructuresActive(req, res, next) {
+  const {campus_id, filterBuilding, filterFloor, filterRoom, buildingName, floorName} = req.query;
+  
+  buildingStructureService.getAllStructuresActive(campus_id, filterBuilding, filterFloor, filterRoom, buildingName, floorName)
+      .then(structures => res.json(structures))
+      .catch(next);
+}
+
+function getAllStructuresDeleted(req, res, next) {
+  const {campus_id, filterBuilding, filterFloor, filterRoom, buildingName, floorName} = req.query;
+  
+  buildingStructureService.getAllStructuresDeleted(campus_id, filterBuilding, filterFloor, filterRoom, buildingName, floorName)
+      .then(structures => res.json(structures))
+      .catch(next);
+}
+
+
+function getStructureById(req, res, next) {
+  buildingStructureService.getStructureById(req.params.id)
+      .then(structure => structure ? res.json(structure) : res.sendStatus(404))
       .catch(next);
 }
 

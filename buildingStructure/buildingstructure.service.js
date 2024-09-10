@@ -5,6 +5,10 @@ const Role = require("_helpers/role");
 module.exports = {
   createStructure,
   getAllStructure,
+  getAllStructureCount,
+  getAllStructuresActive,
+  getAllStructuresDeleted,
+  getStructureById,
 };
 
 async function createStructure(params, accountId) {
@@ -139,7 +143,7 @@ function transformStructureData(structure) {
       (structure.buildingName && `${structure.buildingName} `) || ""
     }${(structure.floorName && `- ${structure.floorName} `) || ""}${
       (structure.roomName && `- ${structure.roomName}`) || ""
-    }`,
+    }`.trim(),
   };
 }
 
@@ -187,4 +191,114 @@ async function getAllStructure(
   }
 
   return await getStructures(whereClause);
+}
+
+async function getAllStructureCount(
+  campus_id = null,
+  filterBuilding = null,
+  filterFloor = null,
+  filterRoom = null,
+  buildingName = null,
+  floorName = null
+) {
+  const whereClause = {isActive: true, isDeleted: false};
+
+  // Apply filtering based on the parameters
+  if (campus_id) {
+    whereClause.campus_id = campus_id;
+  }
+  if (buildingName) {
+    whereClause.buildingName = buildingName;
+  }
+  if (filterBuilding === "true") {
+    whereClause.isBuilding = true;
+  } else if (filterFloor === "true") {
+    whereClause.isFloor = true;
+  } else if (filterRoom === "true") {
+    whereClause.isRoom = true;
+    if (floorName) {
+      whereClause.floorName = floorName;
+    }
+  }
+
+  return await db.BuildingStructure.count({
+    where: whereClause,
+  });
+}
+
+async function getAllStructuresActive(
+  campus_id = null,
+  filterBuilding = null,
+  filterFloor = null,
+  filterRoom = null,
+  buildingName = null,
+  floorName = null
+) {
+  const whereClause = {isActive: true, isDeleted: false};
+
+  // Apply filtering based on the parameters
+  if (campus_id) {
+    whereClause.campus_id = campus_id;
+  }
+  if (buildingName) {
+    whereClause.buildingName = buildingName;
+  }
+  if (filterBuilding === "true") {
+    whereClause.isBuilding = true;
+  } else if (filterFloor === "true") {
+    whereClause.isFloor = true;
+  } else if (filterRoom === "true") {
+    whereClause.isRoom = true;
+    if (floorName) {
+      whereClause.floorName = floorName;
+    }
+  }
+
+  return await getStructures(whereClause);
+}
+
+async function getAllStructuresDeleted(
+  campus_id = null,
+  filterBuilding = null,
+  filterFloor = null,
+  filterRoom = null,
+  buildingName = null,
+  floorName = null
+) {
+  const whereClause = {isDeleted: true};
+
+  // Apply filtering based on the parameters
+  if (campus_id) {
+    whereClause.campus_id = campus_id;
+  }
+  if (buildingName) {
+    whereClause.buildingName = buildingName;
+  }
+  if (filterBuilding === "true") {
+    whereClause.isBuilding = true;
+  } else if (filterFloor === "true") {
+    whereClause.isFloor = true;
+  } else if (filterRoom === "true") {
+    whereClause.isRoom = true;
+    if (floorName) {
+      whereClause.floorName = floorName;
+    }
+  }
+
+  return await getStructures(whereClause);
+}
+
+async function getStructureById(id) {
+  const structure = await db.BuildingStructure.findByPk(id, {
+    include: [
+      {
+        model: db.Campus,
+        attributes: ["campusName"], // Include only the campus name
+      },
+    ],
+  });
+
+  if (!structure) throw new Error("Building Structure not found");
+
+  return transformStructureData(structure);
 }
