@@ -316,8 +316,19 @@ async function updateStructure(id, params, accountId) {
     if (params.isDeleted && structure.isActive) {
       throw new Error(
         `You must set the Status of "${
-          structure.buildingName || structure.floorName || structure.roomName
-        }" to Inactive before you can delete this structure.`
+          structure.isBuilding
+            ? structure.buildingName
+            : structure.isFloor
+            ? structure.floorName
+            : structure.roomName
+          // structure.buildingName || structure.floorName || structure.roomName
+        }" to Inactive before you can delete this ${
+          structure.isBuilding
+            ? "Building"
+            : structure.isFloor
+            ? "Floor"
+            : "Room"
+        }.`
       );
     }
 
