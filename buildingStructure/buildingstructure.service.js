@@ -154,7 +154,7 @@ async function getStructures(whereClause) {
     include: [
       {
         model: db.Campus,
-        attributes: ["campusName"], // Include only the campus name
+        attributes: ["campusName", "campus_id"], // Include only the campus name
       },
     ],
   });
@@ -293,7 +293,7 @@ async function getStructureById(id) {
     include: [
       {
         model: db.Campus,
-        attributes: ["campusName"], // Include only the campus name
+        attributes: ["campusName", "campus_id"], // Include only the campus name
       },
     ],
   });
