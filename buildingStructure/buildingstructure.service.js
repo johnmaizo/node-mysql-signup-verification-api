@@ -2,6 +2,8 @@ const {Op} = require("sequelize");
 const db = require("_helpers/db");
 const Role = require("_helpers/role");
 
+const deepEqual = require("deep-equal");
+
 module.exports = {
   createStructure,
   getAllStructure,
@@ -9,6 +11,7 @@ module.exports = {
   getAllStructuresActive,
   getAllStructuresDeleted,
   getStructureById,
+  updateStructure,
 };
 
 async function createStructure(params, accountId) {
@@ -301,4 +304,120 @@ async function getStructureById(id) {
   if (!structure) throw new Error("Building Structure not found");
 
   return transformStructureData(structure);
+}
+
+async function updateStructure(id, params, accountId) {
+  const structure = await db.BuildingStructure.findByPk(id);
+
+  if (!structure) throw "Structure not found";
+
+  // Check if the action is only to delete the structure
+  if (params.isDeleted !== undefined) {
+    if (params.isDeleted && structure.isActive) {
+      throw new Error(
+        `You must set the Status of "${
+          structure.buildingName || structure.floorName || structure.roomName
+        }" to Inactive before you can delete this structure.`
+      );
+    }
+
+    Object.assign(structure, {isDeleted: params.isDeleted});
+    await structure.save();
+
+    // Log the update action
+    await db.History.create({
+      action: "update",
+      entity: structure.isBuilding
+        ? "Building"
+        : structure.isFloor
+        ? "Floor"
+        : "Room",
+      entityId: structure.structure_id,
+      changes: params,
+      accountId: accountId,
+    });
+
+    return structure;
+  }
+
+  // Log the original state before update
+  const originalData = {...structure.dataValues};
+
+  // Handle validation based on structure type (Building, Floor, Room)
+  if (structure.isBuilding) {
+    // Check if building name exists
+    const existingBuilding = await db.BuildingStructure.findOne({
+      where: {
+        buildingName: params.buildingName || structure.buildingName,
+        campus_id: structure.campus_id,
+        isBuilding: true,
+        structure_id: {[Op.ne]: id}, // Exclude the current building from this check
+      },
+    });
+
+    if (existingBuilding) {
+      throw `Building "${params.buildingName}" already exists on campus.`;
+    }
+  } else if (structure.isFloor) {
+    // Validate floor
+    const existingFloor = await db.BuildingStructure.findOne({
+      where: {
+        floorName: params.floorName || structure.floorName,
+        buildingName: structure.buildingName,
+        campus_id: structure.campus_id,
+        isFloor: true,
+        structure_id: {[Op.ne]: id}, // Exclude the current floor from this check
+      },
+    });
+
+    if (existingFloor) {
+      throw `Floor "${params.floorName}" already exists in building "${structure.buildingName}".`;
+    }
+  } else if (structure.isRoom) {
+    // Validate room
+    const existingRoom = await db.BuildingStructure.findOne({
+      where: {
+        roomName: params.roomName || structure.roomName,
+        floorName: structure.floorName,
+        buildingName: structure.buildingName,
+        campus_id: structure.campus_id,
+        isRoom: true,
+        structure_id: {[Op.ne]: id}, // Exclude the current room from this check
+      },
+    });
+
+    if (existingRoom) {
+      throw `Room "${params.roomName}" already exists on floor "${structure.floorName}" in building "${structure.buildingName}".`;
+    }
+  }
+
+  // Update structure with new params
+  Object.assign(structure, params);
+  await structure.save();
+
+  // Check if there are actual changes
+  const hasChanges = !deepEqual(originalData, structure.dataValues);
+
+  if (hasChanges) {
+    // Log the update action with changes
+    const changes = {
+      original: originalData,
+      updated: params,
+    };
+
+    // Log the update action
+    await db.History.create({
+      action: "update",
+      entity: structure.isBuilding
+        ? "Building"
+        : structure.isFloor
+        ? "Floor"
+        : "Room",
+      entityId: structure.structure_id,
+      changes: changes,
+      accountId: accountId,
+    });
+  }
+
+  return structure;
 }

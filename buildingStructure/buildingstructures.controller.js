@@ -12,7 +12,7 @@ router.get('/count', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAl
 router.get('/active', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllStructuresActive);
 router.get('/deleted', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllStructuresDeleted);
 router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getStructureById);
-// router.put("/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), updateRoomSchema, updateRoom); 
+router.put("/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), updateBuildingSchema, updateBuilding); 
 
 
 module.exports = router;
@@ -68,13 +68,13 @@ function getStructureById(req, res, next) {
       .catch(next);
 }
 
-function updateRoom(req, res, next) {
+function updateBuilding(req, res, next) {
   buildingStructureService
-    .updateRoom(req.params.id, req.body)
+    .updateStructure(req.params.id, req.body, req.user.id)
     .then(() =>
       res.json({
         message:
-          "Room Updated Successfully.",
+          "Structure Updated Successfully.",
       })
     )
     .catch(next);
@@ -108,14 +108,19 @@ function addStructureSchema(req, res, next) {
 
 
 
-function updateRoomSchema(req, res, next) {
+function updateBuildingSchema(req, res, next) {
   const schema = Joi.object({
-    floorLevel: Joi.string().empty(""),
-    roomNumber: Joi.string().empty(""),
-    building: Joi.string().empty(""),
-    isActive: Joi.boolean().empty(""),
+    isBuilding: Joi.boolean().empty(""),
+    isFloor: Joi.boolean().empty(""),
+    isRoom: Joi.boolean().empty(""),
+
+    buildingName: Joi.string().empty(""),
+    floorName: Joi.string().empty(""),
+    roomName: Joi.string().empty(""),
     
+    isActive: Joi.boolean().empty(""),
     isDeleted: Joi.boolean().empty(""),
   });
+
   validateRequest(req, next, schema);
 }
