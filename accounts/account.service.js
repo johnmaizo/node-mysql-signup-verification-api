@@ -189,8 +189,16 @@ async function getById(id) {
 }
 
 async function create(params, accountId) {
-  // Restrict account creation to specific roles
-  if (![Role.SuperAdmin, Role.Admin, Role.Registrar].includes(params.role)) {
+  // Ensure role is an array and check if it contains "Admin", "SuperAdmin", or "Registrar"
+  const allowedRoles = [Role.SuperAdmin, Role.Admin, Role.Registrar];
+
+  // Convert role to an array if it is not already
+  const roleArray = Array.isArray(params.role) ? params.role : [params.role];
+
+  // Check if any of the allowed roles are present in the role array
+  const hasAllowedRole = roleArray.some((role) => allowedRoles.includes(role));
+
+  if (!hasAllowedRole) {
     throw `Cannot create an account for the role "${params.role}"`;
   }
 
@@ -199,10 +207,8 @@ async function create(params, accountId) {
     throw `Email "${params.email}" is already registered`;
   }
 
-  // Check if role is an array of strings and convert to comma-separated string
-  if (Array.isArray(params.role)) {
-    params.role = params.role.join(", ");
-  }
+  // Convert the role array to a comma-separated string if it's an array
+  params.role = roleArray.join(", ");
 
   const account = new db.Account(params);
   account.verified = Date.now();
@@ -223,10 +229,9 @@ async function create(params, accountId) {
   });
 
   // Retrieve the campus info if the role is not SuperAdmin
-  const campus =
-    account.role !== "SuperAdmin"
-      ? await account.getCampus({attributes: ["campusName", "campus_id"]})
-      : null;
+  const campus = !roleArray.includes("SuperAdmin")
+    ? await account.getCampus({attributes: ["campusName", "campus_id"]})
+    : null;
 
   return basicDetails(account, campus);
 }
