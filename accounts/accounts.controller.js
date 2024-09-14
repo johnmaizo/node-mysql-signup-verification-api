@@ -192,6 +192,14 @@ function getById(req, res, next) {
 }
 
 function createSchema(req, res, next) {
+    const roles = req.body.role;
+    
+    // Check if roles include SuperAdmin, Admin, or Registrar
+    const requirePassword = Array.isArray(roles)
+        ? roles.some(role => [Role.SuperAdmin, Role.Admin, Role.Registrar].includes(role))
+        : [Role.SuperAdmin, Role.Admin, Role.Registrar].includes(roles);
+
+    // Define the schema with conditional password and confirmPassword fields
     const schema = Joi.object({
         title: Joi.string().required(),
         firstName: Joi.string().required(),
@@ -203,11 +211,10 @@ function createSchema(req, res, next) {
         gender: Joi.string().required(),
 
         email: Joi.string().email().required(),
-        password: Joi.string().min(6).required(),
-        confirmPassword: Joi.string().valid(Joi.ref('password')).required(),
+        password: requirePassword ? Joi.string().min(6).required() : Joi.any().strip(),
+        confirmPassword: requirePassword ? Joi.string().valid(Joi.ref('password')).required() : Joi.any().strip(),
+
         role: Joi.alternatives().try(
-            // Joi.string().valid(Role.Admin, Role.SuperAdmin, Role.Registart, Role.DataCenter, Role.Staff, Ro),
-            // Joi.array().items(Joi.string().valid(Role.Admin, Role.Staff, Role.User, Role.Student))
             Joi.string(),
             Joi.array().items(Joi.string())
         ).required(),
@@ -241,8 +248,6 @@ function updateSchema(req, res, next) {
         confirmPassword: Joi.string().valid(Joi.ref('password')).empty(''),
 
         role: Joi.alternatives().try(
-            // Joi.string().valid(Role.Admin, Role.SuperAdmin, Role.Registart, Role.DataCenter, Role.Staff, Ro),
-            // Joi.array().items(Joi.string().valid(Role.Admin, Role.Staff, Role.User, Role.Student))
             Joi.string(),
             Joi.array().items(Joi.string())
         ).empty(''),

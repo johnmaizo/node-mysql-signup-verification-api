@@ -27,7 +27,7 @@ function model(sequelize) {
     roleType: {type: DataTypes.STRING, allowNull: true},
 
     email: {type: DataTypes.STRING, allowNull: false},
-    passwordHash: {type: DataTypes.STRING, allowNull: false},
+    passwordHash: {type: DataTypes.STRING, allowNull: true}, // allowNull to 'true' for not admins, registrars
     title: {type: DataTypes.STRING, allowNull: false},
     firstName: {type: DataTypes.STRING, allowNull: false},
     middleName: {type: DataTypes.STRING, allowNull: true},

@@ -195,13 +195,6 @@ async function create(params, accountId) {
   // Convert role to an array if it is not already
   const roleArray = Array.isArray(params.role) ? params.role : [params.role];
 
-  // Check if any of the allowed roles are present in the role array
-  const hasAllowedRole = roleArray.some((role) => allowedRoles.includes(role));
-
-  if (!hasAllowedRole) {
-    throw `Cannot create an account for the role "${params.role}"`;
-  }
-
   // Validate if email is already registered
   if (await db.Account.findOne({where: {email: params.email}})) {
     throw `Email "${params.email}" is already registered`;
@@ -213,8 +206,12 @@ async function create(params, accountId) {
   const account = new db.Account(params);
   account.verified = Date.now();
 
-  // Hash password
-  account.passwordHash = await hash(params.password);
+  // Set passwordHash to null unless role includes SuperAdmin, Admin, or Registrar
+  if (roleArray.some((role) => allowedRoles.includes(role))) {
+    account.passwordHash = await hash(params.password);
+  } else {
+    account.passwordHash = null; // No password for other roles
+  }
 
   // Save account
   await account.save();
