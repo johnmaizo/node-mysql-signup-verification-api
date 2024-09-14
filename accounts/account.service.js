@@ -314,8 +314,10 @@ function basicDetails(account, campus) {
     id,
     title,
     firstName,
+    middleName, // ! remove if necessary
     lastName,
     email,
+    contactNumber, // ! remove if necessary
     role,
     created,
     updated,
@@ -326,8 +328,10 @@ function basicDetails(account, campus) {
     id,
     title,
     firstName,
+    middleName,
     lastName,
     email,
+    contactNumber,
     role,
     created: created ? created.toISOString() : null,
     updated: updated ? updated.toISOString() : null,
