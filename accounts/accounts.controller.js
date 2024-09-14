@@ -191,6 +191,16 @@ function getById(req, res, next) {
         .catch(next);
 }
 
+    /**
+     * Schema for creating a new user account. The schema includes fields for
+     * title, first name, middle name, last name, address, contact number, gender,
+     * email, password, confirm password, role, and campus ID. The password and
+     * confirm password fields are only required if the role is SuperAdmin,
+     * Admin, or Registrar.
+     * @param {Object} req - The express request object
+     * @param {Object} res - The express response object
+     * @param {Function} next - The next middleware function
+     */
 function createSchema(req, res, next) {
     const roles = req.body.role;
     
@@ -231,21 +241,34 @@ function create(req, res, next) {
         .catch(next);
 }
 
+    /**
+     * Schema for updating an existing account
+     * @function
+     * @param {Object} req - The Express request object
+     * @param {Object} res - The Express response object
+     * @param {Function} next - The next middleware function
+     */
 function updateSchema(req, res, next) {
+    const roles = req.body.role;
+
+    // Check if roles include SuperAdmin, Admin, or Registrar
+    const requirePassword = Array.isArray(roles)
+        ? roles.some(role => [Role.SuperAdmin, Role.Admin, Role.Registrar].includes(role))
+        : [Role.SuperAdmin, Role.Admin, Role.Registrar].includes(roles);
+
     const schemaRules = {
         title: Joi.string().empty(''),
         firstName: Joi.string().empty(''),
-        middleName: Joi.string().empty(""),
+        middleName: Joi.string().empty(''),
         lastName: Joi.string().empty(''),
 
         address: Joi.string().empty(''),
         contactNumber: Joi.string().empty(''),
         gender: Joi.string().empty(''),
 
-
         email: Joi.string().email().empty(''),
-        password: Joi.string().min(6).empty(''),
-        confirmPassword: Joi.string().valid(Joi.ref('password')).empty(''),
+        password: requirePassword ? Joi.string().min(6).empty('') : Joi.any().strip(),
+        confirmPassword: requirePassword ? Joi.string().valid(Joi.ref('password')).empty('') : Joi.any().strip(),
 
         role: Joi.alternatives().try(
             Joi.string(),
