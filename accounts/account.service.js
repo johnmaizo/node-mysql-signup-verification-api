@@ -27,8 +27,16 @@ async function authenticate({email, password, ipAddress}) {
   // Find the account without any associations first
   const account = await db.Account.scope("withHash").findOne({where: {email}});
 
+  // Check if account exists and if passwordHash is present
+  if (!account) {
+    throw "Email or password is incorrect";
+  }
+
+  if (!account.passwordHash) {
+    throw "Account password is not set. Please contact support.";
+  }
+
   if (
-    !account ||
     !account.isVerified ||
     !(await bcrypt.compare(password, account.passwordHash))
   ) {
