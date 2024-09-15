@@ -41,7 +41,7 @@ async function getMe(req, res, next) {
 
 function authenticateSchema(req, res, next) {
     const schema = Joi.object({
-        email: Joi.string().required(),
+        email: Joi.string().email().required(),
         password: Joi.string().required()
     });
     validateRequest(req, next, schema);
@@ -213,7 +213,7 @@ function createSchema(req, res, next) {
     const schema = Joi.object({
         title: Joi.string().required(),
         firstName: Joi.string().required(),
-        middleName: Joi.string().empty(""),
+        middleName: Joi.string().allow(null, '').optional(),
         lastName: Joi.string().required(),
 
         address: Joi.string().required(),
@@ -259,7 +259,7 @@ function updateSchema(req, res, next) {
     const schemaRules = {
         title: Joi.string().empty(''),
         firstName: Joi.string().empty(''),
-        middleName: Joi.string().empty(''),
+        middleName: Joi.string().allow(null, '').optional(),
         lastName: Joi.string().empty(''),
 
         address: Joi.string().empty(''),
