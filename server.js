@@ -18,7 +18,7 @@ app.use(
   cors({origin: (origin, callback) => callback(null, true), credentials: true})
 );
 
-app.use("/external", require("./_external/externals.controller"))
+app.use("/external", require("./_external/externals.controller")) // ! Externals
 
 // api routes
 // ! Accounts
