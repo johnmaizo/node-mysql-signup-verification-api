@@ -16,14 +16,14 @@ async function setupAccounts(db) {
 
     // SuperAdmin Setup
     const superAdminUser = await db.Account.findOne({
-      where: {email: "admin@gmail.com"},
+      where: {email: "superadmin@gmail.com"},
     });
 
     if (!superAdminUser) {
       const superAdminPasswordHash = await bcrypt.hash("aw12345", 10);
 
       const newSuperAdmin = new db.Account({
-        email: "admin@gmail.com",
+        email: "superadmin@gmail.com",
         passwordHash: superAdminPasswordHash,
         role: Role.SuperAdmin,
         title: "Super Administrator",
