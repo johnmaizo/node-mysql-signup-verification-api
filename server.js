@@ -48,6 +48,9 @@ app.use("/program-courses", require("./program_course/program_courses.controller
 // ! Building Structure
 app.use("/building-structure", require("./buildingStructure/buildingstructures.controller"));
 
+// ! Enrollment Student
+app.use("/enrollment", require("./enrollment/enrollments.controller"));
+
 // swagger docs route
 app.use("/api-docs", require("_helpers/swagger"));
 

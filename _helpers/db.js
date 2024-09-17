@@ -58,6 +58,13 @@ async function initialize() {
   );
   db.StudentSubject = require("../models/student_subject.model")(sequelize);
 
+
+
+  // ! Simple Official Student Basic
+  db.StudentOfficalBasic = require("../models/student_official_basic.model")(sequelize);
+
+
+  
   // define relationships using the imported function
   defineRelationships(db);
 

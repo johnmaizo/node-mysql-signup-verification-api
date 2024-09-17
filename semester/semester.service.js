@@ -103,6 +103,7 @@ function transformSemesterData(semester) {
     fullSemesterNameWithCampus:
       `${semester.schoolYear} - ${semester.semesterName} - ${semester.campus.campusName}` ||
       "fullSemesterNameWithCampus not found",
+    campusName: semester.campus.campusName || "campusName not found",
   };
 }
 
