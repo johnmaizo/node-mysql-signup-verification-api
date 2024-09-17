@@ -10,6 +10,7 @@ const enrollmentService = require("./enrollment.service");
 // router.post("/enroll-student", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), enrollStudent);
 router.post("/enroll-student", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), enrollStudent);
 router.get('/', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllStudentsOfficial);
+router.get('/count', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllStudentOfficialCount);
 router.get('/active', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllStudentsOfficialActive);
 router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getStudentById);
 router.put("/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), updateStudentSchema, updateStudent); 
@@ -38,6 +39,14 @@ function getAllStudentsOfficial(req, res, next) {
   const { campusName } = req.query;
   enrollmentService.getAllStudentsOfficial(campusName)
       .then(students => res.json(students))
+      .catch(next);
+}
+
+function getAllStudentOfficialCount(req, res, next) {
+  const { campusName } = req.query;
+  
+  enrollmentService.getAllStudentOfficialCount(campusName)
+      .then(count => res.json(count))
       .catch(next);
 }
 

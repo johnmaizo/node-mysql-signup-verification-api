@@ -11,6 +11,7 @@ module.exports = {
   enrollStudent,
   getAllStudentsOfficial,
   getAllStudentsOfficalActive,
+  getAllStudentOfficialCount,
 
   getStudentById,
   updateStudent,
@@ -227,7 +228,6 @@ async function generateStudentId(programCode, campusName) {
     order: [["createdAt", "DESC"]],
   });
 
-
   const lastStudent = await db.StudentOfficalBasic.findOne({
     where: {
       student_id: {
@@ -248,48 +248,59 @@ async function generateStudentId(programCode, campusName) {
   }
 }
 
-async function getAllStudentsOfficial(campusName) {
-  if (!campusName) {
-    throw new Error("Campus name is required");
+async function getAllStudentsOfficial(campusName = null) {
+  let campus;
+
+  // If campusName is provided, fetch the campus based on the campus name
+  if (campusName) {
+    campus = await db.Campus.findOne({
+      where: {campusName},
+    });
+
+    // Check if the campus exists
+    if (!campus) {
+      throw new Error("Campus not found");
+    }
   }
 
-  // Fetch the campus based on the campus name
-  const campus = await db.Campus.findOne({where: {campusName: campusName}});
-
-  // Check if campus exists
-  if (!campus) {
-    throw new Error("Campus not found");
-  }
-
-  // Retrieve all students from the current campus
+  // Retrieve students based on the provided campus or all students if campusName is null
   const students = await db.StudentOfficalBasic.findAll({
     where: {
-      campus_id: campus.campus_id, // Check for students based on campus_id
+      // Only filter by campus_id if a campus is found (i.e., campusName was provided)
+      ...(campus ? {campus_id: campus.campus_id} : {}),
       student_id: {
-        [Op.like]: `${new Date().getFullYear()}%`, // Adjust if needed to get all students for the current year
+        [Op.like]: `${new Date().getFullYear()}%`, // Adjust this condition as per your filtering needs
       },
     },
+    include: [
+      {
+        model: db.Campus,
+        attributes: ["campusName"], // Include only the campus name
+      },
+    ],
   });
 
-  // If no students found, return an empty array
+  // If no students are found, return an empty array
   if (!students || students.length === 0) {
     return [];
   }
 
-  // Find all departments related to the given campus name
+  // Retrieve departments based on the campus or all departments if no campus is specified
   const departmentsOnCampus = await db.Department.findAll({
     include: [
       {
         model: db.Campus,
-        where: {
-          campusName: campusName,
-        },
+        where: campusName ? {campusName} : undefined, // Filter departments by campus if provided
       },
     ],
   });
 
   if (!departmentsOnCampus || departmentsOnCampus.length === 0) {
-    throw new Error(`No departments found for campus "${campusName}"`);
+    throw new Error(
+      campusName
+        ? `No departments found for campus "${campusName}"`
+        : "No departments found"
+    );
   }
 
   // Map the department index in the student_id back to the real department_id
@@ -315,11 +326,42 @@ async function getAllStudentsOfficial(campusName) {
       ...student.toJSON(), // Convert Sequelize object to plain object
       department_id: department.department_id,
       departmentName: department.departmentName,
+      campusName: student ? student.campus.campusName : null,
     };
   });
 
   return studentsWithDepartment;
 }
+
+async function getAllStudentOfficialCount(campusName = null) {
+  let campus;
+
+  // If campusName is provided, fetch the campus based on the campus name
+  if (campusName) {
+    campus = await db.Campus.findOne({
+      where: { campusName },
+    });
+
+    // Check if the campus exists
+    if (!campus) {
+      throw new Error("Campus not found");
+    }
+  }
+
+  // Count the students based on the provided campus or all students if campusName is null
+  const studentCount = await db.StudentOfficalBasic.count({
+    where: {
+      // Only filter by campus_id if a campus is found (i.e., campusName was provided)
+      ...(campus ? { campus_id: campus.campus_id } : {}),
+      student_id: {
+        [Op.like]: `${new Date().getFullYear()}%`, // Adjust this condition as per your filtering needs
+      },
+    },
+  });
+
+  return studentCount;
+}
+
 
 async function getAllStudentsOfficalActive() {
   const students = await db.StudentOfficalBasic.count({
