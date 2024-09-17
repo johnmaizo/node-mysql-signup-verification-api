@@ -12,6 +12,8 @@ module.exports = {
   getAllStudentsOfficial,
   getAllStudentsOfficalActive,
   getAllStudentOfficialCount,
+  getStudentStatisticsForChart,
+  getChartData,
 
   getStudentById,
   updateStudent,
@@ -339,7 +341,7 @@ async function getAllStudentOfficialCount(campusName = null) {
   // If campusName is provided, fetch the campus based on the campus name
   if (campusName) {
     campus = await db.Campus.findOne({
-      where: { campusName },
+      where: {campusName},
     });
 
     // Check if the campus exists
@@ -352,7 +354,7 @@ async function getAllStudentOfficialCount(campusName = null) {
   const studentCount = await db.StudentOfficalBasic.count({
     where: {
       // Only filter by campus_id if a campus is found (i.e., campusName was provided)
-      ...(campus ? { campus_id: campus.campus_id } : {}),
+      ...(campus ? {campus_id: campus.campus_id} : {}),
       student_id: {
         [Op.like]: `${new Date().getFullYear()}%`, // Adjust this condition as per your filtering needs
       },
@@ -362,6 +364,185 @@ async function getAllStudentOfficialCount(campusName = null) {
   return studentCount;
 }
 
+async function getStudentStatisticsForChart(campusName = null) {
+  let campus;
+
+  // Fetch campus if campusName is provided
+  if (campusName) {
+    campus = await db.Campus.findOne({
+      where: {campusName},
+    });
+
+    if (!campus) {
+      throw new Error("Campus not found");
+    }
+  }
+
+  // Fetch all departments
+  const departments = await db.Department.findAll({
+    where: {
+      ...(campus ? {campus_id: campus.campus_id} : {}),
+    },
+  });
+
+  if (!departments || departments.length === 0) {
+    throw new Error("No departments found");
+  }
+
+  // Initialize statistics arrays
+  const labels = [];
+  const series = [];
+  const colors = [];
+  const colorPalette = ["#3C50E0", "#6577F3", "#8FD0EF", "#0FADCF"];
+  const totalStudentsCount = await db.StudentOfficalBasic.count({
+    where: {
+      ...(campus ? {campus_id: campus.campus_id} : {}),
+    },
+  });
+
+  if (totalStudentsCount === 0) {
+    throw new Error("No students found");
+  }
+
+  // Iterate through each department
+  for (let i = 0; i < departments.length; i++) {
+    const department = departments[i];
+
+    // Count the students in the current department
+    const studentCount = await db.StudentOfficalBasic.count({
+      where: {
+        department_id: department.department_id,
+        ...(campus ? {campus_id: campus.campus_id} : {}),
+      },
+    });
+
+    // Push department name to labels
+    labels.push(department.departmentName);
+
+    // Push the student count to series
+    series.push(studentCount);
+
+    // Generate unique color based on the palette
+    colors.push(colorPalette[i % colorPalette.length]); // Rotate over the colors if needed
+  }
+
+  // Calculate percentage for each department
+  const percent = series.map((count) =>
+    ((count / totalStudentsCount) * 100).toFixed(2)
+  );
+
+  // Return the data for ApexCharts
+  return {
+    labels, // Department names
+    series, // Number of students in each department
+    colors, // Unique colors for each department
+    percent, // Percentage of total students in each department
+  };
+}
+
+// Helper function to generate new hex colors similar to base colors
+function generateColor(baseColor) {
+  // This function lightens the base color by a factor to generate a similar color
+  const factor = 0.1; // Adjust the factor to control how similar the new color is
+  let color = baseColor.replace("#", "");
+
+  let r = parseInt(color.substring(0, 2), 16);
+  let g = parseInt(color.substring(2, 4), 16);
+  let b = parseInt(color.substring(4, 6), 16);
+
+  r = Math.min(255, Math.floor(r + (255 - r) * factor));
+  g = Math.min(255, Math.floor(g + (255 - g) * factor));
+  b = Math.min(255, Math.floor(b + (255 - b) * factor));
+
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`.toLocaleUpperCase();
+}
+
+async function getChartData(campusName = null) {
+  let campus;
+
+  // If campusName is provided, fetch the campus based on the campus name
+  if (campusName) {
+    campus = await db.Campus.findOne({
+      where: {campusName},
+    });
+
+    // Check if the campus exists
+    if (!campus) {
+      throw new Error(`Campus "${campusName}" not found`);
+    }
+  }
+
+  // Fetch all departments that belong to the specified campus or all campuses
+  const departments = await db.Department.findAll({
+    include: [
+      {
+        model: db.Campus,
+        where: campus ? {campusName} : undefined, // Filter departments by campus if provided
+        attributes: ["campusName"],
+      },
+    ],
+  });
+
+  if (!departments || departments.length === 0) {
+    throw new Error(
+      campusName
+        ? `No departments found for campus "${campusName}"`
+        : "No departments found"
+    );
+  }
+
+  // Fetch all students filtered by campus or all students if no campusName is provided
+  const students = await getAllStudentsOfficial(campusName);
+
+  if (!students || students.length === 0) {
+    throw new Error(
+      campusName
+        ? `No students found for campus "${campusName}"`
+        : "No students found"
+    );
+  }
+
+  const baseColors = ["#3C50E0", "#6577F3", "#8FD0EF", "#0FADCF"];
+  const chartData = {
+    colors: [],
+    labels: [],
+    series: [],
+    percentages: [],
+  };
+
+  let totalStudents = students.length;
+
+  departments.forEach((department, index) => {
+    // Filter students by department
+    const studentsInDept = students.filter(
+      (student) => student.departmentName === department.departmentName
+    );
+
+    const studentCount = studentsInDept.length;
+    const percentage = ((studentCount / totalStudents) * 100).toFixed(2); // Calculate percentage
+
+    // Add data to chart arrays
+    chartData.labels.push({
+      departmentCode: department.departmentCode, // Assuming departmentCode exists
+      departmentName: department.departmentName,
+      campusName: department.campus.campusName,
+    });
+    chartData.series.push(studentCount);
+    chartData.percentages.push(percentage);
+
+    // Generate new color if the index exceeds the baseColors length
+    // if (index < baseColors.length) {
+    //   chartData.colors.push(baseColors[index]);
+    // } else {
+    //   const newColor = generateColor(baseColors[index % baseColors.length]);
+    //   chartData.colors.push(newColor);
+    // }
+    const newColor = generateColor(baseColors[index % baseColors.length]);
+    chartData.colors.push(newColor);
+  });
+
+  return chartData;
+}
 
 async function getAllStudentsOfficalActive() {
   const students = await db.StudentOfficalBasic.count({
