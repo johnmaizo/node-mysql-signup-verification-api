@@ -31,6 +31,7 @@ async function InsertSampleData(db) {
       { campus_id: campuses[1].campus_id, departmentCode: "CBM", departmentName: "College of Business and Management", departmentDean: "test" },
       { campus_id: campuses[0].campus_id, departmentCode: "CEA", departmentName: "College of Education and Arts", departmentDean: "Dr. Johner D. Montegrande" },
       { campus_id: campuses[0].campus_id, departmentCode: "COE", departmentName: "College of Engineering", departmentDean: "Dr. Nimfa Ramirez" },
+      { campus_id: campuses[1].campus_id, departmentCode: "CEA", departmentName: "College of Education and Arts", departmentDean: "test" },
     ]);
 
     // Insert sample programs
