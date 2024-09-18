@@ -2,8 +2,7 @@ const {Op, where} = require("sequelize");
 const db = require("_helpers/db");
 const Role = require("_helpers/role");
 
-// const axios = require("axios");
-const axios = require("axios").default;
+const axios = require("axios");
 
 require("dotenv").config();
 
