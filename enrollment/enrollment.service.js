@@ -440,21 +440,26 @@ async function getStudentStatisticsForChart(campusName = null) {
   };
 }
 
-// Helper function to generate new hex colors similar to base colors
 function generateColor(baseColor) {
-  // This function lightens the base color by a factor to generate a similar color
-  const factor = 0.1; // Adjust the factor to control how similar the new color is
   let color = baseColor.replace("#", "");
 
   let r = parseInt(color.substring(0, 2), 16);
   let g = parseInt(color.substring(2, 4), 16);
   let b = parseInt(color.substring(4, 6), 16);
 
-  r = Math.min(255, Math.floor(r + (255 - r) * factor));
-  g = Math.min(255, Math.floor(g + (255 - g) * factor));
-  b = Math.min(255, Math.floor(b + (255 - b) * factor));
+  // Introduce randomness to each channel to generate a distinct color
+  r = Math.min(255, Math.max(0, r + Math.floor(Math.random() * 100 - 50))); // Random variation within ±50
+  g = Math.min(255, Math.max(0, g + Math.floor(Math.random() * 100 - 50)));
+  b = Math.min(255, Math.max(0, b + Math.floor(Math.random() * 100 - 50)));
 
-  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`.toLocaleUpperCase();
+  // Ensure the new color is not too close to grayscale
+  if (Math.abs(r - g) < 30 && Math.abs(g - b) < 30 && Math.abs(b - r) < 30) {
+    // Shift one channel drastically if too close to grayscale
+    r = (r + 100) % 255;
+  }
+
+  // Return the new color in hexadecimal format
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`.toUpperCase();
 }
 
 async function getChartData(campusName = null) {
@@ -530,19 +535,28 @@ async function getChartData(campusName = null) {
     chartData.series.push(studentCount);
     chartData.percentages.push(percentage);
 
-    // Generate new color if the index exceeds the baseColors length
+    const newColor = generateColor(baseColors[index % baseColors.length]);
+    chartData.colors.push(newColor);
+    
+    // ! Generate new color if the index exceeds the baseColors length
     // if (index < baseColors.length) {
     //   chartData.colors.push(baseColors[index]);
     // } else {
     //   const newColor = generateColor(baseColors[index % baseColors.length]);
     //   chartData.colors.push(newColor);
     // }
-    const newColor = generateColor(baseColors[index % baseColors.length]);
-    chartData.colors.push(newColor);
   });
 
   return chartData;
 }
+
+// Generate new color if the index exceeds the baseColors length
+// if (index < baseColors.length) {
+//   chartData.colors.push(baseColors[index]);
+// } else {
+//   const newColor = generateColor(baseColors[index % baseColors.length]);
+//   chartData.colors.push(newColor);
+// }
 
 async function getAllStudentsOfficalActive() {
   const students = await db.StudentOfficalBasic.count({
