@@ -66,6 +66,7 @@ function transformDepartmentData(department) {
     fullDepartmentNameWithCampus:
       `${department.departmentCode} - ${department.departmentName} - ${department.campus.campusName}` ||
       "fullDepartmentNameWithCampus not found",
+    campusName: department.campus.campusName || "campusName not found",
   };
 }
 
