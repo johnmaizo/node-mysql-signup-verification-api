@@ -529,7 +529,8 @@ async function getChartData(campusName = null) {
     chartData.labels.push({
       departmentCode: department.departmentCode, // Assuming departmentCode exists
       departmentName: department.departmentName,
-      campusName: department.campus.campusName,
+      departmentCodeWithCampusName: `${department.departmentCode} (${department.campus.campusName})`,
+      departmentNameWithCampusName: `${department.departmentName} (${department.campus.campusName})`,
     });
     chartData.series.push(studentCount);
     chartData.percentages.push(percentage);
