@@ -442,14 +442,23 @@ async function getStudentStatisticsForChart(campusName = null) {
 function generateColor(baseColor) {
   let color = baseColor.replace("#", "");
 
-  let r = parseInt(color.substring(0, 2), 16);
-  let g = parseInt(color.substring(2, 4), 16);
-  let b = parseInt(color.substring(4, 6), 16);
+  let dct = 30; // Distance to color threshold
+  let darknessFactor = 0.25;
 
-  // Introduce randomness to each channel to generate a distinct color
-  r = Math.min(255, Math.max(0, r + Math.floor(Math.random() * 100 - 50))); // Random variation within ±50
-  g = Math.min(255, Math.max(0, g + Math.floor(Math.random() * 100 - 50)));
-  b = Math.min(255, Math.max(0, b + Math.floor(Math.random() * 100 - 50)));
+  // Generate random base color channels (r, g, b)
+  let r = Math.floor(Math.random() * 256);
+  let g = Math.floor(Math.random() * 256);
+  let b = Math.floor(Math.random() * 256);
+
+  // Introduce randomness to each channel to generate a dct color
+  r = Math.min(255, Math.max(0, r + Math.floor(Math.random() * 100 - dct))); // Random variation within ±dct
+  g = Math.min(255, Math.max(0, g + Math.floor(Math.random() * 100 - dct)));
+  b = Math.min(255, Math.max(0, b + Math.floor(Math.random() * 100 - dct)));
+
+  // Adjust the color based on the darkness factor
+  r = Math.floor(r * (1 - darknessFactor));
+  g = Math.floor(g * (1 - darknessFactor));
+  b = Math.floor(b * (1 - darknessFactor));
 
   // Ensure the new color is not too close to grayscale
   if (Math.abs(r - g) < 30 && Math.abs(g - b) < 30 && Math.abs(b - r) < 30) {
@@ -458,7 +467,9 @@ function generateColor(baseColor) {
   }
 
   // Return the new color in hexadecimal format
-  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`.toUpperCase();
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b)
+    .toString(16)
+    .slice(1)}`.toUpperCase();
 }
 
 async function getChartData(campusName = null) {
@@ -537,7 +548,7 @@ async function getChartData(campusName = null) {
 
     const newColor = generateColor(baseColors[index % baseColors.length]);
     chartData.colors.push(newColor);
-    
+
     // ! Generate new color if the index exceeds the baseColors length
     // if (index < baseColors.length) {
     //   chartData.colors.push(baseColors[index]);
