@@ -149,7 +149,7 @@ async function enrollStudent(params, accountId) {
   });
 }
 
-async function generateStudentId(programCode, campusName) {
+async function generateStudentIdWithDepartmentCode(programCode, campusName) {
   if (!campusName) {
     throw new Error("Campus name is required");
   }
@@ -245,6 +245,42 @@ async function generateStudentId(programCode, campusName) {
     return `${currentYear}-${departmentCode}-${newIdNumber}`;
   } else {
     return `${currentYear}-${departmentCode}-0001`;
+  }
+}
+
+async function generateStudentId(campusName) {
+  if (!campusName) {
+    throw new Error("Campus name is required");
+  }
+
+  // Fetch the campus based on the campus name
+  const campus = await db.Campus.findOne({where: {campusName: campusName}});
+
+  // Check if campus exists
+  if (!campus) {
+    throw new Error("Campus not found");
+  }
+
+  const currentYear = new Date().getFullYear().toString();
+
+  // Find the last student ID for the campus and the current year
+  const lastStudent = await db.StudentOfficalBasic.findOne({
+    where: {
+      student_id: {
+        [Op.like]: `${currentYear}-%`,
+      },
+      campus_id: campus.campus_id, // Ensures it matches the campus
+    },
+    order: [["createdAt", "DESC"]],
+  });
+
+  // If a student exists, increment the last student ID, otherwise start from 00001
+  if (lastStudent) {
+    const lastId = lastStudent.student_id.split("-")[1]; // Get the numeric part of the ID
+    const newIdNumber = (parseInt(lastId) + 1).toString().padStart(5, "0"); // 5 digits for the numeric part
+    return `${currentYear}-${newIdNumber}`;
+  } else {
+    return `${currentYear}-00001`; // Start from 00001 if no previous student exists
   }
 }
 
