@@ -100,6 +100,7 @@ async function enrollStudent(params, accountId) {
     {
       student_id: studentparams.student_id,
       applicant_id: params.applicant_id,
+      pswrd: studentparams.student_id,
     },
     {
       headers: {
@@ -274,13 +275,13 @@ async function generateStudentId(campusName) {
     order: [["createdAt", "DESC"]],
   });
 
-  // If a student exists, increment the last student ID, otherwise start from 00001
+  // If a student exists, increment the last student ID,  otherwise start from 00001
   if (lastStudent) {
     const lastId = lastStudent.student_id.split("-")[1]; // Get the numeric part of the ID
-    const newIdNumber = (parseInt(lastId) + 1).toString().padStart(4, "0"); // ! Change to 5 later 
+    const newIdNumber = (parseInt(lastId) + 1).toString().padStart(4, "0"); // ! Change to 5 later
     return `${currentYear}-${newIdNumber}`;
   } else {
-    return `${currentYear}-00001`; // Start from 00001 if no previous student exists
+    return `${currentYear}-0001`; // ! Change to 5 later
   }
 }
 
