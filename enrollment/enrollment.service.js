@@ -90,7 +90,7 @@ async function enrollStudent(params, accountId) {
 
   // Generate student ID
   studentparams.student_id = await generateStudentId(
-    studentparams.program,
+    // studentparams.program,
     campus_name
   );
 
@@ -277,7 +277,7 @@ async function generateStudentId(campusName) {
   // If a student exists, increment the last student ID, otherwise start from 00001
   if (lastStudent) {
     const lastId = lastStudent.student_id.split("-")[1]; // Get the numeric part of the ID
-    const newIdNumber = (parseInt(lastId) + 1).toString().padStart(5, "0"); // 5 digits for the numeric part
+    const newIdNumber = (parseInt(lastId) + 1).toString().padStart(4, "0"); // ! Change to 5 later 
     return `${currentYear}-${newIdNumber}`;
   } else {
     return `${currentYear}-00001`; // Start from 00001 if no previous student exists
