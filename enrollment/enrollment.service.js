@@ -499,22 +499,38 @@ async function getChartData(campusName = null) {
   });
 
   if (!departments || departments.length === 0) {
-    throw new Error(
-      campusName
-        ? `No departments found for campus "${campusName}"`
-        : "No departments found"
-    );
+    return {
+      colors: ["#FF0000"],
+      labels: [
+        {
+          departmentCode: "None",
+          departmentCodeWithCampusName: "waley",
+          departmentName: "Wala",
+          departmentNameWithCampusName: "ambot",
+        },
+      ],
+      series: [1],
+      percentages: ["0"],
+    };
   }
 
   // Fetch all students filtered by campus or all students if no campusName is provided
   const students = await getAllStudentsOfficial(campusName);
 
   if (!students || students.length === 0) {
-    throw new Error(
-      campusName
-        ? `No students found for campus "${campusName}"`
-        : "No students found"
-    );
+    return {
+      colors: ["#FF0000"],
+      labels: [
+        {
+          departmentCode: "None",
+          departmentCodeWithCampusName: "waley",
+          departmentName: "Wala",
+          departmentNameWithCampusName: "ambot",
+        },
+      ],
+      series: [1],
+      percentages: ["0"],
+    };
   }
 
   const baseColors = ["#3C50E0", "#6577F3", "#8FD0EF", "#0FADCF"];
