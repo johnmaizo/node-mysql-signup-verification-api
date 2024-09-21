@@ -11,7 +11,6 @@ module.exports = {
   getAllStudentsOfficial,
   getAllStudentsOfficalActive,
   getAllStudentOfficialCount,
-  getStudentStatisticsForChart,
   getChartData,
 
   getStudentById,
@@ -361,82 +360,6 @@ async function getAllStudentOfficialCount(campusName = null) {
   });
 
   return studentCount;
-}
-
-async function getStudentStatisticsForChart(campusName = null) {
-  let campus;
-
-  // Fetch campus if campusName is provided
-  if (campusName) {
-    campus = await db.Campus.findOne({
-      where: {campusName},
-    });
-
-    if (!campus) {
-      throw new Error("Campus not found");
-    }
-  }
-
-  // Fetch all departments
-  const departments = await db.Department.findAll({
-    where: {
-      ...(campus ? {campus_id: campus.campus_id} : {}),
-    },
-  });
-
-  if (!departments || departments.length === 0) {
-    throw new Error("No departments found");
-  }
-
-  // Initialize statistics arrays
-  const labels = [];
-  const series = [];
-  const colors = [];
-  const colorPalette = ["#3C50E0", "#6577F3", "#8FD0EF", "#0FADCF"];
-  const totalStudentsCount = await db.StudentOfficalBasic.count({
-    where: {
-      ...(campus ? {campus_id: campus.campus_id} : {}),
-    },
-  });
-
-  if (totalStudentsCount === 0) {
-    throw new Error("No students found");
-  }
-
-  // Iterate through each department
-  for (let i = 0; i < departments.length; i++) {
-    const department = departments[i];
-
-    // Count the students in the current department
-    const studentCount = await db.StudentOfficalBasic.count({
-      where: {
-        department_id: department.department_id,
-        ...(campus ? {campus_id: campus.campus_id} : {}),
-      },
-    });
-
-    // Push department name to labels
-    labels.push(department.departmentName);
-
-    // Push the student count to series
-    series.push(studentCount);
-
-    // Generate unique color based on the palette
-    colors.push(colorPalette[i % colorPalette.length]); // Rotate over the colors if needed
-  }
-
-  // Calculate percentage for each department
-  const percent = series.map((count) =>
-    ((count / totalStudentsCount) * 100).toFixed(2)
-  );
-
-  // Return the data for ApexCharts
-  return {
-    labels, // Department names
-    series, // Number of students in each department
-    colors, // Unique colors for each department
-    percent, // Percentage of total students in each department
-  };
 }
 
 function generateColor(baseColor) {
