@@ -116,6 +116,12 @@ function defineRelationships(db) {
   // ! Campus -> StudentOfficalBasic
   db.Campus.hasMany(db.StudentOfficalBasic, {foreignKey: "campus_id"});
   db.StudentOfficalBasic.belongsTo(db.Campus, {foreignKey: "campus_id"});
+
+  // ! Department -> Course Info
+  db.Department.hasMany(db.CourseInfo, {foreignKey: "department_id"});
+  db.CourseInfo.belongsTo(db.Department, {foreignKey: "department_id"});
+
+  
 }
 
 module.exports = defineRelationships;

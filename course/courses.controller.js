@@ -14,7 +14,6 @@ router.post(
 );
 router.get(
   "/",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Staff]),
   getAllCourse
 );
 router.get(
@@ -55,19 +54,19 @@ function addCourse(req, res, next) {
 }
 
 function getAllCourse(req, res, next) {
-  const campus_id = req.query.campus_id;
+  const {campus_id, program_id} = req.query;
 
   courseService
-    .getAllCourse(campus_id)
+    .getAllCourse(campus_id, program_id)
     .then((courses) => res.json(courses))
     .catch(next);
 }
 
 function getAllCourseActive(req, res, next) {
-  const campus_id = req.query.campus_id;
+  const {campus_id, program_id} = req.query;
 
   courseService
-    .getAllCourseActive(campus_id)
+    .getAllCourseActive(campus_id, program_id)
     .then((courses) => res.json(courses))
     .catch(next);
 }
@@ -112,6 +111,7 @@ function addCourseSchema(req, res, next) {
     unit: Joi.number().required(),
 
     campus_id: Joi.number().required(),
+    department_id: [Joi.number().optional(), Joi.allow(null)],
   });
   validateRequest(req, next, schema);
 }
@@ -123,6 +123,7 @@ function updateCourseSchema(req, res, next) {
     unit: Joi.number().empty(""),
 
     campus_id: Joi.number().empty(""),
+    department_id: [Joi.number().optional(), Joi.allow(null)],
 
     isActive: Joi.boolean().empty(""),
     isDeleted: Joi.boolean().empty(""),
