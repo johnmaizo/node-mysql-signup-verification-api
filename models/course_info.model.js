@@ -18,6 +18,16 @@ function model(sequelize) {
             },
             allowNull: false, // Department must belong to a campus
         },
+
+        department_id: { 
+            type: DataTypes.INTEGER,
+            references: {
+                model: 'departments', // refers to the table name
+                key: 'department_id'  // refers to the column name in the departments table
+            },
+            allowNull: true, // SuperAdmin won't have a campus_id
+        }, 
+
         
         courseCode: { 
             type: DataTypes.STRING, 

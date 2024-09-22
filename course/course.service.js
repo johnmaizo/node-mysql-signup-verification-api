@@ -1,4 +1,4 @@
-const {Op, where} = require("sequelize");
+const {Op, where, col} = require("sequelize");
 const db = require("_helpers/db");
 const Role = require("_helpers/role");
 
@@ -53,42 +53,70 @@ function transformCourseData(course) {
     fullCourseNameWithCampus:
       `${course.courseCode} - ${course.courseDescription} - ${course.campus.campusName}` ||
       "fullCourseNameWithCampus not found",
+    fullDepartmentNameWithCampus: course.department
+      ? `${course.department.departmentCode} - ${course.department.departmentName} - ${course.campus.campusName}`
+      : null,
+    campusName: course.campus.campusName,
   };
 }
 
 // Common function to get courses based on filter conditions
-async function getCourses(whereClause) {
+async function getCourses(whereClause, program_id = null) {
+  const includeConditions = [
+    {
+      model: db.Campus,
+      attributes: ["campusName"], // Include only the campus name
+    },
+    {
+      model: db.Department,
+      attributes: ["departmentCode", "departmentName", "department_id"], // Include department details and ID
+    },
+  ];
+
+  if (program_id) {
+    includeConditions.push({
+      model: db.Department,
+      required: true, // Ensure department is matched
+      include: [
+        {
+          model: db.Program,
+          where: { program_id: program_id }, // Match the program_id
+          attributes: ["programCode", "programDescription", "department_id"], // Include program details
+        },
+      ],
+      attributes: ["department_id"], // Include department_id to match with CourseInfo
+    });
+
+    // Add condition to ensure course's department matches the program's department
+    whereClause.department_id = col("Department.department_id");
+  }
+
   const courses = await db.CourseInfo.findAll({
     where: whereClause,
-    include: [
-      {
-        model: db.Campus,
-        attributes: ["campusName"], // Include only the campus name
-      },
-    ],
+    include: includeConditions,
   });
 
   return courses.map(transformCourseData);
 }
 
-async function getAllCourse(campus_id = null) {
+async function getAllCourse(campus_id = null, program_id = null) {
   const whereClause = {isDeleted: false};
 
   if (campus_id) {
     whereClause.campus_id = campus_id;
   }
 
-  return await getCourses(whereClause);
+  return await getCourses(whereClause, program_id);
 }
 
-async function getAllCourseActive(campus_id = null) {
+async function getAllCourseActive(campus_id = null, program_id = null) {
   const whereClause = {isActive: true, isDeleted: false};
 
   if (campus_id) {
     whereClause.campus_id = campus_id;
   }
 
-  return await getCourses(whereClause);
+  return await getCourses(whereClause, program_id);
 }
 
 async function getAllCourseDeleted(campus_id = null) {
@@ -114,9 +142,21 @@ async function getAllCourseCount(campus_id = null) {
 }
 
 async function getCourseById(id) {
-  const course = await db.CourseInfo.findByPk(id);
+  const course = await db.CourseInfo.findByPk(id, {
+    include: [
+      {
+        model: db.Campus,
+        attributes: ["campusName"], // Include only the campus name
+      },
+      {
+        model: db.Department,
+        attributes: ["departmentCode", "departmentName"], // Include only department attributes
+      },
+    ],
+  });
+
   if (!course) throw "Course not found";
-  return course;
+  return transformCourseData(course);
 }
 
 async function updateCourse(id, params, accountId) {
