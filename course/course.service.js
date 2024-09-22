@@ -1,4 +1,4 @@
-const {Op, where, col} = require("sequelize");
+const {Op, where, col, fn, literal} = require("sequelize");
 const db = require("_helpers/db");
 const Role = require("_helpers/role");
 
@@ -76,19 +76,22 @@ async function getCourses(whereClause, program_id = null) {
   if (program_id) {
     includeConditions.push({
       model: db.Department,
-      required: true, // Ensure department is matched
+      required: false, // Allow fetching records even when department is null
       include: [
         {
           model: db.Program,
-          where: { program_id: program_id }, // Match the program_id
+          where: {program_id: program_id}, // Match the program_id
           attributes: ["programCode", "programDescription", "department_id"], // Include program details
         },
       ],
       attributes: ["department_id"], // Include department_id to match with CourseInfo
     });
 
-    // Add condition to ensure course's department matches the program's department
-    whereClause.department_id = col("Department.department_id");
+    // Modify where clause to fetch courses with either a matching department_id or null
+    whereClause[Op.or] = [
+      {department_id: {[Op.eq]: col("Department.department_id")}}, // Matching department
+      {department_id: null}, // Allow department_id to be null
+    ];
   }
 
   const courses = await db.CourseInfo.findAll({
@@ -119,14 +122,14 @@ async function getAllCourseActive(campus_id = null, program_id = null) {
   return await getCourses(whereClause, program_id);
 }
 
-async function getAllCourseDeleted(campus_id = null) {
+async function getAllCourseDeleted(campus_id = null, program_id = null) {
   const whereClause = {isDeleted: true};
 
   if (campus_id) {
     whereClause.campus_id = campus_id;
   }
 
-  return await getCourses(whereClause);
+  return await getCourses(whereClause, program_id);
 }
 
 async function getAllCourseCount(campus_id = null) {
