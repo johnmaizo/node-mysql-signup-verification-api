@@ -6,12 +6,38 @@ const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const semesterService = require("./semester.service");
 
-router.post("/add-semester", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), addSemesterSchema, addSemester);
-router.get("/", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllSemester);
-router.get("/active", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllSemesterActive);
-router.get("/deleted", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getAllSemesterDeleted);
-router.get("/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), getSemesterById);
-router.put("/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Staff]), updateSemesterSchema, updateSemester);
+router.post(
+  "/add-semester",
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  addSemesterSchema,
+  addSemester
+);
+router.get(
+  "/",
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  getAllSemester
+);
+router.get(
+  "/active",
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  getAllSemesterActive
+);
+router.get(
+  "/deleted",
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  getAllSemesterDeleted
+);
+router.get(
+  "/:id",
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  getSemesterById
+);
+router.put(
+  "/:id",
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  updateSemesterSchema,
+  updateSemester
+);
 
 module.exports = router;
 

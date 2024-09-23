@@ -197,8 +197,8 @@ async function getById(id) {
 }
 
 async function create(params, accountId) {
-  // Ensure role is an array and check if it contains "Admin", "SuperAdmin", or "Registrar"
-  const allowedRoles = [Role.SuperAdmin, Role.Admin, Role.Registrar];
+  // Ensure role is an array and check if it contains "Admin", "SuperAdmin", "Registrar", or "Data Center"
+  const allowedRoles = [Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter];
 
   // Convert role to an array if it is not already
   const roleArray = Array.isArray(params.role) ? params.role : [params.role];

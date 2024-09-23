@@ -18,9 +18,9 @@ router.post('/verify-email', verifyEmailSchema, verifyEmail);
 router.post('/forgot-password', forgotPasswordSchema, forgotPassword);
 router.post('/validate-reset-token', validateResetTokenSchema, validateResetToken);
 router.post('/reset-password', resetPasswordSchema, resetPassword);
-router.get('/', authorize([Role.SuperAdmin, Role.Admin]), getAll);
+router.get('/', authorize([Role.SuperAdmin, Role.Admin, Role.DataCenter]), getAll);
 router.get('/:id', authorize(), getById);
-router.post('/', authorize([Role.SuperAdmin, Role.Admin]), createSchema, create);
+router.post('/', authorize([Role.SuperAdmin, Role.Admin, Role.DataCenter]), createSchema, create);
 router.put('/:id', authorize(), updateSchema, update);
 router.delete('/:id', authorize(), _delete);
 
@@ -206,8 +206,8 @@ function createSchema(req, res, next) {
     
     // Check if roles include SuperAdmin, Admin, or Registrar
     const requirePassword = Array.isArray(roles)
-        ? roles.some(role => [Role.SuperAdmin, Role.Admin, Role.Registrar].includes(role))
-        : [Role.SuperAdmin, Role.Admin, Role.Registrar].includes(roles);
+        ? roles.some(role => [Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter].includes(role))
+        : [Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter].includes(roles);
 
     // Define the schema with conditional password and confirmPassword fields
     const schema = Joi.object({
@@ -253,8 +253,8 @@ function updateSchema(req, res, next) {
 
     // Check if roles include SuperAdmin, Admin, or Registrar
     const requirePassword = Array.isArray(roles)
-        ? roles.some(role => [Role.SuperAdmin, Role.Admin, Role.Registrar].includes(role))
-        : [Role.SuperAdmin, Role.Admin, Role.Registrar].includes(roles);
+        ? roles.some(role => [Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter].includes(role))
+        : [Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter].includes(roles);
 
     const schemaRules = {
         title: Joi.string().empty(''),
