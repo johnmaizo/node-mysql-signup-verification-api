@@ -8,37 +8,34 @@ const courseService = require("./course.service");
 
 router.post(
   "/add-course",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Staff]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
   addCourseSchema,
   addCourse
 );
-router.get(
-  "/",
-  getAllCourse
-);
+router.get("/", getAllCourse);
 router.get(
   "/count",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Staff]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
   getAllCourseCount
 );
 router.get(
   "/active",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Staff]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
   getAllCourseActive
 );
 router.get(
   "/deleted",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Staff]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
   getAllCourseDeleted
 );
 router.get(
   "/:id",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Staff]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
   getCourseById
 );
 router.put(
   "/:id",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Staff]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
   updateCourseSchema,
   updateCourse
 );

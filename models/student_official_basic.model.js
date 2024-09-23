@@ -27,8 +27,8 @@ function model(sequelize) {
         gender: { type: DataTypes.STRING(10), allowNull: false },
 
         email: { type: DataTypes.STRING, allowNull: false },
-        contactNumber: { type: DataTypes.STRING(15), allowNull: false},
-        address: { type: DataTypes.STRING, allowNull: false},
+        contactNumber: { type: DataTypes.STRING(15), allowNull: false },
+        address: { type: DataTypes.STRING, allowNull: false },
 
         yearLevel: { type: DataTypes.STRING, allowNull: false },
         program: { type: DataTypes.STRING, allowNull: false },
@@ -44,6 +44,12 @@ function model(sequelize) {
 
     const options = {
         timestamps: true,
+        indexes: [
+            {
+                unique: true,
+                fields: ['student_id', 'campus_id'] // Enforces uniqueness of student_id within each campus
+            }
+        ]
     };
 
     return sequelize.define('studentofficalbasic', attributes, options);
