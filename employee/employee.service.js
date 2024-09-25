@@ -16,9 +16,24 @@ module.exports = {
 
 async function createEmployee(params, accountId) {
   // Convert role to an array if it is not already
-  const roleArray = Array.isArray(params.role) ? params.role : [params.role];
+  let roleArray = Array.isArray(params.role) ? params.role : [params.role];
 
-  // Convert the role array to a comma-separated string if it's an array
+  // Define role priorities
+  const rolePriority = ["SuperAdmin", "Admin", "DataCenter", "Registrar"];
+
+  // Filter roles to find relevant ones
+  const foundRoles = rolePriority.filter((role) => roleArray.includes(role));
+
+  // If we found any relevant roles, re-arrange them according to the priority
+  if (foundRoles.length > 0) {
+    // First, remove found roles from the original array
+    roleArray = roleArray.filter((role) => !foundRoles.includes(role));
+
+    // Then prepend the found roles in the correct priority order
+    roleArray = [...foundRoles, ...roleArray];
+  }
+
+  // Convert the role array back to a comma-separated string
   params.role = roleArray.join(", ");
 
   // If the roleArray contains "SuperAdmin", set campus_id to null
@@ -26,38 +41,39 @@ async function createEmployee(params, accountId) {
     params.campus_id = null; // Set campus_id to null for SuperAdmin
   } else {
     // Get the campusName based on campus_id and validate
-    campus = await db.Campus.findByPk(params.campus_id);
+    const campus = await db.Campus.findByPk(params.campus_id);
     if (!campus) {
       throw `Campus with ID "${params.campus_id}" not found.`;
     }
   }
 
   // Validate if the employee already exists using both firstName and lastName
-  if (
-    await db.Employee.findOne({
-      where: {
-        firstName: params.firstName,
-        lastName: params.lastName,
-        campus_id: params.campus_id, // Use updated campus_id
-      },
-    })
-  ) {
+  const employeeExists = await db.Employee.findOne({
+    where: {
+      firstName: params.firstName,
+      lastName: params.lastName,
+      campus_id: params.campus_id, // Use updated campus_id
+    },
+  });
+
+  if (employeeExists) {
     throw `Employee "${params.firstName} ${params.lastName}" is already registered on this campus.`;
   }
 
+  // Create new employee record
   const employee = new db.Employee(params);
 
   // Save employee
   await employee.save();
 
   // Log the creation action
-//   await db.History.create({
-//     action: "create",
-//     entity: "Employee",
-//     entityId: employee.employee_id,
-//     changes: params,
-//     accountId: accountId,
-//   });
+  await db.History.create({
+    action: "create",
+    entity: "Employee",
+    entityId: employee.employee_id,
+    changes: params,
+    accountId: accountId,
+  });
 }
 
 // Common function to handle the transformation

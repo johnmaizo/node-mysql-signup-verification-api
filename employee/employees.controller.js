@@ -6,20 +6,19 @@ const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const employeeService = require("./employee.service");
 
-router.post('/add-employee', createEmployeeSchema, createEmployee);
-router.get('/', getAllEmployee);
-router.get('/count', getAllEmployeeCount);
-router.get('/active', getAllEmployeeActive);
-router.get('/deleted', getAllEmployeeDeleted);
-router.get('/:id', getEmployeeById);
-router.put('/:id', updateEmployeeSchema, updateEmployee);
+router.post('/add-employee', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]), createEmployeeSchema, createEmployee);
+router.get('/', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]), getAllEmployee);
+router.get('/count', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]), getAllEmployeeCount);
+router.get('/active', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]), getAllEmployeeActive);
+router.get('/deleted', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]), getAllEmployeeDeleted);
+router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]), getEmployeeById);
+router.put('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]), updateEmployeeSchema, updateEmployee);
 
 module.exports = router;
 
 function createEmployee(req, res, next) {
     employeeService
-    //   .createEmployee(req.body, req.user.id)
-      .createEmployee(req.body)
+      .createEmployee(req.body, req.user.id)
       .then(() =>
         res.json({
           message: "Employee Added Successfully.",
@@ -136,12 +135,12 @@ function updateEmployeeSchema(req, res, next) {
 }
 
 function updateEmployee(req, res, next) {
-    // users can update their own account and admins can update any account
-    if (Number(req.params.id) !== req.user.id && req.user.role !== Role.Admin) {
-        return res.status(401).json({ message: 'Unauthorized' });
-    }
-
-    employeeService.update(req.params.id, req.body)
-        .then(account => res.json(account))
-        .catch(next);
-}
+    employeeService
+      .updateEmployee(req.params.id, req.body, req.user.id)
+      .then(() =>
+        res.json({
+          message: "Employee Updated Successfully.",
+        })
+      )
+      .catch(next);
+  }
