@@ -14,25 +14,36 @@ async function setupAccounts(db) {
       console.log("Default campus created successfully.");
     }
 
+    // SuperAdmin Employee Setup
+    const superAdminEmployee = await db.Employee.findOne({
+      where: {role: Role.SuperAdmin},
+    });
+
     // SuperAdmin Setup
     const superAdminUser = await db.Account.findOne({
       where: {email: "superadmin@gmail.com"},
     });
 
-    if (!superAdminUser) {
+    if (!superAdminUser || !superAdminEmployee) {
       const superAdminPasswordHash = await bcrypt.hash("aw12345", 10);
 
-      const newSuperAdmin = new db.Account({
-        email: "superadmin@gmail.com",
-        passwordHash: superAdminPasswordHash,
+      const newEmployeeSuperAdmin = new db.Employee({
         role: Role.SuperAdmin,
-        title: "Super Administrator",
+        title: "Super Duper Admin",
         firstName: "John Robert",
         middleName: "Libaton",
         lastName: "Maizo",
         gender: "Male",
         address: "C.D. Seno St., Tipolo, Mandaue City",
-        contactNumber: "09324568499",
+        contactNumber: "09321146580",
+      });
+
+      await newEmployeeSuperAdmin.save();
+
+      const newSuperAdmin = new db.Account({
+        employee_id: 1,
+        email: "superadmin@gmail.com",
+        passwordHash: superAdminPasswordHash,
 
         acceptTerms: true,
         verified: new Date(),
@@ -45,18 +56,21 @@ async function setupAccounts(db) {
       console.log("SuperAdmin user already exists.");
     }
 
+    // Admin Employee Setup
+    const adminEmployee = await db.Employee.findOne({
+      where: {role: Role.Admin, campus_id: 1},
+    });
+
     // Admin Setup
     const adminUser = await db.Account.findOne({
       where: {email: "admin2@gmail.com"},
     });
 
-    if (!adminUser) {
+    if (!adminUser || !adminEmployee) {
       const adminPasswordHash = await bcrypt.hash("aw12345", 10);
 
-      const newAdmin = new db.Account({
-        email: "admin2@gmail.com",
-        passwordHash: adminPasswordHash,
-        role: `${Role.Admin}, ${Role.Instructor}, ${Role.Staff}, ${Role.Student}`,
+      const newEmployeeAdmin = new db.Employee({
+        role: Role.Admin,
         title: "Administrator",
         firstName: "John Robert",
         middleName: "Dope",
@@ -65,10 +79,19 @@ async function setupAccounts(db) {
         address: "Banilad, Mandaue City",
         contactNumber: "09324568324",
 
+        campus_id: 1, // Add a valid campus_id here
+      });
+
+      await newEmployeeAdmin.save();
+
+      const newAdmin = new db.Account({
+        employee_id: 2,
+
+        email: "admin2@gmail.com",
+        passwordHash: adminPasswordHash,
         acceptTerms: true,
         verified: new Date(),
         created: new Date(),
-        campus_id: 1, // Add a valid campus_id here
       });
 
       await newAdmin.save();
@@ -76,32 +99,43 @@ async function setupAccounts(db) {
     } else {
       console.log("Admin user already exists.");
     }
-    
+
+    // Cebu Admin Employee Setup
+    const adminCebuEmployee = await db.Employee.findOne({
+      where: {role: Role.Admin, campus_id: 2},
+    });
+
     // Admin Setup - Cebu
     const adminUserCebu = await db.Account.findOne({
       where: {email: "cebu@gmail.com"},
     });
 
-    if (!adminUserCebu) {
+    if (!adminUserCebu || !adminCebuEmployee) {
       const adminPasswordHash = await bcrypt.hash("aw12345", 10);
 
+      const newEmployeeCebuAdmin = new db.Employee({
+        role: Role.Admin,
+        title: "Administrator",
+        firstName: "Juan",
+        middleName: "Cingko",
+        lastName: "Makabugto",
+        gender: "Male",
+        address: "Banilad, Mandaue City",
+        contactNumber: "09485324123",
+
+        campus_id: 2, // Add a valid campus_id here
+      });
+
+      await newEmployeeCebuAdmin.save();
+
       const newAdmin = new db.Account({
+        employee_id: 3,
+
         email: "cebu@gmail.com",
         passwordHash: adminPasswordHash,
-        role: `${Role.Admin}, ${Role.Instructor}, ${Role.Student}`,
-        title: "Mr",
-        firstName: "Johnny",
-        middleName: "gwapo",
-        lastName: "Bravo",
-        gender: "Male",
-        address: "Benedicto St., Cebu City",
-        contactNumber: "09324568546",
-
-
         acceptTerms: true,
         verified: new Date(),
         created: new Date(),
-        campus_id: 2, // Add a valid campus_id here
       });
 
       await newAdmin.save();
@@ -109,39 +143,6 @@ async function setupAccounts(db) {
     } else {
       console.log("Admin user (CEBU) already exists.");
     }
-
-    // Staff Setup
-    const registrarUser = await db.Account.findOne({
-      where: {email: "registrar@gmail.com"},
-    });
-
-    if (!registrarUser) {
-      const registrarPasswordHash = await bcrypt.hash("aw12345", 10);
-
-      const newRegistrar = new db.Account({
-        email: "registrar@gmail.com",
-        passwordHash: registrarPasswordHash,
-        role: `${Role.Instructor}, ${Role.Staff}, ${Role.Registrar}`,
-        title: "Registrar Member",
-        firstName: "Juan",
-        middleName: "makabugto",
-        lastName: "Tamad",
-        gender: "Male",
-        address: "Jmall, Mandaue City",
-        contactNumber: "09554568324",
-        
-        acceptTerms: true,
-        verified: new Date(),
-        created: new Date(),
-        campus_id: 1, // Add a valid campus_id here
-      });
-
-      await newRegistrar.save();
-      console.log("Registrar user created successfully.");
-    } else {
-      console.log("Registrar user already exists.");
-    }
-
   } catch (error) {
     console.error("Error setting up accounts:", error);
   }

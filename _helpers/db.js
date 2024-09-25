@@ -19,6 +19,9 @@ async function initialize() {
   // connect to db
   const sequelize = new Sequelize(database, user, password, {dialect: "mysql"});
 
+  // Make sure to select the database
+  await connection.query(`USE \`${database}\`;`);
+
   // init models and add them to the exported db object
   // ! Account
   db.Account = require("../accounts/account.model")(sequelize);
@@ -42,7 +45,9 @@ async function initialize() {
   // ! Program Course
   db.ProgramCourse = require("../models/program_course.model")(sequelize);
   // ! Building Structure
-  db.BuildingStructure = require("../models/building_structure.model")(sequelize);
+  db.BuildingStructure = require("../models/building_structure.model")(
+    sequelize
+  );
 
   // ! Student
   db.Student = require("../models/student.model")(sequelize);
@@ -58,18 +63,32 @@ async function initialize() {
   );
   db.StudentSubject = require("../models/student_subject.model")(sequelize);
 
-
+  // ! Employee
+  db.Employee = require("../models/employee.model")(sequelize);
 
   // ! Simple Official Student Basic
-  db.StudentOfficalBasic = require("../models/student_official_basic.model")(sequelize);
+  db.StudentOfficalBasic = require("../models/student_official_basic.model")(
+    sequelize
+  );
 
-
-  
   // define relationships using the imported function
   defineRelationships(db);
 
   // sync all models with database
-  await sequelize.sync();
+  await sequelize.sync(); // Ensure tables are created
+
+  // Check if the unique constraint already exists before adding it
+  const [result] = await connection.query(`
+    SHOW INDEX FROM studentofficalbasic WHERE Key_name = 'unique_student_per_campus';
+  `);
+
+  if (result.length === 0) {
+    // If the unique index does not exist, add it
+    await connection.query(`
+        ALTER TABLE studentofficalbasic 
+        ADD CONSTRAINT unique_student_per_campus UNIQUE (student_id, campus_id);
+      `);
+  }
 
   // Setup dummy values
   await InsertSampleData(db);
