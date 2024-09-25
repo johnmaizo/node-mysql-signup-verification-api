@@ -77,9 +77,24 @@ async function createEmployee(params, accountId) {
 }
 
 // Common function to handle the transformation
-function transformEmployeeData(employee) {
+function transformEmployeeData(employee, roleFilter = null) {
+  // Extract and filter roles if a roleFilter is provided
+  let roles = employee.role
+    ? employee.role.split(",").map((r) => r.trim())
+    : [];
+
+  if (roleFilter) {
+    roles = roles.filter((role) => role === roleFilter);
+  }
+
   return {
     ...employee.toJSON(),
+    role:
+      roleFilter && roles.length > 0
+        ? roles[0]
+        : employee.role
+        ? employee.role
+        : "Role not found", // Return the filtered role or a default
     fullName:
       `${employee.firstName} ${employee.lastName}` || "Full name not found",
     campusName: employee.campus?.campusName || "Campus name not found",
@@ -87,7 +102,7 @@ function transformEmployeeData(employee) {
 }
 
 // Common function to get employees based on filter conditions
-async function getEmployees(whereClause) {
+async function getEmployees(whereClause, roleFilter = null) {
   const employees = await db.Employee.findAll({
     where: whereClause,
     include: [
@@ -98,44 +113,100 @@ async function getEmployees(whereClause) {
     ],
   });
 
-  return employees.map(transformEmployeeData);
+  return employees.map((employee) =>
+    transformEmployeeData(employee, roleFilter)
+  );
 }
 
-async function getAllEmployee(campus_id = null) {
+// Main function to get all employees with optional campus_id and role filters
+async function getAllEmployee(campus_id = null, role = null) {
   const whereClause = {isDeleted: false};
 
+  // Add campus_id condition if provided
   if (campus_id) {
     whereClause.campus_id = campus_id;
   }
 
-  return await getEmployees(whereClause);
+  if (role) {
+    whereClause.role = {
+      [Op.like]: `%${role}%`,
+    };
+
+    if (role === "Admin") {
+      whereClause.role = {
+        [Op.like]: `%${role}%`, // Search for 'Admin'
+        [Op.notLike]: `%SuperAdmin%`, // Exclude 'SuperAdmin'
+      };
+    }
+  }
+
+  return await getEmployees(whereClause, role);
 }
 
-async function getAllEmployeeActive(campus_id = null) {
+async function getAllEmployeeActive(campus_id = null, role = null) {
   const whereClause = {isActive: true, isDeleted: false};
 
   if (campus_id) {
     whereClause.campus_id = campus_id;
   }
 
-  return await getEmployees(whereClause);
+  if (role) {
+    whereClause.role = {
+      [Op.like]: `%${role}%`,
+    };
+
+    if (role === "Admin") {
+      whereClause.role = {
+        [Op.like]: `%${role}%`, // Search for 'Admin'
+        [Op.notLike]: `%SuperAdmin%`, // Exclude 'SuperAdmin'
+      };
+    }
+  }
+
+  return await getEmployees(whereClause, role);
 }
 
-async function getAllEmployeeDeleted(campus_id = null) {
+async function getAllEmployeeDeleted(campus_id = null, role = null) {
   const whereClause = {isDeleted: true};
 
   if (campus_id) {
     whereClause.campus_id = campus_id;
   }
 
-  return await getEmployees(whereClause);
+  if (role) {
+    whereClause.role = {
+      [Op.like]: `%${role}%`,
+    };
+
+    if (role === "Admin") {
+      whereClause.role = {
+        [Op.like]: `%${role}%`, // Search for 'Admin'
+        [Op.notLike]: `%SuperAdmin%`, // Exclude 'SuperAdmin'
+      };
+    }
+  }
+
+  return await getEmployees(whereClause, role);
 }
 
-async function getAllEmployeeCount(campus_id = null) {
+async function getAllEmployeeCount(campus_id = null, role = null) {
   const whereClause = {isActive: true, isDeleted: false};
 
   if (campus_id) {
     whereClause.campus_id = campus_id;
+  }
+
+  if (role) {
+    whereClause.role = {
+      [Op.like]: `%${role}%`,
+    };
+
+    if (role === "Admin") {
+      whereClause.role = {
+        [Op.like]: `%${role}%`, // Search for 'Admin'
+        [Op.notLike]: `%SuperAdmin%`, // Exclude 'SuperAdmin'
+      };
+    }
   }
 
   return await db.Employee.count({
