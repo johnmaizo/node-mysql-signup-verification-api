@@ -9,20 +9,20 @@ const accountService = require('./account.service');
 // routes
 
 // Add new route
-router.get('/me', authorize(), getMe);
+router.get('/me', authorize([Role.SuperAdmin, Role.Admin, Role.DataCenter]), getMe);
 router.post('/authenticate', authenticateSchema, authenticate);
 router.post('/refresh-token', refreshToken);
-router.post('/revoke-token', authorize(), revokeTokenSchema, revokeToken);
+router.post('/revoke-token', authorize([Role.SuperAdmin, Role.Admin, Role.DataCenter]), revokeTokenSchema, revokeToken);
 router.post('/register', registerSchema, register);
 router.post('/verify-email', verifyEmailSchema, verifyEmail);
 router.post('/forgot-password', forgotPasswordSchema, forgotPassword);
 router.post('/validate-reset-token', validateResetTokenSchema, validateResetToken);
 router.post('/reset-password', resetPasswordSchema, resetPassword);
 router.get('/', authorize([Role.SuperAdmin, Role.Admin, Role.DataCenter]), getAll);
-router.get('/:id', authorize(), getById);
+router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.DataCenter]), getById);
 router.post('/', authorize([Role.SuperAdmin, Role.Admin, Role.DataCenter]), createSchema, create);
-router.put('/:id', authorize(), updateSchema, update);
-router.delete('/:id', authorize(), _delete);
+router.put('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.DataCenter]), updateSchema, update);
+router.delete('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.DataCenter]), _delete);
 
 
 
@@ -191,44 +191,28 @@ function getById(req, res, next) {
         .catch(next);
 }
 
-    /**
-     * Schema for creating a new user account. The schema includes fields for
-     * title, first name, middle name, last name, address, contact number, gender,
-     * email, password, confirm password, role, and campus ID. The password and
-     * confirm password fields are only required if the role is SuperAdmin,
-     * Admin, or Registrar.
-     * @param {Object} req - The express request object
-     * @param {Object} res - The express response object
-     * @param {Function} next - The next middleware function
-     */
 function createSchema(req, res, next) {
-    const roles = req.body.role;
-    
-    // Check if roles include SuperAdmin, Admin, or Registrar
-    const requirePassword = Array.isArray(roles)
-        ? roles.some(role => [Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter].includes(role))
-        : [Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter].includes(roles);
-
     // Define the schema with conditional password and confirmPassword fields
     const schema = Joi.object({
-        title: Joi.string().required(),
-        firstName: Joi.string().required(),
-        middleName: Joi.string().allow(null, '').optional(),
-        lastName: Joi.string().required(),
+        // title: Joi.string().required(),
+        // firstName: Joi.string().required(),
+        // middleName: Joi.string().allow(null, '').optional(),
+        // lastName: Joi.string().required(),
 
-        address: Joi.string().required(),
-        contactNumber: Joi.string().required(),
-        gender: Joi.string().required(),
-
+        // address: Joi.string().required(),
+        // contactNumber: Joi.string().required(),
+        // gender: Joi.string().required(),
+        
+        employee_id: Joi.number().required(),
         email: Joi.string().email().required(),
-        password: requirePassword ? Joi.string().min(6).required() : Joi.any().strip(),
-        confirmPassword: requirePassword ? Joi.string().valid(Joi.ref('password')).required() : Joi.any().strip(),
+        password: Joi.string().min(6).required(),
+        confirmPassword: Joi.string().valid(Joi.ref('password')).required(),
 
-        role: Joi.alternatives().try(
-            Joi.string(),
-            Joi.array().items(Joi.string())
-        ).required(),
-        campus_id: Joi.number().required(),
+        // role: Joi.alternatives().try(
+        //     Joi.string(),
+        //     Joi.array().items(Joi.string())
+        // ).required(),
+        // campus_id: Joi.number().required(),
     });
 
     validateRequest(req, next, schema);
@@ -236,7 +220,8 @@ function createSchema(req, res, next) {
 
 
 function create(req, res, next) {
-    accountService.create(req.body, req.user.id)
+    // accountService.create(req.body, req.user.id)
+    accountService.create(req.body)
         .then(account => res.json(account))
         .catch(next);
 }
@@ -257,31 +242,32 @@ function updateSchema(req, res, next) {
         : [Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter].includes(roles);
 
     const schemaRules = {
-        title: Joi.string().empty(''),
-        firstName: Joi.string().empty(''),
-        middleName: Joi.string().allow(null, '').optional(),
-        lastName: Joi.string().empty(''),
+        // title: Joi.string().empty(''),
+        // firstName: Joi.string().empty(''),
+        // middleName: Joi.string().allow(null, '').optional(),
+        // lastName: Joi.string().empty(''),
 
-        address: Joi.string().empty(''),
-        contactNumber: Joi.string().empty(''),
-        gender: Joi.string().empty(''),
+        // address: Joi.string().empty(''),
+        // contactNumber: Joi.string().empty(''),
+        // gender: Joi.string().empty(''),
 
+        employee_id: Joi.number().empty(''),
         email: Joi.string().email().empty(''),
         password: requirePassword ? Joi.string().min(6).empty('') : Joi.any().strip(),
         confirmPassword: requirePassword ? Joi.string().valid(Joi.ref('password')).empty('') : Joi.any().strip(),
 
-        role: Joi.alternatives().try(
-            Joi.string(),
-            Joi.array().items(Joi.string())
-        ).empty(''),
+        // role: Joi.alternatives().try(
+        //     Joi.string(),
+        //     Joi.array().items(Joi.string())
+        // ).empty(''),
 
-        campus_id: Joi.number().empty(''),
+        // campus_id: Joi.number().empty(''),
     };
 
     // only admins can update role
-    if (req.user.role === Role.Admin) {
-        schemaRules.role = Joi.string().empty('');
-    }
+    // if (req.user.role === Role.Admin) {
+    //     schemaRules.role = Joi.string().empty('');
+    // }
 
     const schema = Joi.object(schemaRules).with('password', 'confirmPassword');
     validateRequest(req, next, schema);

@@ -109,8 +109,8 @@ function defineRelationships(db) {
   db.Account.hasMany(db.History, {foreignKey: "accountId"});
   db.History.belongsTo(db.Account, {foreignKey: "accountId"});
 
-  // ! Account -> Campus
-  db.Account.belongsTo(db.Campus, {foreignKey: "campus_id"});
+  // // ! Account -> Campus
+  // db.Account.belongsTo(db.Campus, {foreignKey: "campus_id"});
 
 
   // ! Campus -> StudentOfficalBasic
@@ -121,7 +121,12 @@ function defineRelationships(db) {
   db.Department.hasMany(db.CourseInfo, {foreignKey: "department_id"});
   db.CourseInfo.belongsTo(db.Department, {foreignKey: "department_id"});
 
-  
+
+  // ! Employee -> Campus
+  db.Employee.belongsTo(db.Campus, {foreignKey: "campus_id"});
+
+  db.Employee.hasOne(db.Account, { foreignKey: 'employee_id', onDelete: 'CASCADE' });
+  db.Account.belongsTo(db.Employee, { foreignKey: 'employee_id' });
 }
 
 module.exports = defineRelationships;

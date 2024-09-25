@@ -21,6 +21,10 @@ app.use(
 app.use("/external", require("./_external/externals.controller")) // ! Externals
 
 // api routes
+// ! Employee
+app.use("/employee", require("./employee/employees.controller"));
+
+
 // ! Accounts
 app.use("/accounts", require("./accounts/accounts.controller"));
 
@@ -50,6 +54,7 @@ app.use("/building-structure", require("./buildingStructure/buildingstructures.c
 
 // ! Enrollment Student
 app.use("/enrollment", require("./enrollment/enrollments.controller"));
+
 
 // swagger docs route
 app.use("/api-docs", require("_helpers/swagger"));

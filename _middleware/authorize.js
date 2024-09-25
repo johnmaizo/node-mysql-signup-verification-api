@@ -19,13 +19,13 @@ function authorize(roles = []) {
         // async (req, res, next) => {
         //     const account = await db.Account.findByPk(req.user.id);
 
-        //     if (!account || (roles.length && !roles.includes(account.role))) {
+        //     if (!account || (roles.length && !roles.includes(employee.role))) {
         //         // account no longer exists or role not authorized
         //         return res.status(401).json({ message: 'Unauthorized' });
         //     }
 
         //     // authentication and authorization successful
-        //     req.user.role = account.role;
+        //     req.user.role = employee.role;
         //     const refreshTokens = await account.getRefreshTokens();
         //     req.user.ownsToken = token => !!refreshTokens.find(x => x.token === token);
         //     next();
@@ -33,28 +33,34 @@ function authorize(roles = []) {
 
         async (req, res, next) => {
             const account = await db.Account.findByPk(req.user.id);
-        
+            
             if (!account) {
-                // account no longer exists
                 return res.status(401).json({ message: 'Unauthorized' });
             }
+            
+            const employee = await db.Employee.findByPk(account.employee_id);
+            
+            if (!employee) {
+                return res.status(401).json({ message: 'Unauthorized' });
+            }
+
+            const accountRoles = employee.role.split(',').map(role => role.trim());
+
+            console.log("Account Roles: ", accountRoles)
         
-            // Split the account's roles into an array and trim whitespace
-            const accountRoles = account.role.split(',').map(role => role.trim());
-        
-            // Check if any of the roles match the authorized roles
             const isAuthorized = roles.some(role => accountRoles.includes(role));
-        
+
+            console.log("IS AUTHORIZED??: ", isAuthorized)
+            
             if (roles.length && !isAuthorized) {
-                // role not authorized
                 return res.status(401).json({ message: 'Unauthorized' });
             }
         
-            // authentication and authorization successful
-            req.user.role = account.role;
+            req.user.role = employee.role;
             const refreshTokens = await account.getRefreshTokens();
             req.user.ownsToken = token => !!refreshTokens.find(x => x.token === token);
             next();
         }
+        
     ];
 }
