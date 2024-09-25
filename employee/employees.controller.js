@@ -29,38 +29,38 @@ function createEmployee(req, res, next) {
 
 
   function getAllEmployee(req, res, next) {
-    const {campus_id} = req.query;
+    const {campus_id, role} = req.query;
 
     employeeService
-      .getAllEmployee(campus_id)
+      .getAllEmployee(campus_id, role)
       .then((employees) => res.json(employees))
       .catch(next);
   }
 
 
   function getAllEmployeeCount(req, res, next) {
-    const {campus_id} = req.query;
+    const {campus_id, role} = req.query;
 
     employeeService
-      .getAllEmployeeCount(campus_id)
+      .getAllEmployeeCount(campus_id, role)
       .then((employees) => res.json(employees))
       .catch(next);
   }
 
   function getAllEmployeeActive(req, res, next) {
-    const {campus_id} = req.query;
+    const {campus_id, role} = req.query;
 
     employeeService
-      .getAllEmployeeActive(campus_id)
+      .getAllEmployeeActive(campus_id, role)
       .then((employees) => res.json(employees))
       .catch(next);
   }
 
   function getAllEmployeeDeleted(req, res, next) {
-    const {campus_id} = req.query;
+    const {campus_id, role} = req.query;
 
     employeeService
-      .getAllEmployeeDeleted(campus_id)
+      .getAllEmployeeDeleted(campus_id, role)
       .then((employees) => res.json(employees))
       .catch(next);
   }
