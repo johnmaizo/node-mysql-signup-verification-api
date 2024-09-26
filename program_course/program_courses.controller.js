@@ -54,13 +54,9 @@ function addProgramAssignCourse(req, res, next) {
 function getAllProgramAssignCourse(req, res, next) {
   const {programCode, campus_id, program_id, campusName} = req.query;
 
-  console.log(
-    `\n\n\n\n\nprogramCode: ${programCode}, campus_id: ${campus_id}, program_id: ${program_id}, campusName: ${campusName}\n\n\n\n\n`
-  );
-
   programCourseService
     .getAllProgramAssignCourse(programCode, program_id, campus_id, campusName)
-    .then((programcourse) => res.json(programcourse))
+    .then((programcourse) => programcourse ? res.json(programcourse) : res.sendStatus(404))
     .catch(next);
 }
 

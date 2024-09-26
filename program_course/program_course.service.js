@@ -121,7 +121,7 @@ async function createProgramAssignCourse(params, accountId) {
 
 // Common function to handle the transformation
 function transformProgramCourseData(programCourse) {
-  return {
+  const gwapo = {
     ...programCourse.toJSON(),
     courseCode: programCourse.courseinfo.courseCode || null,
     courseDescription: programCourse.courseinfo.courseDescription || null,
@@ -134,6 +134,8 @@ function transformProgramCourseData(programCourse) {
       ? `${programCourse.courseinfo.department.departmentCode} - ${programCourse.courseinfo.department.departmentName} - ${programCourse.courseinfo.department.campus.campusName}`
       : null,
   };
+  console.log(gwapo);
+  return gwapo;
 }
 
 // Helper function to generate include conditions
@@ -143,16 +145,21 @@ function getIncludeConditionsForProgramCourse(
   campus_id,
   campusName
 ) {
+  console.log(
+    `\n\n\n\nPROGRAM CODE: ${programCode}, PROGRAM ID: ${program_id}, CAMPUS ID: ${campus_id}, CAMPUS NAME: ${campusName}\n\n\n\n\n`
+  );
+
   const includeConditions = [
     {
       model: db.Program,
-      where: program_id
-        ? {program_id: program_id}
-        : programCode
-        ? {programCode: programCode}
-        : programCode && program_id
-        ? {programCode: programCode, program_id: program_id}
-        : undefined,
+      where:
+        programCode && program_id
+          ? {programCode: programCode, program_id: program_id}
+          : program_id
+          ? {program_id: program_id}
+          : programCode
+          ? {programCode: programCode}
+          : undefined,
       include: [
         {
           model: db.Department,
@@ -232,6 +239,21 @@ async function getProgramCourses(
   );
 
   await validateCampus(campus_id, campusName);
+
+  if (programCode && program_id) {
+    const validProgram = await db.Program.findOne({
+      where: {
+        programCode: programCode,
+        program_id: program_id,
+      },
+    });
+
+    if (!validProgram) {
+      throw new Error(
+        `Program with ID "${program_id}" and Program Code "${programCode}" does not match.`
+      );
+    }
+  }
 
   const programCourses = await db.ProgramCourse.findAll({
     where: whereClause,
