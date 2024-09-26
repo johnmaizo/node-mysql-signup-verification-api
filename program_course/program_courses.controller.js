@@ -14,11 +14,7 @@ router.post(
   addProgramAssignCourseSchema,
   addProgramAssignCourse
 );
-router.get(
-  "/",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
-  getAllProgramAssignCourse
-);
+router.get("/", getAllProgramAssignCourse);
 router.get(
   "/count",
   authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
@@ -56,45 +52,51 @@ function addProgramAssignCourse(req, res, next) {
 }
 
 function getAllProgramAssignCourse(req, res, next) {
-  const campus_id = req.query.campus_id; // Extract campus_id from query parameters
-  const program_id = req.query.program_id; // Extract program_id from query parameters
-  const campusName = req.query.campusName; // Extract campusName from query parameters
+  const {programCode, campus_id, program_id, campusName} = req.query;
+
+  console.log(
+    `\n\n\n\n\nprogramCode: ${programCode}, campus_id: ${campus_id}, program_id: ${program_id}, campusName: ${campusName}\n\n\n\n\n`
+  );
 
   programCourseService
-    .getAllProgramAssignCourse(program_id, campus_id, campusName)
+    .getAllProgramAssignCourse(programCode, program_id, campus_id, campusName)
     .then((programcourse) => res.json(programcourse))
     .catch(next);
 }
 
 function getAllProgramAssignCourseCount(req, res, next) {
-  const campus_id = req.query.campus_id;
-  const program_id = req.query.program_id;
-  const campusName = req.query.campusName;
+  const {programCode, campus_id, program_id, campusName} = req.query;
 
   programCourseService
-    .getProgramAssignCourseCount(program_id, campus_id, campusName)
+    .getProgramAssignCourseCount(programCode, program_id, campus_id, campusName)
     .then((programcourse) => res.json(programcourse))
     .catch(next);
 }
 
 function getAllProgramAssignCourseActive(req, res, next) {
-  const campus_id = req.query.campus_id;
-  const program_id = req.query.program_id;
-  const campusName = req.query.campusName;
+  const {programCode, campus_id, program_id, campusName} = req.query;
 
   programCourseService
-    .getAllProgramAssignCourseActive(program_id, campus_id, campusName)
+    .getAllProgramAssignCourseActive(
+      programCode,
+      program_id,
+      campus_id,
+      campusName
+    )
     .then((programcourse) => res.json(programcourse))
     .catch(next);
 }
 
 function getAllProgramAssignCourseDeleted(req, res, next) {
-  const campus_id = req.query.campus_id;
-  const program_id = req.query.program_id;
-  const campusName = req.query.campusName;
+  const {programCode, campus_id, program_id, campusName} = req.query;
 
   programCourseService
-    .getAllProgramAssignCourseDeleted(program_id, campus_id, campusName)
+    .getAllProgramAssignCourseDeleted(
+      programCode,
+      program_id,
+      campus_id,
+      campusName
+    )
     .then((programcourse) => res.json(programcourse))
     .catch(next);
 }

@@ -92,7 +92,7 @@ function getIncludeConditionsForCampus(campus_id, campusName) {
       include: [
         {
           model: db.Campus,
-          attributes: ["campusName"], // Include only the campus name
+          attributes: ["campusName", "campus_id"], // Include only the campus name
         },
       ],
       attributes: ["departmentName", "departmentCode"], // Include department name and code

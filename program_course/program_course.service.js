@@ -123,14 +123,22 @@ async function createProgramAssignCourse(params, accountId) {
 function transformProgramCourseData(programCourse) {
   return {
     ...programCourse.toJSON(),
+    courseCode: programCourse.courseinfo.courseCode || null,
+    courseDescription: programCourse.courseinfo.courseDescription || null,
+    departmentCode: programCourse.program.department.departmentCode || null,
+    departmentName: programCourse.program.department.departmentName || null,
     fullProgramDescriptionWithCourseAndCampus:
       `${programCourse.program.programCode} - ${programCourse.program.programDescription} - ${programCourse.courseinfo.courseCode} - ${programCourse.courseinfo.courseDescription} - ${programCourse.program.department.campus.campusName}` ||
       "fullProgramDescriptionWithCourseAndCampus not found",
+    fullDepartmentNameWithCampusForSubject: programCourse.courseinfo.department
+      ? `${programCourse.courseinfo.department.departmentCode} - ${programCourse.courseinfo.department.departmentName} - ${programCourse.courseinfo.department.campus.campusName}`
+      : null,
   };
 }
 
 // Helper function to generate include conditions
 function getIncludeConditionsForProgramCourse(
+  programCode,
   program_id,
   campus_id,
   campusName
@@ -138,7 +146,13 @@ function getIncludeConditionsForProgramCourse(
   const includeConditions = [
     {
       model: db.Program,
-      where: program_id ? {program_id: program_id} : undefined,
+      where: program_id
+        ? {program_id: program_id}
+        : programCode
+        ? {programCode: programCode}
+        : programCode && program_id
+        ? {programCode: programCode, program_id: program_id}
+        : undefined,
       include: [
         {
           model: db.Department,
@@ -157,6 +171,19 @@ function getIncludeConditionsForProgramCourse(
     {
       model: db.CourseInfo,
       attributes: ["courseCode", "courseDescription", "unit"], // Include course code and description
+      include: [
+        {
+          model: db.Department,
+          include: [
+            {
+              model: db.Campus,
+              attributes: ["campusName"], // Include only the campus name
+              where: campusName ? {campusName: campusName} : undefined,
+            },
+          ],
+          attributes: ["departmentName", "departmentCode"], // Include department name and code
+        },
+      ],
     },
   ];
 
@@ -192,11 +219,13 @@ async function validateCampus(campus_id, campusName) {
 // Reuse the existing getProgramCourses function
 async function getProgramCourses(
   whereClause,
+  programCode = null,
   program_id = null,
   campus_id = null,
   campusName = null
 ) {
   const includeConditions = getIncludeConditionsForProgramCourse(
+    programCode,
     program_id,
     campus_id,
     campusName
@@ -213,6 +242,7 @@ async function getProgramCourses(
 }
 
 async function getAllProgramAssignCourse(
+  programCode = null,
   program_id = null,
   campus_id = null,
   campusName = null
@@ -221,6 +251,7 @@ async function getAllProgramAssignCourse(
 
   return await getProgramCourses(
     whereClause,
+    programCode,
     program_id,
     campus_id,
     campusName
@@ -228,6 +259,7 @@ async function getAllProgramAssignCourse(
 }
 
 async function getProgramAssignCourseCount(
+  programCode = null,
   program_id = null,
   campus_id = null,
   campusName = null
@@ -237,6 +269,7 @@ async function getProgramAssignCourseCount(
   await validateCampus(campus_id, campusName);
 
   const includeConditions = getIncludeConditionsForProgramCourse(
+    programCode,
     program_id,
     campus_id,
     campusName
@@ -249,6 +282,7 @@ async function getProgramAssignCourseCount(
 }
 
 async function getAllProgramAssignCourseActive(
+  programCode = null,
   program_id = null,
   campus_id = null,
   campusName = null
@@ -257,6 +291,7 @@ async function getAllProgramAssignCourseActive(
 
   return await getProgramCourses(
     whereClause,
+    programCode,
     program_id,
     campus_id,
     campusName
@@ -264,6 +299,7 @@ async function getAllProgramAssignCourseActive(
 }
 
 async function getAllProgramAssignCourseDeleted(
+  programCode = null,
   program_id = null,
   campus_id = null,
   campusName = null
@@ -272,6 +308,7 @@ async function getAllProgramAssignCourseDeleted(
 
   return await getProgramCourses(
     whereClause,
+    programCode,
     program_id,
     campus_id,
     campusName
