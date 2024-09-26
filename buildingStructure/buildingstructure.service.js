@@ -175,6 +175,36 @@ async function getAllStructure(
 ) {
   const whereClause = {isDeleted: false};
 
+  if (buildingName && campus_id) {
+    const structure = await db.BuildingStructure.findOne({
+      where: {
+        buildingName: buildingName,
+        campus_id: campus_id,
+      },
+    });
+
+    if (!structure) {
+      throw new Error(
+        `Building Name "${buildingName}" has not found on Campus "${campus_id}".`
+      );
+    }
+  }
+  if (floorName && buildingName && campus_id) {
+    const structure = await db.BuildingStructure.findOne({
+      where: {
+        buildingName: buildingName,
+        floorName: floorName,
+        campus_id: campus_id,
+      },
+    });
+
+    if (!structure) {
+      throw new Error(
+        `Building Name "${buildingName}" or Floor Name "${floorName}" has not found on Campus "${campus_id}".`
+      );
+    }
+  }
+
   // Apply filtering based on the parameters
   if (campus_id) {
     whereClause.campus_id = campus_id;
