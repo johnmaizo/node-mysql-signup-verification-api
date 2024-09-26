@@ -219,7 +219,6 @@ async function getEmployeeById(id) {
     include: [
       {
         model: db.Campus,
-        attributes: ["campusName"], // Include only the campus name
       },
     ],
   });
