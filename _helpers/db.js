@@ -1,4 +1,4 @@
-const config = require("config.json");
+require("dotenv").config();
 const mysql = require("mysql2/promise");
 const {Sequelize} = require("sequelize");
 const defineRelationships = require("./relationship");
@@ -12,15 +12,23 @@ initialize();
 
 async function initialize() {
   // create db if it doesn't already exist
-  const {host, port, user, password, database} = config.database;
-  const connection = await mysql.createConnection({host, port, user, password});
-  await connection.query(`CREATE DATABASE IF NOT EXISTS \`${database}\`;`);
+  const {DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME} = process.env;
+  const connection = await mysql.createConnection({
+    host: DB_HOST,
+    port: DB_PORT,
+    user: DB_USER,
+    password: DB_PASSWORD,
+  });
+  await connection.query(`CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\`;`);
 
   // connect to db
-  const sequelize = new Sequelize(database, user, password,  {host: host, dialect: "mysql"});
+  const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
+    host: DB_HOST,
+    dialect: "mysql",
+  });
 
   // Make sure to select the database
-  await connection.query(`USE \`${database}\`;`);
+  await connection.query(`USE \`${DB_NAME}\`;`);
 
   // init models and add them to the exported db object
   // ! Account

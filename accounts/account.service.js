@@ -1,4 +1,4 @@
-﻿const config = require("config.json");
+﻿require('dotenv').config();
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
@@ -381,7 +381,7 @@ async function hash(password) {
 
 function generateJwtToken(account) {
   // create a jwt token containing the account id
-  return jwt.sign({sub: account.id, id: account.id}, config.secret, {
+  return jwt.sign({sub: account.id, id: account.id}, process.env.SECRET, {
     // expiresIn: "5m",
     expiresIn: "30m",
   });
