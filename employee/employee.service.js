@@ -17,7 +17,14 @@ module.exports = {
 async function createEmployee(params, accountId) {
   let roleArray = Array.isArray(params.role) ? params.role : [params.role];
 
-  const rolePriority = ["SuperAdmin", "Admin", "DataCenter", "Registrar", "Accounting", "Dean"];
+  const rolePriority = [
+    "SuperAdmin",
+    "Admin",
+    "DataCenter",
+    "Registrar",
+    "Accounting",
+    "Dean",
+  ];
 
   const foundRoles = rolePriority.filter((role) => roleArray.includes(role));
 
@@ -84,6 +91,21 @@ function transformEmployeeData(employee, roleFilter = null) {
     roles = roles.filter((role) => role === roleFilter);
   }
 
+  const validRoles = [
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.DataCenter,
+    Role.Dean,
+    Role.Accounting,
+  ];
+
+  // Filter roles to keep only valid ones
+  const forValidRoles = roles.filter((role) => validRoles.includes(role));
+
+  // Get the first valid role if available
+  const firstValidRole = roles.length > 0 ? roles[0] : null;
+
   return {
     ...employee.toJSON(),
     role:
@@ -94,7 +116,8 @@ function transformEmployeeData(employee, roleFilter = null) {
         : null,
     fullName:
       `${employee.firstName} ${employee.lastName}` || null,
-    fullNameWithRole: `${employee.firstName} ${employee.lastName} - ${employee.role.split(",")[0]}` || null,
+    // fullNameWithRole: `${employee.firstName} ${employee.lastName} - ${employee.role.split(",")[0]}` || null,
+    fullNameWithRole: `${employee.firstName} ${employee.lastName} - ${forValidRoles}` || null,
     campusName: employee.campus?.campusName || "Campus name not found",
   };
 }
@@ -141,11 +164,21 @@ async function getAllEmployee(campus_id = null, role = null) {
   return await getEmployees(whereClause, role);
 }
 
-async function getAllEmployeeActive(campus_id = null, role = null, forAccounts = null) {
-  const whereClause = { isActive: true, isDeleted: false };
+async function getAllEmployeeActive(
+  campus_id = null,
+  role = null,
+  forAccounts = null
+) {
+  const whereClause = {isActive: true, isDeleted: false};
 
   // Array of roles to filter when forAccounts is true
-  const accountRoles = ["Admin", "DataCenter", "Registrar", "Accounting", "Dean"];
+  const accountRoles = [
+    "Admin",
+    "DataCenter",
+    "Registrar",
+    "Accounting",
+    "Dean",
+  ];
 
   if (campus_id) {
     whereClause.campus_id = campus_id;
@@ -166,9 +199,9 @@ async function getAllEmployeeActive(campus_id = null, role = null, forAccounts =
 
   if (forAccounts) {
     whereClause.role = {
-      [Op.or]: accountRoles.map(accountRole => ({
-        [Op.like]: `%${accountRole}%`
-      }))
+      [Op.or]: accountRoles.map((accountRole) => ({
+        [Op.like]: `%${accountRole}%`,
+      })),
     };
   }
 
