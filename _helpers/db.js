@@ -11,24 +11,50 @@ module.exports = db = {};
 initialize();
 
 async function initialize() {
+  let dbConfig;
+
+  if (process.env.NODE_ENV && process.env.NODE_ENV === "production") {
+    // Use production database configuration
+    dbConfig = {
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      name: process.env.DB_NAME,
+    };
+  } else {
+    // Use local database configuration
+    dbConfig = {
+      host: process.env.LOCAL_DB_HOST,
+      port: process.env.LOCAL_DB_PORT,
+      user: process.env.LOCAL_DB_USER,
+      password: process.env.LOCAL_DB_PASSWORD,
+      name: process.env.LOCAL_DB_NAME,
+    };
+  }
+
   // create db if it doesn't already exist
-  const {DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME} = process.env;
   const connection = await mysql.createConnection({
-    host: DB_HOST,
-    port: DB_PORT,
-    user: DB_USER,
-    password: DB_PASSWORD,
+    host: dbConfig.host,
+    port: dbConfig.port,
+    user: dbConfig.user,
+    password: dbConfig.password,
   });
-  await connection.query(`CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\`;`);
+  await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.name}\`;`);
 
   // connect to db
-  const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
-    host: DB_HOST,
-    dialect: "mysql",
-  });
+  const sequelize = new Sequelize(
+    dbConfig.name,
+    dbConfig.user,
+    dbConfig.password,
+    {
+      host: dbConfig.host,
+      dialect: "mysql",
+    }
+  );
 
   // Make sure to select the database
-  await connection.query(`USE \`${DB_NAME}\`;`);
+  await connection.query(`USE \`${dbConfig.name}\`;`);
 
   // init models and add them to the exported db object
   // ! Account
