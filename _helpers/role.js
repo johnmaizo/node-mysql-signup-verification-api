@@ -7,5 +7,6 @@ module.exports = {
     Instructor: 'Instructor',
     User: 'User',
     Dean: "Dean",
+    Accounting: "Accounting",
     Student: 'Student',
 };

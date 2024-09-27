@@ -48,10 +48,10 @@ function createEmployee(req, res, next) {
   }
 
   function getAllEmployeeActive(req, res, next) {
-    const {campus_id, role} = req.query;
+    const {campus_id, role, forAccounts} = req.query;
 
     employeeService
-      .getAllEmployeeActive(campus_id, role)
+      .getAllEmployeeActive(campus_id, role, forAccounts)
       .then((employees) => res.json(employees))
       .catch(next);
   }
