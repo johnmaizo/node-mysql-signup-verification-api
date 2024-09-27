@@ -17,7 +17,7 @@ async function initialize() {
   await connection.query(`CREATE DATABASE IF NOT EXISTS \`${database}\`;`);
 
   // connect to db
-  const sequelize = new Sequelize(database, user, password, {dialect: "mysql"});
+  const sequelize = new Sequelize(database, user, password,  {host: host, dialect: "mysql"});
 
   // Make sure to select the database
   await connection.query(`USE \`${database}\`;`);
@@ -94,5 +94,5 @@ async function initialize() {
   await InsertSampleData(db);
 
   // Setup the accounts
-  await setupAccounts(db); 
+  await setupAccounts(db);
 }
