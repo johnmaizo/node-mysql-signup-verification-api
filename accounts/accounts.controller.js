@@ -220,8 +220,7 @@ function createSchema(req, res, next) {
 
 
 function create(req, res, next) {
-    // accountService.create(req.body, req.user.id)
-    accountService.create(req.body)
+    accountService.create(req.body, req.user.id)
         .then(account => res.json(account))
         .catch(next);
 }

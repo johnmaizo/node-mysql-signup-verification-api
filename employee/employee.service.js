@@ -15,13 +15,10 @@ module.exports = {
 };
 
 async function createEmployee(params, accountId) {
-  // Convert role to an array if it is not already
   let roleArray = Array.isArray(params.role) ? params.role : [params.role];
 
-  // Define role priorities
-  const rolePriority = ["SuperAdmin", "Admin", "DataCenter", "Registrar"];
+  const rolePriority = ["SuperAdmin", "Admin", "DataCenter", "Registrar", "Accounting", "Dean"];
 
-  // Filter roles to find relevant ones
   const foundRoles = rolePriority.filter((role) => roleArray.includes(role));
 
   // If we found any relevant roles, re-arrange them according to the priority
@@ -94,9 +91,10 @@ function transformEmployeeData(employee, roleFilter = null) {
         ? roles[0]
         : employee.role
         ? employee.role
-        : "Role not found", // Return the filtered role or a default
+        : null,
     fullName:
-      `${employee.firstName} ${employee.lastName}` || "Full name not found",
+      `${employee.firstName} ${employee.lastName}` || null,
+    fullNameWithRole: `${employee.firstName} ${employee.lastName} - ${employee.role.split(",")[0]}` || null,
     campusName: employee.campus?.campusName || "Campus name not found",
   };
 }
@@ -143,8 +141,11 @@ async function getAllEmployee(campus_id = null, role = null) {
   return await getEmployees(whereClause, role);
 }
 
-async function getAllEmployeeActive(campus_id = null, role = null) {
-  const whereClause = {isActive: true, isDeleted: false};
+async function getAllEmployeeActive(campus_id = null, role = null, forAccounts = null) {
+  const whereClause = { isActive: true, isDeleted: false };
+
+  // Array of roles to filter when forAccounts is true
+  const accountRoles = ["Admin", "DataCenter", "Registrar", "Accounting", "Dean"];
 
   if (campus_id) {
     whereClause.campus_id = campus_id;
@@ -161,6 +162,14 @@ async function getAllEmployeeActive(campus_id = null, role = null) {
         [Op.notLike]: `%SuperAdmin%`, // Exclude 'SuperAdmin'
       };
     }
+  }
+
+  if (forAccounts) {
+    whereClause.role = {
+      [Op.or]: accountRoles.map(accountRole => ({
+        [Op.like]: `%${accountRole}%`
+      }))
+    };
   }
 
   return await getEmployees(whereClause, role);

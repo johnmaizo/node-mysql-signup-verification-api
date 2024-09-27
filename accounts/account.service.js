@@ -241,6 +241,19 @@ async function create(params, accountId) {
 
   const roleArray = employee.role.split(", "); // Assuming role is a comma-separated string
 
+  // Validate if employee is already registered
+  const existingEmployee = await db.Account.findOne({
+    where: {employee_id: params.employee_id},
+    include: [
+      {
+        model: db.Employee,
+      },
+    ],
+  });
+  if (existingEmployee) {
+    throw `Employee "${existingEmployee.employee.firstName} ${existingEmployee.employee.lastName}" already has an account.`;
+  }
+
   // Validate if email is already registered
   const existingEmail = await db.Account.findOne({
     where: {email: params.email},
@@ -249,16 +262,29 @@ async function create(params, accountId) {
     throw `Email "${params.email}" is already registered.`;
   }
 
-  const account = new db.Account(params);
-  account.verified = Date.now();
-
-  // Set passwordHash based on the employee's role
   const allowedRoles = [
     Role.SuperAdmin,
     Role.Admin,
     Role.Registrar,
     Role.DataCenter,
+    Role.Dean,
+    Role.Accounting,
   ];
+
+  // Check if password is provided but role is not in allowedRoles
+  if (
+    params.password &&
+    !roleArray.some((role) => allowedRoles.includes(role))
+  ) {
+    throw new Error(
+      "You cannot create an account with a password unless you are in an allowed role."
+    );
+  }
+
+  const account = new db.Account(params);
+  account.verified = Date.now();
+
+  // Set passwordHash based on the employee's role
   if (roleArray.some((role) => allowedRoles.includes(role))) {
     account.passwordHash = await hash(params.password);
   } else {
