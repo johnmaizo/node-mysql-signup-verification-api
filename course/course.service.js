@@ -89,7 +89,7 @@ async function getCourses(whereClause, program_id = null) {
 
     // Modify where clause to fetch courses with either a matching department_id or null
     whereClause[Op.or] = [
-      {department_id: {[Op.eq]: col("Department.department_id")}}, // Matching department
+      {department_id: {[Op.eq]: col("department.department_id")}}, // Matching department
       {department_id: null}, // Allow department_id to be null
     ];
   }
