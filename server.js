@@ -13,17 +13,30 @@ app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
 app.use(cookieParser());
 
-// allow cors requests from any origin and with credentials
+// List of allowed origins
+const allowedOrigins = ["https://misbenedictocollege.netlify.app"];
+
 app.use(
-  cors({origin: (origin, callback) => callback(null, true), credentials: true})
+  cors({
+    origin: function (origin, callback) {
+      // allow requests with no origin (like mobile apps, curl requests)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg =
+          "The CORS policy for this site does not allow access from the specified Origin.";
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
+    credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+  })
 );
 
-app.use("/external", require("./_external/externals.controller")) // ! Externals
+app.use("/external", require("./_external/externals.controller")); // ! Externals
 
 // api routes
 // ! Employee
 app.use("/employee", require("./employee/employees.controller"));
-
 
 // ! Accounts
 app.use("/accounts", require("./accounts/accounts.controller"));
@@ -47,14 +60,19 @@ app.use("/programs", require("./program/programs.controller"));
 app.use("/course", require("./course/courses.controller"));
 
 // ! Program Course
-app.use("/program-courses", require("./program_course/program_courses.controller"));
+app.use(
+  "/program-courses",
+  require("./program_course/program_courses.controller")
+);
 
 // ! Building Structure
-app.use("/building-structure", require("./buildingStructure/buildingstructures.controller"));
+app.use(
+  "/building-structure",
+  require("./buildingStructure/buildingstructures.controller")
+);
 
 // ! Enrollment Student
 app.use("/enrollment", require("./enrollment/enrollments.controller"));
-
 
 // swagger docs route
 app.use("/api-docs", require("_helpers/swagger"));
