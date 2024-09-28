@@ -27,18 +27,18 @@ async function setupAccounts(db) {
     if (!superAdminUser || !superAdminEmployee) {
       const superAdminPasswordHash = await bcrypt.hash("aw12345", 10);
 
-      const newEmployeeSuperAdmin = new db.Employee({
-        role: Role.SuperAdmin,
-        title: "SuperDuperAdmin",
-        firstName: "John Robert",
-        middleName: "Libaton",
-        lastName: "Maizo",
-        gender: "Male",
-        address: "C.D. Seno St., Tipolo, Mandaue City",
-        contactNumber: "09321146580",
-      });
+      // const newEmployeeSuperAdmin = new db.Employee({
+      //   role: Role.SuperAdmin,
+      //   title: "SuperDuperAdmin",
+      //   firstName: "John Robert",
+      //   middleName: "Libaton",
+      //   lastName: "Maizo",
+      //   gender: "Male",
+      //   address: "C.D. Seno St., Tipolo, Mandaue City",
+      //   contactNumber: "09321146580",
+      // });
 
-      await newEmployeeSuperAdmin.save();
+      // await newEmployeeSuperAdmin.save();
 
       const newSuperAdmin = new db.Account({
         employee_id: 1,
@@ -69,20 +69,20 @@ async function setupAccounts(db) {
     if (!adminUser || !adminEmployee) {
       const adminPasswordHash = await bcrypt.hash("aw12345", 10);
 
-      const newEmployeeAdmin = new db.Employee({
-        role: Role.Admin,
-        title: "Administrator",
-        firstName: "John Robert",
-        middleName: "Dope",
-        lastName: "Gwapo",
-        gender: "Male",
-        address: "Banilad, Mandaue City",
-        contactNumber: "09324568324",
+      // const newEmployeeAdmin = new db.Employee({
+      //   role: Role.Admin,
+      //   title: "Administrator",
+      //   firstName: "John Robert",
+      //   middleName: "Dope",
+      //   lastName: "Gwapo",
+      //   gender: "Male",
+      //   address: "Banilad, Mandaue City",
+      //   contactNumber: "09324568324",
 
-        campus_id: 1, // Add a valid campus_id here
-      });
+      //   campus_id: 1, // Add a valid campus_id here
+      // });
 
-      await newEmployeeAdmin.save();
+      // await newEmployeeAdmin.save();
 
       const newAdmin = new db.Account({
         employee_id: 2,
@@ -113,20 +113,20 @@ async function setupAccounts(db) {
     if (!adminUserCebu || !adminCebuEmployee) {
       const adminPasswordHash = await bcrypt.hash("aw12345", 10);
 
-      const newEmployeeCebuAdmin = new db.Employee({
-        role: Role.Admin,
-        title: "Administrator",
-        firstName: "Juan",
-        middleName: "Cingko",
-        lastName: "Makabugto",
-        gender: "Male",
-        address: "Banilad, Mandaue City",
-        contactNumber: "09485324123",
+      // const newEmployeeCebuAdmin = new db.Employee({
+      //   role: Role.Admin,
+      //   title: "Administrator",
+      //   firstName: "Juan",
+      //   middleName: "Cingko",
+      //   lastName: "Makabugto",
+      //   gender: "Male",
+      //   address: "Banilad, Mandaue City",
+      //   contactNumber: "09485324123",
 
-        campus_id: 2, // Add a valid campus_id here
-      });
+      //   campus_id: 2,
+      // });
 
-      await newEmployeeCebuAdmin.save();
+      // await newEmployeeCebuAdmin.save();
 
       const newAdmin = new db.Account({
         employee_id: 3,
