@@ -136,10 +136,23 @@ function transformEmployeeData(employee, roleFilter = null) {
   // Get the first valid role if available
   const firstValidRole = roles.length > 0 ? roles[0] : null;
 
-  // Check if qualifications exist and ensure it's an array before mapping
+  // Handle qualifications, parse the string into an array if needed
+  let qualificationsArray = [];
+  if (typeof employee.qualifications === "string") {
+    try {
+      qualificationsArray = JSON.parse(employee.qualifications);
+    } catch (error) {
+      console.error("Error parsing qualifications:", error);
+      qualificationsArray = []; // Handle the error by returning an empty array
+    }
+  } else if (Array.isArray(employee.qualifications)) {
+    qualificationsArray = employee.qualifications;
+  }
+
+  // Check if qualifications exist and map the abbreviations
   const qualifications =
-    Array.isArray(employee.qualifications) && employee.qualifications.length > 0
-      ? `, (${employee.qualifications.map((q) => q.abbreviation).join(", ")})`
+    qualificationsArray.length > 0
+      ? `, (${qualificationsArray.map((q) => q.abbreviation).join(", ")})`
       : "";
 
   return {
