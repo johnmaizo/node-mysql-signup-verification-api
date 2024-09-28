@@ -227,6 +227,16 @@ async function getById(id) {
   return basicDetails(account, account.employee.campus, account.employee);
 }
 
+/**
+ * Creates a new account based on the provided parameters.
+ * @param {Object} params - An object containing the required parameters.
+ * @param {number} params.employee_id - The ID of the employee to create an account for.
+ * @param {string} [params.email] - The email address to associate with the account.
+ * @param {string} [params.password] - The password to associate with the account (required for allowed roles only).
+ * @param {number} accountId - The ID of the account performing the action.
+ * @returns {Promise<Account>} The newly created account with basic details.
+ * @throws {Error} If the employee ID is not provided, if the employee is already registered, or if there is an error with the API requests.
+ */
 async function create(params, accountId) {
   // Ensure employee_id is provided
   if (!params.employee_id) {
