@@ -136,9 +136,9 @@ function transformEmployeeData(employee, roleFilter = null) {
   // Get the first valid role if available
   const firstValidRole = roles.length > 0 ? roles[0] : null;
 
-  // Check if qualifications exist and map the abbreviations
+  // Check if qualifications exist and ensure it's an array before mapping
   const qualifications =
-    employee.qualifications && employee.qualifications.length > 0
+    Array.isArray(employee.qualifications) && employee.qualifications.length > 0
       ? `, (${employee.qualifications.map((q) => q.abbreviation).join(", ")})`
       : "";
 
