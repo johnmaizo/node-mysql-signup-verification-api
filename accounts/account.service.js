@@ -467,8 +467,7 @@ function basicDetails(account, campus, employee) {
     created: created ? created.toISOString() : null,
     updated: updated ? updated.toISOString() : null,
     isVerified,
-    otherRole:
-      roles.length > 1 ? employee.role.split(",").slice(1).join(",") : null,
+    allRoles: employee.role || null,
     fullName:
       `${employee.title} ${employee.firstName}${
         employee.middleName != null ? ` ${`${employee.middleName[0]}.`}` : ""

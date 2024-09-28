@@ -174,8 +174,7 @@ function transformEmployeeData(employee, roleFilter = null) {
         : employee.role
         ? employee.role
         : null,
-    otherRole:
-      roles.length > 1 ? employee.role.split(",").slice(1).join(",") : null,
+    allRoles: employee.role || null,
     fullName:
       `${employee.title} ${employee.firstName}${
         employee.middleName != null ? ` ${`${employee.middleName[0]}.`}` : ""
