@@ -13,8 +13,11 @@ app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json());
 app.use(cookieParser());
 
-// List of allowed origins
-const allowedOrigins = ["https://misbenedictocollege.netlify.app"];
+// List of allowed origins for both production and development
+const allowedOrigins = [
+  "https://misbenedictocollege.netlify.app", // Production frontend
+  "http://localhost:5173", // Development frontend
+];
 
 app.use(
   cors({
