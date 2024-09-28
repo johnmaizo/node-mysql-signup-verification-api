@@ -105,7 +105,7 @@ function createEmployeeSchema(req, res, next) {
 
         campus_id: requireCampus ? Joi.number().empty("") : Joi.number().required(),
         
-        department_id: requireDepartment ? Joi.number().empty("") : Joi.number().required(),
+        department_id: requireDepartment ? Joi.number().required() : Joi.optional().allow(null),
 
         qualifications: Joi.array().items(
             Joi.object({

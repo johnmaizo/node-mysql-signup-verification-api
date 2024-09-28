@@ -53,11 +53,11 @@ async function createEmployee(params, accountId) {
   // Convert the role array back to a comma-separated string
   params.role = roleArray.join(", ");
 
-  // If the roleArray contains "SuperAdmin", set campus_id to null
-  if (roleArray.includes("SuperAdmin")) {
-    params.campus_id = null; // Set campus_id to null for SuperAdmin
-    params.department_id = null; // Set department_id to null for SuperAdmin
-  } else {
+  if (
+    roleArray.includes("Dean") ||
+    roleArray.includes("Teacher") ||
+    roleArray.includes("Instructor")
+  ) {
     // Get the campusName based on campus_id and validate
     const campus = await db.Campus.findByPk(params.campus_id);
     if (!campus) {
@@ -79,6 +79,17 @@ async function createEmployee(params, accountId) {
     if (!department) {
       throw `Department with ID "${params.department_id}" not found.`;
     }
+  } else if (roleArray.includes("SuperAdmin")) {
+    params.campus_id = null; // Set campus_id to null for SuperAdmin
+    params.department_id = null; // Set department_id to null for SuperAdmin
+  } else {
+    // Get the campusName based on campus_id and validate
+    const campus = await db.Campus.findByPk(params.campus_id);
+    if (!campus) {
+      throw `Campus with ID "${params.campus_id}" not found.`;
+    }
+
+    params.department_id = null;
   }
 
   // Validate if the employee already exists using both firstName and lastName
