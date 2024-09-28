@@ -5,6 +5,7 @@ module.exports = {
     DataCenter: 'DataCenter',
     Staff: 'Staff',
     Instructor: 'Instructor',
+    Teacher: 'Teacher',
     User: 'User',
     Dean: "Dean",
     Accounting: "Accounting",

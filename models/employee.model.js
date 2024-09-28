@@ -27,18 +27,33 @@ module.exports = (sequelize) => {
       },
     },
 
+    department_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: "departments",
+        key: "department_id",
+      },
+    },
+
     role: {type: DataTypes.STRING, allowNull: false},
-    roleType: {type: DataTypes.STRING, allowNull: true},
 
-    title: {type: DataTypes.STRING, allowNull: false},
-
+    title: {type: DataTypes.STRING, allowNull: true},
     firstName: {type: DataTypes.STRING, allowNull: false},
     middleName: {type: DataTypes.STRING, allowNull: true},
     lastName: {type: DataTypes.STRING, allowNull: false},
 
+    qualifications: {
+      type: DataTypes.JSON, // Can also use DataTypes.ARRAY(DataTypes.STRING) for storing an array of strings
+      allowNull: true,
+      defaultValue: null,
+    },
+
     gender: {type: DataTypes.STRING(10), allowNull: false},
     address: {type: DataTypes.STRING(95), allowNull: false},
     contactNumber: {type: DataTypes.STRING(15), allowNull: false},
+
+    
 
     isActive: {type: DataTypes.BOOLEAN, defaultValue: true},
 
