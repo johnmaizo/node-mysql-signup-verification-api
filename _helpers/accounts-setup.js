@@ -29,7 +29,7 @@ async function setupAccounts(db) {
 
       const newEmployeeSuperAdmin = new db.Employee({
         role: Role.SuperAdmin,
-        title: "Super Duper Admin",
+        title: "SuperDuperAdmin",
         firstName: "John Robert",
         middleName: "Libaton",
         lastName: "Maizo",
