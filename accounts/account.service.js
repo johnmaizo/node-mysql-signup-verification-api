@@ -1,4 +1,4 @@
-﻿require('dotenv').config();
+﻿require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
@@ -417,6 +417,31 @@ function basicDetails(account, campus, employee) {
   const {title, firstName, middleName, lastName, contactNumber, role} =
     employee;
 
+  let roles = employee.role
+    ? employee.role.split(",").map((r) => r.trim())
+    : [];
+
+  const validRoles = [
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.DataCenter,
+    Role.Dean,
+    Role.Accounting,
+  ];
+
+  // Filter roles to keep only valid ones
+  const forValidRoles = roles.filter((role) => validRoles.includes(role));
+
+  // Get the first valid role if available
+  const firstValidRole = roles.length > 0 ? roles[0] : null;
+
+  // Check if qualifications exist and map the abbreviations
+  const qualifications =
+    employee.qualifications && employee.qualifications.length > 0
+      ? `, (${employee.qualifications.map((q) => q.abbreviation).join(", ")})`
+      : "";
+
   return {
     id,
     title,
@@ -429,6 +454,19 @@ function basicDetails(account, campus, employee) {
     created: created ? created.toISOString() : null,
     updated: updated ? updated.toISOString() : null,
     isVerified,
+    otherRole:
+      roles.length > 1 ? employee.role.split(",").slice(1).join(",") : null,
+    fullName:
+      `${employee.title} ${employee.firstName}${
+        employee.middleName != null ? ` ${`${employee.middleName[0]}.`}` : ""
+      } ${employee.lastName}${qualifications}` || null,
+    fullNameWithRole:
+      `${employee.title} ${employee.firstName}${
+        employee.middleName != null ? ` ${`${employee.middleName[0]}.`}` : ""
+      } ${employee.lastName}${qualifications} - ${
+        firstValidRole ? firstValidRole : forValidRoles
+      }` || null,
+
     // Include campusName if the role is not SuperAdmin
     ...(role !== "SuperAdmin" && campus
       ? {campusName: campus.campusName, campus_id: campus.campus_id}

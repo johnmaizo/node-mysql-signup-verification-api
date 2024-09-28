@@ -17,6 +17,19 @@ module.exports = {
 async function createEmployee(params, accountId) {
   let roleArray = Array.isArray(params.role) ? params.role : [params.role];
 
+  // Define roles that require department_id
+  const rolesRequiringDepartment = ["Dean", "Instructor", "Teacher"];
+
+  // Check if any of the roles requiring department_id are present in the roleArray
+  const requiresDepartment = roleArray.some((role) =>
+    rolesRequiringDepartment.includes(role)
+  );
+
+  // If one of the required roles is found and department_id is missing, throw an error
+  if (requiresDepartment && !params.department_id) {
+    throw "Department is required for roles: Dean, Instructor, or Teacher.";
+  }
+
   const rolePriority = [
     "SuperAdmin",
     "Admin",
@@ -43,11 +56,28 @@ async function createEmployee(params, accountId) {
   // If the roleArray contains "SuperAdmin", set campus_id to null
   if (roleArray.includes("SuperAdmin")) {
     params.campus_id = null; // Set campus_id to null for SuperAdmin
+    params.department_id = null; // Set department_id to null for SuperAdmin
   } else {
     // Get the campusName based on campus_id and validate
     const campus = await db.Campus.findByPk(params.campus_id);
     if (!campus) {
       throw `Campus with ID "${params.campus_id}" not found.`;
+    }
+
+    // Get the departmentName based on department_id and validate
+    const department = await db.Department.findByPk(params.department_id, {
+      include: [
+        {
+          model: db.Campus,
+          as: "campus",
+          where: {
+            campus_id: params.campus_id, // Use updated campus_id
+          },
+        },
+      ],
+    });
+    if (!department) {
+      throw `Department with ID "${params.department_id}" not found.`;
     }
   }
 
@@ -106,6 +136,12 @@ function transformEmployeeData(employee, roleFilter = null) {
   // Get the first valid role if available
   const firstValidRole = roles.length > 0 ? roles[0] : null;
 
+  // Check if qualifications exist and map the abbreviations
+  const qualifications =
+    employee.qualifications && employee.qualifications.length > 0
+      ? `, (${employee.qualifications.map((q) => q.abbreviation).join(", ")})`
+      : "";
+
   return {
     ...employee.toJSON(),
     role:
@@ -114,22 +150,46 @@ function transformEmployeeData(employee, roleFilter = null) {
         : employee.role
         ? employee.role
         : null,
+    otherRole:
+      roles.length > 1 ? employee.role.split(",").slice(1).join(",") : null,
     fullName:
-      `${employee.firstName} ${employee.lastName}` || null,
-    // fullNameWithRole: `${employee.firstName} ${employee.lastName} - ${employee.role.split(",")[0]}` || null,
-    fullNameWithRole: `${employee.firstName} ${employee.lastName} - ${forValidRoles}` || null,
+      `${employee.title} ${employee.firstName}${
+        employee.middleName != null ? ` ${`${employee.middleName[0]}.`}` : ""
+      } ${employee.lastName}${qualifications}` || null,
+    fullNameWithRole:
+      `${employee.title} ${employee.firstName}${
+        employee.middleName != null ? ` ${`${employee.middleName[0]}.`}` : ""
+      } ${employee.lastName}${qualifications} - ${
+        firstValidRole ? firstValidRole : forValidRoles
+      }` || null,
     campusName: employee.campus?.campusName || "Campus name not found",
   };
 }
 
 // Common function to get employees based on filter conditions
-async function getEmployees(whereClause, roleFilter = null) {
+async function getEmployees(
+  whereClause,
+  roleFilter = null,
+  departmentCode = null
+) {
+  if (departmentCode) {
+    const department = await db.Department.findOne({where: {departmentCode}});
+    if (!department) {
+      throw `Department with code "${departmentCode}" not found.`;
+    }
+  }
+
   const employees = await db.Employee.findAll({
     where: whereClause,
     include: [
       {
         model: db.Campus,
         attributes: ["campusName"], // Include only the campus name
+      },
+      {
+        model: db.Department,
+        where: departmentCode ? {departmentCode: departmentCode} : null,
+        attributes: ["departmentName", "departmentCode"],
       },
     ],
   });
@@ -140,8 +200,22 @@ async function getEmployees(whereClause, roleFilter = null) {
 }
 
 // Main function to get all employees with optional campus_id and role filters
-async function getAllEmployee(campus_id = null, role = null) {
+async function getAllEmployee(
+  campus_id = null,
+  role = null,
+  forAccounts = null,
+  departmentCode = null
+) {
   const whereClause = {isDeleted: false};
+
+  // Array of roles to filter when forAccounts is true
+  const accountRoles = [
+    "Admin",
+    "DataCenter",
+    "Registrar",
+    "Accounting",
+    "Dean",
+  ];
 
   // Add campus_id condition if provided
   if (campus_id) {
@@ -161,13 +235,22 @@ async function getAllEmployee(campus_id = null, role = null) {
     }
   }
 
-  return await getEmployees(whereClause, role);
+  if (forAccounts) {
+    whereClause.role = {
+      [Op.or]: accountRoles.map((accountRole) => ({
+        [Op.like]: `%${accountRole}%`,
+      })),
+    };
+  }
+
+  return await getEmployees(whereClause, role, departmentCode);
 }
 
 async function getAllEmployeeActive(
   campus_id = null,
   role = null,
-  forAccounts = null
+  forAccounts = null,
+  departmentCode = null
 ) {
   const whereClause = {isActive: true, isDeleted: false};
 
@@ -205,12 +288,26 @@ async function getAllEmployeeActive(
     };
   }
 
-  return await getEmployees(whereClause, role);
+  return await getEmployees(whereClause, role, departmentCode);
 }
 
-async function getAllEmployeeDeleted(campus_id = null, role = null) {
+async function getAllEmployeeDeleted(
+  campus_id = null,
+  role = null,
+  forAccounts = null,
+  departmentCode = null
+) {
   const whereClause = {isDeleted: true};
 
+  // Array of roles to filter when forAccounts is true
+  const accountRoles = [
+    "Admin",
+    "DataCenter",
+    "Registrar",
+    "Accounting",
+    "Dean",
+  ];
+
   if (campus_id) {
     whereClause.campus_id = campus_id;
   }
@@ -228,11 +325,33 @@ async function getAllEmployeeDeleted(campus_id = null, role = null) {
     }
   }
 
-  return await getEmployees(whereClause, role);
+  if (forAccounts) {
+    whereClause.role = {
+      [Op.or]: accountRoles.map((accountRole) => ({
+        [Op.like]: `%${accountRole}%`,
+      })),
+    };
+  }
+
+  return await getEmployees(whereClause, role, departmentCode);
 }
 
-async function getAllEmployeeCount(campus_id = null, role = null) {
+async function getAllEmployeeCount(
+  campus_id = null,
+  role = null,
+  forAccounts = null,
+  departmentCode = null
+) {
   const whereClause = {isActive: true, isDeleted: false};
+
+  // Array of roles to filter when forAccounts is true
+  const accountRoles = [
+    "Admin",
+    "DataCenter",
+    "Registrar",
+    "Accounting",
+    "Dean",
+  ];
 
   if (campus_id) {
     whereClause.campus_id = campus_id;
@@ -249,10 +368,24 @@ async function getAllEmployeeCount(campus_id = null, role = null) {
         [Op.notLike]: `%SuperAdmin%`, // Exclude 'SuperAdmin'
       };
     }
+  }
+
+  if (forAccounts) {
+    whereClause.role = {
+      [Op.or]: accountRoles.map((accountRole) => ({
+        [Op.like]: `%${accountRole}%`,
+      })),
+    };
   }
 
   return await db.Employee.count({
     where: whereClause,
+    include: [
+      {
+        model: db.Department,
+        where: departmentCode ? {code: departmentCode} : null,
+      },
+    ],
   });
 }
 
@@ -276,9 +409,22 @@ async function updateEmployee(id, params, accountId) {
   if (!employee) throw "Employee not found";
 
   // Convert role to an array if it is not already
-  const roleArray = Array.isArray(params.role) ? params.role : [params.role];
+  let roleArray = Array.isArray(params.role) ? params.role : [params.role];
 
-  // Convert the role array to a comma-separated string if it's an array
+  // Define roles that require department_id
+  const rolesRequiringDepartment = ["Dean", "Instructor", "Teacher"];
+
+  // Check if any of the roles requiring department_id are present in the roleArray
+  const requiresDepartment = roleArray.some((role) =>
+    rolesRequiringDepartment.includes(role)
+  );
+
+  // If one of the required roles is found and department_id is missing, throw an error
+  if (requiresDepartment && !params.department_id) {
+    throw "Department is required for roles: Dean, Instructor, or Teacher.";
+  }
+
+  // Convert the role array to a comma-separated string
   params.role = roleArray.join(", ");
 
   // Check if the action is only to delete the employee

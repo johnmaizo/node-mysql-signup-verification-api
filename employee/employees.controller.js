@@ -7,7 +7,7 @@ const Role = require("_helpers/role");
 const employeeService = require("./employee.service");
 
 router.post('/add-employee', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]), createEmployeeSchema, createEmployee);
-router.get('/', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]), getAllEmployee);
+router.get('/', getAllEmployee);
 router.get('/count', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]), getAllEmployeeCount);
 router.get('/active', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]), getAllEmployeeActive);
 router.get('/deleted', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]), getAllEmployeeDeleted);
@@ -29,38 +29,38 @@ function createEmployee(req, res, next) {
 
 
   function getAllEmployee(req, res, next) {
-    const {campus_id, role} = req.query;
+    const {campus_id, role, forAccounts, departmentCode} = req.query;
 
     employeeService
-      .getAllEmployee(campus_id, role)
+      .getAllEmployee(campus_id, role, forAccounts, departmentCode)
       .then((employees) => res.json(employees))
       .catch(next);
   }
 
 
   function getAllEmployeeCount(req, res, next) {
-    const {campus_id, role} = req.query;
+    const {campus_id, role, forAccounts, departmentCode} = req.query;
 
     employeeService
-      .getAllEmployeeCount(campus_id, role)
+      .getAllEmployeeCount(campus_id, role, forAccounts, departmentCode)
       .then((employees) => res.json(employees))
       .catch(next);
   }
 
   function getAllEmployeeActive(req, res, next) {
-    const {campus_id, role, forAccounts} = req.query;
+    const {campus_id, role, forAccounts, departmentCode} = req.query;
 
     employeeService
-      .getAllEmployeeActive(campus_id, role, forAccounts)
+      .getAllEmployeeActive(campus_id, role, forAccounts, departmentCode)
       .then((employees) => res.json(employees))
       .catch(next);
   }
 
   function getAllEmployeeDeleted(req, res, next) {
-    const {campus_id, role} = req.query;
+    const {campus_id, role, forAccounts, departmentCode} = req.query;
 
     employeeService
-      .getAllEmployeeDeleted(campus_id, role)
+      .getAllEmployeeDeleted(campus_id, role, forAccounts, departmentCode)
       .then((employees) => res.json(employees))
       .catch(next);
   }
@@ -78,14 +78,17 @@ function createEmployee(req, res, next) {
 function createEmployeeSchema(req, res, next) {
     const roles = req.body.role;
     
-    // Check if roles include SuperAdmin
+    // Check if roles include SuperAdmin for campus requirement
     const requireCampus = Array.isArray(roles)
         ? roles.some(role => [Role.SuperAdmin].includes(role))
         : [Role.SuperAdmin].includes(roles);
 
+    // Check if roles include Instructor, Teacher, or Dean for department requirement
+    const requireDepartment = Array.isArray(roles)
+        ? roles.some(role => [Role.Instructor, Role.Teacher, Role.Dean].includes(role))
+        : [Role.Instructor, Role.Teacher, Role.Dean].includes(roles);
 
     const schema = Joi.object({
-        
         role: Joi.alternatives().try(
             Joi.string(),
             Joi.array().items(Joi.string())
@@ -100,7 +103,16 @@ function createEmployeeSchema(req, res, next) {
         address: Joi.string().required(),
         contactNumber: Joi.string().required(),
 
-        campus_id:  requireCampus ? Joi.number().empty("") : Joi.number().required(),
+        campus_id: requireCampus ? Joi.number().empty("") : Joi.number().required(),
+        
+        department_id: requireDepartment ? Joi.number().empty("") : Joi.number().required(),
+
+        qualifications: Joi.array().items(
+            Joi.object({
+                abbreviation: Joi.string().required(),
+                meaning: Joi.string().required(),
+            })
+        ).optional().allow(null), // Allow null or an empty array for employees without qualifications
     });
 
     validateRequest(req, next, schema);
@@ -109,29 +121,46 @@ function createEmployeeSchema(req, res, next) {
 
 
 function updateEmployeeSchema(req, res, next) {
-    const schemaRules = {
-        campus_id: Joi.number().empty(''),
+  const roles = req.body.role;
 
-        title: Joi.string().empty(''),
-        firstName: Joi.string().empty(''),
-        middleName: Joi.string().allow(null, '').optional(),
-        lastName: Joi.string().empty(''),
+  // Check if roles include SuperAdmin for campus requirement
+  const requireCampus = Array.isArray(roles)
+      ? roles.some(role => [Role.SuperAdmin].includes(role))
+      : [Role.SuperAdmin].includes(roles);
 
-        address: Joi.string().empty(''),
-        contactNumber: Joi.string().empty(''),
-        gender: Joi.string().empty(''),
+  // Check if roles include Instructor, Teacher, or Dean for department requirement
+  const requireDepartment = Array.isArray(roles)
+      ? roles.some(role => [Role.Instructor, Role.Teacher, Role.Dean].includes(role))
+      : [Role.Instructor, Role.Teacher, Role.Dean].includes(roles);
 
-        role: Joi.alternatives().try(
-            Joi.string(),
-            Joi.array().items(Joi.string())
-        ).empty(''),
-    };
+  const schema = Joi.object({
+      role: Joi.alternatives().try(
+          Joi.string(),
+          Joi.array().items(Joi.string())
+      ).optional(),
 
-    // only admins can update role
-    if (req.user.role === Role.Admin) {
-        schemaRules.role = Joi.string().empty('');
-    }
-    validateRequest(req, next, schemaRules);
+      title: Joi.string().optional(),
+      firstName: Joi.string().optional(),
+      middleName: Joi.string().allow(null, '').optional(),
+      lastName: Joi.string().optional(),
+      
+      gender: Joi.string().optional(),
+      address: Joi.string().optional(),
+      contactNumber: Joi.string().optional(),
+
+      campus_id: requireCampus ? Joi.number().empty("") : Joi.number().optional(),
+      
+      department_id: requireDepartment ? Joi.number().empty("") : Joi.number().optional(),
+
+      qualifications: Joi.array().items(
+          Joi.object({
+              abbreviation: Joi.string().required(),
+              meaning: Joi.string().required(),
+          })
+      ).optional().allow(null), // Allow null or an empty array for employees without qualifications
+  });
+
+  validateRequest(req, next, schema);
 }
 
 function updateEmployee(req, res, next) {
