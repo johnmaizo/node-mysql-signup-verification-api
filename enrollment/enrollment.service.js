@@ -338,8 +338,6 @@ async function fetchApplicantData(campusName = null) {
             active,
           } = applicantData;
 
-          if (!program) continue; // Skip if program is missing
-
           const programRecord = await db.Program.findOne({
             where: {programCode: program},
           });
