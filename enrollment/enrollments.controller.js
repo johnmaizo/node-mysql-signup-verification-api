@@ -6,8 +6,6 @@ const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const enrollmentService = require("./enrollment.service");
 
-// router.post("/enroll-student", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]), enrollStudentSchema, enrollStudent);
-// router.post("/enroll-student", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]), enrollStudent);
 router.post(
   "/enroll-student",
   authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
@@ -24,15 +22,27 @@ router.get(
   getAllStudentOfficialCount
 );
 router.get("/get-chart-data", getChartData);
-router.get(
-  "/active",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
-  getAllStudentsOfficialActive
-);
+router.get("/fetch-applicant-data", fetchApplicantData);
+// router.get(
+//   "/active",
+//   authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+//   getAllStudentsOfficialActive
+// );
 router.get(
   "/:id",
   authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
   getStudentById
+);
+router.put(
+  "/enrollmentprocess",
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  enrollmentProcessSchema,
+  updateEnrollmentProcess
+);
+router.get(
+  "/get-enrollment-process/:id",
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  getEnrollmentProcessByApplicantId
 );
 router.put(
   "/:id",
@@ -89,16 +99,45 @@ function getChartData(req, res, next) {
     .catch(next);
 }
 
-function getAllStudentsOfficialActive(req, res, next) {
+function fetchApplicantData(req, res, next) {
+  const {campusName} = req.query;
+
   enrollmentService
-    .getAllStudentsOfficialActive()
-    .then((students) => res.json(students))
-    .catch(next);
+    .fetchApplicantData(campusName)
+    .then((result) => {
+      const message = result.isUpToDate
+        ? "All applicants are up to date."
+        : "Fetch Applicant Data Successfully! Updates or new entries have been made.";
+      res.json({message});
+    })
+    .catch((error) => {
+      console.error(
+        "Error response:",
+        error.response ? error.response.data : error.message
+      );
+      next(error);
+    });
 }
+
+// function getAllStudentsOfficialActive(req, res, next) {
+//   enrollmentService
+//     .getAllStudentsOfficialActive()
+//     .then((students) => res.json(students))
+//     .catch(next);
+// }
 
 function getStudentById(req, res, next) {
   enrollmentService
     .getStudentById(req.params.id)
+    .then((student) => (student ? res.json(student) : res.sendStatus(404)))
+    .catch(next);
+}
+
+function getEnrollmentProcessByApplicantId(req, res, next) {
+  console.log(req.user.role);
+
+  enrollmentService
+    .getEnrollmentProcessByApplicantId(req.params.id)
     .then((student) => (student ? res.json(student) : res.sendStatus(404)))
     .catch(next);
 }
@@ -109,6 +148,17 @@ function updateStudent(req, res, next) {
     .then(() =>
       res.json({
         message: "Student Updated Successfully.",
+      })
+    )
+    .catch(next);
+}
+
+function updateEnrollmentProcess(req, res, next) {
+  enrollmentService
+    .updateEnrollmentProcess(req.body)
+    .then(() =>
+      res.json({
+        message: "Enrollment process updated.",
       })
     )
     .catch(next);
@@ -157,6 +207,17 @@ function updateStudentSchema(req, res, next) {
     isActive: Joi.boolean().empty(""),
 
     isDeleted: Joi.boolean().empty(""),
+  });
+  validateRequest(req, next, schema);
+}
+
+function enrollmentProcessSchema(req, res, next) {
+  const schema = Joi.object({
+    applicant_id: Joi.number().required(),
+    allRoles: Joi.string().required(),
+    specificRole: Joi.string().required(),
+    status: Joi.string().required(),
+    payment_confirmed: Joi.boolean().empty(""),
   });
   validateRequest(req, next, schema);
 }

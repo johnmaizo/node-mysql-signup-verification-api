@@ -4,6 +4,8 @@ const Role = require("_helpers/role");
 
 const axios = require("axios");
 
+const {sequelize} = require("_helpers/db"); // Import sequelize from db.js
+
 require("dotenv").config();
 
 module.exports = {
@@ -16,6 +18,11 @@ module.exports = {
   getStudentById,
   updateStudent,
   // deleteStudent,
+
+  updateEnrollmentProcess,
+  getEnrollmentProcessByApplicantId,
+
+  fetchApplicantData,
 };
 
 const url = process.env.MHAFRIC_API;
@@ -282,6 +289,135 @@ async function generateStudentId(campusName) {
     return `${currentYear}-${newIdNumber}`;
   } else {
     return `${currentYear}-0001`; // ! Change to 5 later
+  }
+}
+
+async function fetchApplicantData(campusName = null) {
+  let apiUrl;
+  const {sequelize} = require("_helpers/db");
+
+  // Fetch the campus based on the campus name
+  if (campusName) {
+    const campus = await db.Campus.findOne({where: {campusName}});
+
+    if (!campus) {
+      throw new Error("Campus not found");
+    }
+
+    apiUrl = `https://afknon.pythonanywhere.com/api/stdntbasicinfoapplication/?filter=campus=${campus.campusName}`;
+  } else {
+    apiUrl = "https://afknon.pythonanywhere.com/api/stdntbasicinfoapplication/";
+  }
+
+  const transaction = await sequelize.transaction();
+  let isUpToDate = true; // Flag to check if data is up to date
+
+  try {
+    const response = await axios.get(apiUrl);
+
+    if (response.data && Array.isArray(response.data)) {
+      const applicantsData = response.data;
+
+      for (let applicantData of applicantsData) {
+        try {
+          const {
+            first_name,
+            middle_name,
+            last_name,
+            suffix,
+            is_transferee,
+            year_level,
+            contact_number,
+            address,
+            campus,
+            program,
+            birth_date,
+            sex,
+            email,
+            status,
+            active,
+          } = applicantData;
+
+          if (!program) continue; // Skip if program is missing
+
+          const programRecord = await db.Program.findOne({
+            where: {programCode: program},
+          });
+
+          if (!programRecord) continue; // Skip if program is not found
+
+          const campusRecord = await db.Campus.findOne({
+            where: {campusName: campus},
+          });
+
+          if (!campusRecord) continue; // Skip if campus is not found
+
+          // Create the new applicant object without applicant_id
+          const newApplicant = {
+            firstName: first_name || null,
+            middleName: middle_name || null,
+            lastName: last_name || null,
+            suffix: suffix || null,
+            gender: sex || null,
+            email: email || null,
+            contactNumber: contact_number || null,
+            address: address || null,
+            yearLevel: year_level || null,
+            isTransferee: is_transferee ? true : false,
+            campus_id: campusRecord.campus_id,
+            program_id: programRecord.program_id,
+            birthDate: birth_date || null,
+            status: status || null,
+            isActive: active || null,
+          };
+
+          // Check if the applicant already exists based on unique constraints
+          const existingApplicant = await db.Applicant.findOne({
+            where: {
+              firstName: first_name,
+              lastName: last_name,
+              birthDate: birth_date,
+              campus_id: campusRecord.campus_id,
+            },
+          });
+
+          if (existingApplicant) {
+            // Compare data to check if an update is needed
+            const isDifferent = Object.keys(newApplicant).some(
+              (key) => newApplicant[key] !== existingApplicant[key]
+            );
+
+            if (isDifferent) {
+              // Update existing applicant record if there's a difference
+              await db.Applicant.update(newApplicant, {
+                where: {applicant_id: existingApplicant.applicant_id},
+                transaction,
+              });
+              console.log(`Updated applicant: ${first_name} ${last_name}`);
+              isUpToDate = false; // Data was updated
+            } else {
+              console.log(
+                `Applicant ${first_name} ${last_name} is up to date.`
+              );
+            }
+          } else {
+            // Create new applicant record
+            await db.Applicant.create(newApplicant, {transaction});
+            console.log(`Inserted new applicant: ${first_name} ${last_name}`);
+            isUpToDate = false; // New data was inserted
+          }
+        } catch (err) {
+          console.error(`Error processing applicant: ${err.message}`);
+        }
+      }
+    }
+
+    await transaction.commit();
+
+    return {isUpToDate};
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
   }
 }
 
@@ -567,4 +703,125 @@ async function updateStudent(id, params) {
 
   Object.assign(student, params);
   await student.save();
+}
+
+/*
+
+  ! For Enrollment Process
+
+*/
+
+// Function to update the enrollment process
+async function updateEnrollmentProcess(params) {
+  const {applicant_id, status, payment_confirmed, allRoles, specificRole} =
+    params;
+
+  // Define the roles that can update the enrollment process
+  const validRoles = [Role.Accounting, Role.Dean, Role.Registrar];
+
+  // Ensure the required parameters are present
+  if (!applicant_id || !status || !specificRole || !allRoles) {
+    throw new Error(
+      "Applicant ID, status, specific role, and all roles are required."
+    );
+  }
+
+  // Convert the comma-separated roles string into an array
+  const userRoles = allRoles.split(",").map((r) => r.trim());
+
+  // Check if the specific role is valid and present in the user's roles
+  if (!userRoles.includes(specificRole)) {
+    throw new Error(`User does not have the role: ${specificRole}`);
+  }
+
+  // Fetch the current enrollment process for the applicant
+  let enrollmentProcess = await db.EnrollmentProcess.findOne({
+    where: {applicant_id: applicant_id},
+  });
+
+  if (!enrollmentProcess) {
+    // If no existing process found, create a new record with default "pending" statuses
+    enrollmentProcess = await db.EnrollmentProcess.create({
+      applicant_id: applicant_id,
+      registrar_status: "pending",
+      dean_status: "pending",
+      accounting_status: "pending",
+      payment_confirmed: false, // Set payment to false initially
+    });
+  }
+
+  // Step 1: Handle the specific role update based on the provided specificRole
+  switch (specificRole) {
+    case Role.Registrar:
+      // Registrar can update their own status directly
+      enrollmentProcess.registrar_status = status;
+      break;
+
+    case Role.Dean:
+      // Ensure the Registrar has accepted before the Dean can approve
+      if (enrollmentProcess.registrar_status !== "accepted") {
+        throw new Error(
+          "Registrar must accept the application before the Dean can approve."
+        );
+      }
+      enrollmentProcess.dean_status = status;
+      break;
+
+    case Role.Accounting:
+      // Ensure both Registrar and Dean have accepted before Accounting can approve
+      if (
+        enrollmentProcess.registrar_status !== "accepted" ||
+        enrollmentProcess.dean_status !== "accepted"
+      ) {
+        throw new Error(
+          "Both Registrar and Dean must accept the application before Accounting can approve."
+        );
+      }
+      enrollmentProcess.accounting_status = status;
+      enrollmentProcess.payment_confirmed = payment_confirmed || false; // Confirm payment if available
+      break;
+
+    default:
+      throw new Error(
+        `Invalid role: ${specificRole} for updating the enrollment process.`
+      );
+  }
+
+  // Step 2: Save the updated enrollment process
+  await enrollmentProcess.save();
+
+  // Step 3: Check if all approvals are complete and ready for enrollment
+  if (
+    enrollmentProcess.registrar_status === "accepted" &&
+    enrollmentProcess.dean_status === "accepted" &&
+    enrollmentProcess.accounting_status === "accepted" &&
+    enrollmentProcess.payment_confirmed
+  ) {
+    return {
+      message: "All approvals completed. Student is ready for enrollment.",
+      readyForEnrollment: true,
+    };
+  }
+
+  return {
+    message: "Enrollment process updated.",
+    readyForEnrollment: false,
+  };
+}
+
+// Function to get the enrollment process by applicant ID
+async function getEnrollmentProcessByApplicantId(applicant_id) {
+  if (!applicant_id) {
+    throw new Error("Applicant ID is required.");
+  }
+
+  const enrollmentProcess = await db.EnrollmentProcess.findOne({
+    where: {applicant_id: applicant_id},
+  });
+
+  if (!enrollmentProcess) {
+    throw new Error("Enrollment process not found for this applicant.");
+  }
+
+  return enrollmentProcess;
 }
