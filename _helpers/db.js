@@ -56,7 +56,10 @@ async function initialize() {
   // Make sure to select the database
   await connection.query(`USE \`${dbConfig.name}\`;`);
 
-  // init models and add them to the exported db object
+  // Assign sequelize to the db object so it can be used globally
+  db.sequelize = sequelize; // <-- Add this line
+
+  // Init models and add them to the exported db object
   // ! Account
   db.Account = require("../accounts/account.model")(sequelize);
   db.RefreshToken = require("../accounts/refresh-token.model")(sequelize);
@@ -99,6 +102,14 @@ async function initialize() {
 
   // ! Employee
   db.Employee = require("../models/employee.model")(sequelize);
+
+  // ! Enrollment
+  db.EnrollmentProcess = require("../models/enrollment_process.model")(
+    sequelize
+  );
+
+  // ! Applicant
+  db.Applicant = require("../models/applicant.model")(sequelize);
 
   // ! Simple Official Student Basic
   db.StudentOfficalBasic = require("../models/student_official_basic.model")(
