@@ -294,7 +294,7 @@ async function generateStudentId(campusName) {
   }
 }
 
-async function fetchApplicantData(campusName = null) {
+async function fetchApplicantData(campusName = null, isAborted = false) {
   let apiUrl;
   const {sequelize} = require("_helpers/db");
 
@@ -321,6 +321,12 @@ async function fetchApplicantData(campusName = null) {
       const applicantsData = response.data;
 
       for (let applicantData of applicantsData) {
+        if (isAborted) {
+          console.log("Processing aborted, rolling back transaction...");
+          await transaction.rollback();
+          return;
+        }
+
         const {
           first_name,
           middle_name,
