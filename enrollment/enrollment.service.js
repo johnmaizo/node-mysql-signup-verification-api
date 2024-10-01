@@ -6,8 +6,6 @@ const axios = require("axios");
 
 const deepEqual = require("deep-equal");
 
-const pLimit = require("p-limit"); // To control concurrency
-
 require("dotenv").config();
 
 module.exports = {
@@ -504,9 +502,10 @@ async function generateStudentId(campusName) {
 async function fetchApplicantData(campusName = null, isAborted = false) {
   let apiUrl;
   const {sequelize} = require("_helpers/db");
+  const pLimit = await import("p-limit");
 
   // Set limit for parallel processing
-  const limit = pLimit(5); // Allow up to 5 concurrent operations
+  const limit = pLimit.default(5); // Allow up to 5 concurrent operations
 
   if (campusName) {
     const campus = await db.Campus.findOne({where: {campusName}});
