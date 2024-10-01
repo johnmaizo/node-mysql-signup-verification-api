@@ -6,6 +6,8 @@ const axios = require("axios");
 
 const deepEqual = require("deep-equal");
 
+const pLimit = require("p-limit"); // To control concurrency
+
 require("dotenv").config();
 
 module.exports = {
@@ -294,18 +296,221 @@ async function generateStudentId(campusName) {
   }
 }
 
+// async function fetchApplicantData(campusName = null, isAborted = false) {
+//   let apiUrl;
+//   const {sequelize} = require("_helpers/db");
+
+//   // Fetch the campus based on the campus name
+//   if (campusName) {
+//     const campus = await db.Campus.findOne({where: {campusName}});
+
+//     if (!campus) {
+//       throw new Error("Campus not found");
+//     }
+
+//     apiUrl = `https://afknon.pythonanywhere.com/api/stdntbasicinfoapplication/?filter=campus=${campus.campusName}`;
+//   } else {
+//     apiUrl = "https://afknon.pythonanywhere.com/api/stdntbasicinfoapplication/";
+//   }
+
+//   const transaction = await sequelize.transaction();
+//   let isUpToDate = true; // Flag to check if data is up to date
+
+//   try {
+//     const response = await axios.get(apiUrl);
+
+//     if (response.data && Array.isArray(response.data)) {
+//       const applicantsData = response.data;
+
+//       for (let applicantData of applicantsData) {
+//         if (isAborted) {
+//           console.log("Processing aborted, rolling back transaction...");
+//           await transaction.rollback();
+//           return;
+//         }
+
+//         const {
+//           first_name,
+//           middle_name,
+//           last_name,
+//           suffix,
+//           is_transferee,
+//           year_level,
+//           contact_number,
+//           address,
+//           campus,
+//           program,
+//           birth_date,
+//           sex,
+//           email,
+//           status,
+//           active,
+//           created_at,
+//         } = applicantData;
+
+//         try {
+//           const campusRecord = await db.Campus.findOne({
+//             where: {campusName: campus},
+//           });
+
+//           if (!campusRecord) continue; // Skip if campus is not found
+
+//           const programRecord = await db.Program.findOne({
+//             where: {programCode: program},
+//             include: [
+//               {
+//                 model: db.Department,
+//                 where: {campus_id: campusRecord.campus_id}, // Ensure the department belongs to the specified campus
+//                 include: [
+//                   {
+//                     model: db.Campus,
+//                     attributes: ["campus_id", "campusName"],
+//                   },
+//                 ],
+//               },
+//             ],
+//           });
+
+//           if (!programRecord) continue; // Skip if program is not found
+
+//           // Create the new applicant object without applicant_id
+//           const newApplicant = {
+//             firstName: first_name ? first_name.trim() : null,
+//             middleName: middle_name ? middle_name.trim() : null,
+//             lastName: last_name ? last_name.trim() : null,
+//             suffix: suffix ? suffix.trim() : null,
+//             gender: sex || null,
+//             email: email ? email.trim().toLowerCase() : null,
+//             contactNumber: contact_number ? contact_number.trim() : null,
+//             address: address ? address.trim() : null,
+//             yearLevel: year_level || null,
+//             isTransferee: is_transferee ? true : false,
+//             campus_id: programRecord.department.campus.campus_id,
+//             program_id: programRecord.program_id,
+//             enrollmentType: "online",
+//             birthDate: birth_date || null,
+//             status: status || null,
+//             isActive: active || null,
+//             dateEnrolled: created_at || null,
+//           };
+
+//           // Check if the applicant already exists based on unique constraints
+//           const existingApplicant = await db.Applicant.findOne({
+//             where: {
+//               firstName: first_name,
+//               lastName: last_name,
+//               birthDate: birth_date,
+//               campus_id: programRecord.department.campus.campus_id,
+//               program_id: programRecord.program_id,
+//             },
+//           });
+
+//           if (existingApplicant) {
+//             // Compare only relevant fields
+//             const relevantFields = [
+//               "firstName",
+//               "middleName",
+//               "lastName",
+//               "suffix",
+//               "gender",
+//               "email",
+//               "contactNumber",
+//               "address",
+//               "yearLevel",
+//               "isTransferee",
+//               "campus_id",
+//               "program_id",
+//               "birthDate",
+//               "status",
+//               "dateEnrolled",
+//             ];
+
+//             const existingApplicantData = {};
+//             const newApplicantData = {};
+
+//             relevantFields.forEach((field) => {
+//               if (field === "dateEnrolled") {
+//                 // Normalize dateEnrolled by stripping milliseconds (if any)
+//                 const normalizeDate = (date) => {
+//                   return date
+//                     ? new Date(date).toISOString().split(".")[0] + "Z"
+//                     : null;
+//                 };
+
+//                 existingApplicantData[field] = normalizeDate(
+//                   existingApplicant[field]
+//                 );
+//                 newApplicantData[field] = normalizeDate(newApplicant[field]);
+//               } else if (field === "isTransferee") {
+//                 existingApplicantData[field] = Boolean(
+//                   existingApplicant[field]
+//                 );
+//                 newApplicantData[field] = Boolean(newApplicant[field]);
+//               } else if (["campus_id", "program_id"].includes(field)) {
+//                 existingApplicantData[field] = Number(existingApplicant[field]);
+//                 newApplicantData[field] = Number(newApplicant[field]);
+//               } else {
+//                 existingApplicantData[field] = existingApplicant[field]
+//                   ? existingApplicant[field].toString().trim()
+//                   : null;
+//                 newApplicantData[field] = newApplicant[field]
+//                   ? newApplicant[field].toString().trim()
+//                   : null;
+//               }
+//             });
+
+//             const isDifferent = !deepEqual(
+//               existingApplicantData,
+//               newApplicantData
+//             );
+
+//             if (isDifferent) {
+//               await db.Applicant.update(newApplicant, {
+//                 where: {applicant_id: existingApplicant.applicant_id},
+//                 transaction,
+//               });
+//               console.log(`Updated applicant: ${first_name} ${last_name}`);
+//               isUpToDate = false;
+//             } else {
+//               console.log(
+//                 `Applicant ${first_name} ${last_name} is up to date.`
+//               );
+//             }
+//           } else {
+//             // Create new applicant record
+//             await db.Applicant.create(newApplicant, {transaction});
+//             console.log(`Inserted new applicant: ${first_name} ${last_name}`);
+//             isUpToDate = false; // New data was inserted
+//           }
+//         } catch (err) {
+//           console.error(`Error processing applicant: ${err.message}`);
+//           // Continue processing other applicants but don't interfere with the transaction
+//           continue;
+//         }
+//       }
+//     }
+
+//     await transaction.commit();
+//     return {isUpToDate};
+//   } catch (error) {
+//     // If there was an error in the outer try block, roll back the transaction
+//     if (!transaction.finished) {
+//       await transaction.rollback();
+//     }
+//     throw error;
+//   }
+// }
+
 async function fetchApplicantData(campusName = null, isAborted = false) {
   let apiUrl;
   const {sequelize} = require("_helpers/db");
 
-  // Fetch the campus based on the campus name
+  // Set limit for parallel processing
+  const limit = pLimit(5); // Allow up to 5 concurrent operations
+
   if (campusName) {
     const campus = await db.Campus.findOne({where: {campusName}});
-
-    if (!campus) {
-      throw new Error("Campus not found");
-    }
-
+    if (!campus) throw new Error("Campus not found");
     apiUrl = `https://afknon.pythonanywhere.com/api/stdntbasicinfoapplication/?filter=campus=${campus.campusName}`;
   } else {
     apiUrl = "https://afknon.pythonanywhere.com/api/stdntbasicinfoapplication/";
@@ -316,194 +521,177 @@ async function fetchApplicantData(campusName = null, isAborted = false) {
 
   try {
     const response = await axios.get(apiUrl);
-
     if (response.data && Array.isArray(response.data)) {
       const applicantsData = response.data;
 
-      for (let applicantData of applicantsData) {
-        if (isAborted) {
-          console.log("Processing aborted, rolling back transaction...");
-          await transaction.rollback();
-          return;
-        }
+      // Fetch all campuses and programs once to reduce repetitive queries
+      const campuses = await db.Campus.findAll();
+      const programs = await db.Program.findAll({
+        include: [{model: db.Department, include: [db.Campus]}],
+      });
 
-        const {
-          first_name,
-          middle_name,
-          last_name,
-          suffix,
-          is_transferee,
-          year_level,
-          contact_number,
-          address,
-          campus,
-          program,
-          birth_date,
-          sex,
-          email,
-          status,
-          active,
-          created_at,
-        } = applicantData;
+      const campusMap = Object.fromEntries(
+        campuses.map((c) => [c.campusName, c])
+      );
+      const programMap = Object.fromEntries(
+        programs.map((p) => [p.programCode, p])
+      );
 
-        try {
-          const campusRecord = await db.Campus.findOne({
-            where: {campusName: campus},
-          });
-
-          if (!campusRecord) continue; // Skip if campus is not found
-
-          const programRecord = await db.Program.findOne({
-            where: {programCode: program},
-            include: [
-              {
-                model: db.Department,
-                where: {campus_id: campusRecord.campus_id}, // Ensure the department belongs to the specified campus
-                include: [
-                  {
-                    model: db.Campus,
-                    attributes: ["campus_id", "campusName"],
-                  },
-                ],
-              },
-            ],
-          });
-
-          if (!programRecord) continue; // Skip if program is not found
-
-          // Create the new applicant object without applicant_id
-          const newApplicant = {
-            firstName: first_name ? first_name.trim() : null,
-            middleName: middle_name ? middle_name.trim() : null,
-            lastName: last_name ? last_name.trim() : null,
-            suffix: suffix ? suffix.trim() : null,
-            gender: sex || null,
-            email: email ? email.trim().toLowerCase() : null,
-            contactNumber: contact_number ? contact_number.trim() : null,
-            address: address ? address.trim() : null,
-            yearLevel: year_level || null,
-            isTransferee: is_transferee ? true : false,
-            campus_id: programRecord.department.campus.campus_id,
-            program_id: programRecord.program_id,
-            enrollmentType: "online",
-            birthDate: birth_date || null,
-            status: status || null,
-            isActive: active || null,
-            dateEnrolled: created_at || null,
-          };
-
-          // Check if the applicant already exists based on unique constraints
-          const existingApplicant = await db.Applicant.findOne({
-            where: {
-              firstName: first_name,
-              lastName: last_name,
-              birthDate: birth_date,
-              campus_id: programRecord.department.campus.campus_id,
-              program_id: programRecord.program_id,
-            },
-          });
-
-          if (existingApplicant) {
-            // Compare only relevant fields
-            const relevantFields = [
-              "firstName",
-              "middleName",
-              "lastName",
-              "suffix",
-              "gender",
-              "email",
-              "contactNumber",
-              "address",
-              "yearLevel",
-              "isTransferee",
-              "campus_id",
-              "program_id",
-              "birthDate",
-              "status",
-              "dateEnrolled",
-            ];
-
-            const existingApplicantData = {};
-            const newApplicantData = {};
-
-            relevantFields.forEach((field) => {
-              if (field === "dateEnrolled") {
-                // Normalize dateEnrolled by stripping milliseconds (if any)
-                const normalizeDate = (date) => {
-                  return date
-                    ? new Date(date).toISOString().split(".")[0] + "Z"
-                    : null;
-                };
-
-                existingApplicantData[field] = normalizeDate(
-                  existingApplicant[field]
-                );
-                newApplicantData[field] = normalizeDate(newApplicant[field]);
-              } else if (field === "isTransferee") {
-                existingApplicantData[field] = Boolean(
-                  existingApplicant[field]
-                );
-                newApplicantData[field] = Boolean(newApplicant[field]);
-              } else if (["campus_id", "program_id"].includes(field)) {
-                existingApplicantData[field] = Number(existingApplicant[field]);
-                newApplicantData[field] = Number(newApplicant[field]);
-              } else {
-                existingApplicantData[field] = existingApplicant[field]
-                  ? existingApplicant[field].toString().trim()
-                  : null;
-                newApplicantData[field] = newApplicant[field]
-                  ? newApplicant[field].toString().trim()
-                  : null;
-              }
-            });
-
-            // console.log(
-            //   `Normalized existing applicant:`,
-            //   existingApplicantData
-            // );
-            // console.log(
-            //   `With new normalized applicant data:`,
-            //   newApplicantData
-            // );
-
-            const isDifferent = !deepEqual(
-              existingApplicantData,
-              newApplicantData
-            );
-
-            if (isDifferent) {
-              await db.Applicant.update(newApplicant, {
-                where: {applicant_id: existingApplicant.applicant_id},
-                transaction,
-              });
-              console.log(`Updated applicant: ${first_name} ${last_name}`);
-              isUpToDate = false;
-            } else {
-              console.log(
-                `Applicant ${first_name} ${last_name} is up to date.`
-              );
+      // Process applicants in parallel with a concurrency limit
+      await Promise.all(
+        applicantsData.map((applicantData) =>
+          limit(async () => {
+            if (isAborted) {
+              console.log("Processing aborted, rolling back transaction...");
+              await transaction.rollback();
+              return;
             }
-          } else {
-            // Create new applicant record
-            await db.Applicant.create(newApplicant, {transaction});
-            console.log(`Inserted new applicant: ${first_name} ${last_name}`);
-            isUpToDate = false; // New data was inserted
-          }
-        } catch (err) {
-          console.error(`Error processing applicant: ${err.message}`);
-          // Continue processing other applicants but don't interfere with the transaction
-          continue;
-        }
-      }
+
+            try {
+              const campusRecord = campusMap[applicantData.campus];
+              if (!campusRecord) return;
+
+              const programRecord = programMap[applicantData.program];
+              if (
+                !programRecord ||
+                programRecord.department.campus_id !== campusRecord.campus_id
+              )
+                return;
+
+              const newApplicant = {
+                firstName: applicantData.first_name
+                  ? applicantData.first_name.trim()
+                  : null,
+                middleName: applicantData.middle_name
+                  ? applicantData.middle_name.trim()
+                  : null,
+                lastName: applicantData.last_name
+                  ? applicantData.last_name.trim()
+                  : null,
+                suffix: applicantData.suffix
+                  ? applicantData.suffix.trim()
+                  : null,
+                gender: applicantData.sex || null,
+                email: applicantData.email
+                  ? applicantData.email.trim().toLowerCase()
+                  : null,
+                contactNumber: applicantData.contact_number
+                  ? applicantData.contact_number.trim()
+                  : null,
+                address: applicantData.address
+                  ? applicantData.address.trim()
+                  : null,
+                yearLevel: applicantData.year_level || null,
+                isTransferee: applicantData.is_transferee ? true : false,
+                campus_id: programRecord.department.campus.campus_id,
+                program_id: programRecord.program_id,
+                enrollmentType: "online",
+                birthDate: applicantData.birth_date || null,
+                status: applicantData.status || null,
+                isActive: applicantData.active || null,
+                dateEnrolled: applicantData.created_at || null,
+              };
+
+              const existingApplicant = await db.Applicant.findOne({
+                where: {
+                  firstName: newApplicant.firstName,
+                  lastName: newApplicant.lastName,
+                  birthDate: newApplicant.birthDate,
+                  campus_id: programRecord.department.campus.campus_id,
+                  program_id: programRecord.program_id,
+                },
+              });
+
+              if (existingApplicant) {
+                // Compare only relevant fields
+                const relevantFields = [
+                  "firstName",
+                  "middleName",
+                  "lastName",
+                  "suffix",
+                  "gender",
+                  "email",
+                  "contactNumber",
+                  "address",
+                  "yearLevel",
+                  "isTransferee",
+                  "campus_id",
+                  "program_id",
+                  "birthDate",
+                  "status",
+                  "dateEnrolled",
+                ];
+
+                const existingApplicantData = {};
+                const newApplicantData = {};
+
+                relevantFields.forEach((field) => {
+                  if (field === "dateEnrolled") {
+                    // Normalize dateEnrolled by stripping milliseconds (if any)
+                    const normalizeDate = (date) => {
+                      return date
+                        ? new Date(date).toISOString().split(".")[0] + "Z"
+                        : null;
+                    };
+
+                    existingApplicantData[field] = normalizeDate(
+                      existingApplicant[field]
+                    );
+                    newApplicantData[field] = normalizeDate(
+                      newApplicant[field]
+                    );
+                  } else if (field === "isTransferee") {
+                    existingApplicantData[field] = Boolean(
+                      existingApplicant[field]
+                    );
+                    newApplicantData[field] = Boolean(newApplicant[field]);
+                  } else if (["campus_id", "program_id"].includes(field)) {
+                    existingApplicantData[field] = Number(
+                      existingApplicant[field]
+                    );
+                    newApplicantData[field] = Number(newApplicant[field]);
+                  } else {
+                    existingApplicantData[field] = existingApplicant[field]
+                      ? existingApplicant[field].toString().trim()
+                      : null;
+                    newApplicantData[field] = newApplicant[field]
+                      ? newApplicant[field].toString().trim()
+                      : null;
+                  }
+                });
+
+                const isDifferent = !deepEqual(
+                  existingApplicantData,
+                  newApplicantData
+                );
+
+                if (isDifferent) {
+                  await db.Applicant.update(newApplicant, {
+                    where: {applicant_id: existingApplicant.applicant_id},
+                    transaction,
+                  });
+                  isUpToDate = false;
+                } else {
+                  // No change in applicant data
+                  isUpToDate = true;
+                }
+              } else {
+                // Create new applicant record
+                await db.Applicant.create(newApplicant, {transaction});
+                isUpToDate = false; // New data was inserted
+              }
+            } catch (err) {
+              console.error(`Error processing applicant: ${err.message}`);
+            }
+          })
+        )
+      );
     }
 
     await transaction.commit();
     return {isUpToDate};
   } catch (error) {
-    // If there was an error in the outer try block, roll back the transaction
-    if (!transaction.finished) {
-      await transaction.rollback();
-    }
+    if (!transaction.finished) await transaction.rollback();
     throw error;
   }
 }
