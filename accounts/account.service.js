@@ -478,6 +478,10 @@ function basicDetails(account, campus, employee) {
       } ${employee.lastName}${qualifications} - ${
         firstValidRole ? firstValidRole : forValidRoles
       }` || null,
+    name:
+      `${employee.firstName}${
+        employee.middleName != null ? ` ${`${employee.middleName[0]}.`}` : ""
+      } ${employee.lastName}` || null,
 
     // Include campusName if the role is not SuperAdmin
     ...(role !== "SuperAdmin" && campus
