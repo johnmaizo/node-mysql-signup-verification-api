@@ -112,7 +112,6 @@ function defineRelationships(db) {
   // // ! Account -> Campus
   // db.Account.belongsTo(db.Campus, {foreignKey: "campus_id"});
 
-
   // ! Campus -> StudentOfficalBasic
   db.Campus.hasMany(db.StudentOfficalBasic, {foreignKey: "campus_id"});
   db.StudentOfficalBasic.belongsTo(db.Campus, {foreignKey: "campus_id"});
@@ -121,14 +120,16 @@ function defineRelationships(db) {
   db.Department.hasMany(db.CourseInfo, {foreignKey: "department_id"});
   db.CourseInfo.belongsTo(db.Department, {foreignKey: "department_id"});
 
-
   // // ! Employee -> Campus
   // db.Employee.belongsTo(db.Campus, {foreignKey: "campus_id"});
 
   // ! Employee -> Account
-  db.Employee.hasOne(db.Account, { foreignKey: 'employee_id', onDelete: 'CASCADE' });
-  db.Account.belongsTo(db.Employee, { foreignKey: 'employee_id' });
-  
+  db.Employee.hasOne(db.Account, {
+    foreignKey: "employee_id",
+    onDelete: "CASCADE",
+  });
+  db.Account.belongsTo(db.Employee, {foreignKey: "employee_id"});
+
   // ! Department -> Employee
   db.Department.hasMany(db.Employee, {foreignKey: "department_id"});
   db.Employee.belongsTo(db.Department, {foreignKey: "department_id"});
@@ -136,7 +137,6 @@ function defineRelationships(db) {
   // ! Campus -> Employee
   db.Campus.hasMany(db.Employee, {foreignKey: "campus_id"});
   db.Employee.belongsTo(db.Campus, {foreignKey: "campus_id"});
-
 
   // ! Applicant -> Enrollment Process
   db.Applicant.hasMany(db.EnrollmentProcess, {foreignKey: "applicant_id"});
