@@ -73,6 +73,8 @@ async function InsertSampleData(db) {
       {department_id: departments[5].department_id, programCode: "BSCE", programDescription: "Bachelor of Science in Civil Engineering"},
       {department_id: departments[5].department_id, programCode: "BSEE", programDescription: "Bachelor of Science in Electrical Engineering"},
       {department_id: departments[5].department_id, programCode: "BSIE", programDescription: "Bachelor of Science in Industrial Engineering"},
+      {department_id: departments[3].department_id, programCode: "BSTM", programDescription: "Bachelor of Science in Tourism Management"},
+      {department_id: departments[6].department_id, programCode: "BSED", programDescription: "Bachelor of Secondary Education major in English"},
     ])
 
     const courseinfos = await db.CourseInfo.bulkCreate([

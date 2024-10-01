@@ -23,11 +23,8 @@ router.get(
 );
 router.get("/get-chart-data", getChartData);
 router.get("/fetch-applicant-data", fetchApplicantData);
-// router.get(
-//   "/active",
-//   authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
-//   getAllStudentsOfficialActive
-// );
+router.get("/get-all-applicant", getAllApplicant);
+router.get("/get-all-applicant-count", getAllApplicantCount);
 router.get(
   "/:id",
   authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
@@ -119,12 +116,23 @@ function fetchApplicantData(req, res, next) {
     });
 }
 
-// function getAllStudentsOfficialActive(req, res, next) {
-//   enrollmentService
-//     .getAllStudentsOfficialActive()
-//     .then((students) => res.json(students))
-//     .catch(next);
-// }
+function getAllApplicant(req, res, next) {
+  const {campus_id} = req.query;
+
+  enrollmentService
+    .getAllApplicant(campus_id)
+    .then((applicants) => res.json(applicants))
+    .catch(next);
+}
+
+function getAllApplicantCount(req, res, next) {
+  const {campus_id} = req.query;
+
+  enrollmentService
+    .getAllApplicantCount(campus_id)
+    .then((applicants) => res.json(applicants))
+    .catch(next);
+}
 
 function getStudentById(req, res, next) {
   enrollmentService
