@@ -14,6 +14,7 @@ function model(sequelize) {
     lastName: {type: DataTypes.STRING(35), allowNull: false},
     suffix: {type: DataTypes.STRING(10), allowNull: true},
     gender: {type: DataTypes.STRING(10), allowNull: false},
+    birthDate: {type: DataTypes.DATEONLY, allowNull: false},
     email: {type: DataTypes.STRING, allowNull: false},
     contactNumber: {type: DataTypes.STRING(15), allowNull: false},
     address: {type: DataTypes.STRING, allowNull: false},
@@ -39,7 +40,11 @@ function model(sequelize) {
       },
     },
 
-    birthDate: {type: DataTypes.DATEONLY, allowNull: false},
+    enrollmentType: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+    }, // 'online', 'regular'
+
     status: {
       type: DataTypes.STRING(20),
       allowNull: false,
@@ -48,6 +53,8 @@ function model(sequelize) {
 
     isActive: {type: DataTypes.BOOLEAN, defaultValue: true},
     isDeleted: {type: DataTypes.BOOLEAN, defaultValue: false},
+
+    dateEnrolled: {type: DataTypes.DATE, allowNull: true},
   };
 
   const options = {

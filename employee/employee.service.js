@@ -185,6 +185,10 @@ function transformEmployeeData(employee, roleFilter = null) {
       } ${employee.lastName}${qualifications} - ${
         firstValidRole ? firstValidRole : forValidRoles
       }` || null,
+      name:
+      `${employee.firstName}${
+        employee.middleName != null ? ` ${`${employee.middleName[0]}.`}` : ""
+      } ${employee.lastName}` || null,
     campusName: employee.campus?.campusName || "Campus name not found",
   };
 }

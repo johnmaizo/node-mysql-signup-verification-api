@@ -4,7 +4,7 @@ const Role = require("_helpers/role");
 
 const axios = require("axios");
 
-const {sequelize} = require("_helpers/db"); // Import sequelize from db.js
+const deepEqual = require("deep-equal");
 
 require("dotenv").config();
 
@@ -23,6 +23,8 @@ module.exports = {
   getEnrollmentProcessByApplicantId,
 
   fetchApplicantData,
+  getAllApplicant,
+  getAllApplicantCount,
 };
 
 const url = process.env.MHAFRIC_API;
@@ -338,35 +340,49 @@ async function fetchApplicantData(campusName = null) {
             active,
           } = applicantData;
 
-          const programRecord = await db.Program.findOne({
-            where: {programCode: program},
-          });
-
-          if (!programRecord) continue; // Skip if program is not found
-
           const campusRecord = await db.Campus.findOne({
             where: {campusName: campus},
           });
 
           if (!campusRecord) continue; // Skip if campus is not found
 
+          const programRecord = await db.Program.findOne({
+            where: {programCode: program},
+            include: [
+              {
+                model: db.Department,
+                where: {campus_id: campusRecord.campus_id}, // Ensure the department belongs to the specified campus
+                include: [
+                  {
+                    model: db.Campus,
+                    attributes: ["campus_id", "campusName"],
+                  },
+                ],
+              },
+            ],
+          });
+
+          if (!programRecord) continue; // Skip if program is not found
+
           // Create the new applicant object without applicant_id
           const newApplicant = {
-            firstName: first_name || null,
-            middleName: middle_name || null,
-            lastName: last_name || null,
-            suffix: suffix || null,
+            firstName: first_name ? first_name.trim() : null,
+            middleName: middle_name ? middle_name.trim() : null,
+            lastName: last_name ? last_name.trim() : null,
+            suffix: suffix ? suffix.trim() : null,
             gender: sex || null,
-            email: email || null,
-            contactNumber: contact_number || null,
-            address: address || null,
+            email: email ? email.trim().toLowerCase() : null,
+            contactNumber: contact_number ? contact_number.trim() : null,
+            address: address ? address.trim() : null,
             yearLevel: year_level || null,
             isTransferee: is_transferee ? true : false,
-            campus_id: campusRecord.campus_id,
+            campus_id: programRecord.department.campus.campus_id,
             program_id: programRecord.program_id,
+            enrollmentType: "online",
             birthDate: birth_date || null,
             status: status || null,
             isActive: active || null,
+            dateEnrolled: created_at || null,
           };
 
           // Check if the applicant already exists based on unique constraints
@@ -375,14 +391,42 @@ async function fetchApplicantData(campusName = null) {
               firstName: first_name,
               lastName: last_name,
               birthDate: birth_date,
-              campus_id: campusRecord.campus_id,
+              campus_id: programRecord.department.campus.campus_id,
+              program_id: programRecord.program_id,
             },
           });
 
           if (existingApplicant) {
-            // Compare data to check if an update is needed
-            const isDifferent = Object.keys(newApplicant).some(
-              (key) => newApplicant[key] !== existingApplicant[key]
+            // Compare only relevant fields
+            const relevantFields = [
+              "firstName",
+              "middleName",
+              "lastName",
+              "suffix",
+              "gender",
+              "email",
+              "contactNumber",
+              "address",
+              "yearLevel",
+              "isTransferee",
+              "campus_id",
+              "program_id",
+              "birthDate",
+              "status",
+              "dateEnrolled",
+            ];
+
+            const existingApplicantData = {};
+            const newApplicantData = {};
+
+            relevantFields.forEach((field) => {
+              existingApplicantData[field] = existingApplicant[field];
+              newApplicantData[field] = newApplicant[field];
+            });
+
+            const isDifferent = !deepEqual(
+              existingApplicantData,
+              newApplicantData
             );
 
             if (isDifferent) {
@@ -418,6 +462,67 @@ async function fetchApplicantData(campusName = null) {
     throw error;
   }
 }
+
+// Common function to get applicants based on filter conditions
+async function getApplicants(whereClause, campus_id = null) {
+  const applicants = await db.Applicant.findAll({
+    where: {
+      ...whereClause,
+      ...(campus_id ? {campus_id} : undefined),
+    },
+    include: [
+      {
+        model: db.Program,
+        attributes: ["programCode", "programDescription"],
+        include: [
+          {
+            model: db.Department,
+            attributes: ["departmentCode", "departmentName"],
+            required: false, // Fetch department even if campus is not found
+            include: [
+              {
+                model: db.Campus,
+                attributes: ["campusName"],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    order: [["applicant_id", "ASC"]], // Apply sorting here (by applicant_id)
+  });
+
+  return applicants.map((applicant) => ({
+    ...applicant.toJSON(),
+    programCode: applicant.program.programCode || "programCode not found",
+    departmentName: applicant.program.department
+      ? applicant.program.department.departmentName
+      : "Department not found",
+    campusName:
+      applicant.program.department && applicant.program.department.campus
+        ? applicant.program.department.campus.campusName
+        : "Campus not found",
+  }));
+}
+
+async function getAllApplicant(campus_id = null) {
+  const whereClause = {isActive: true, isDeleted: false};
+
+  return await getApplicants(whereClause, campus_id);
+}
+
+async function getAllApplicantCount(campus_id = null) {
+  const whereClause = {isActive: true, isDeleted: false};
+
+  return await db.Applicant.count({
+    where: {
+      ...whereClause,
+      ...(campus_id ? {campus_id} : {}),
+    },
+  });
+}
+
+// ! For Student
 
 async function getAllStudentsOfficial(campusName = null) {
   let campus;
