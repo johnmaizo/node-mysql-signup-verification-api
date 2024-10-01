@@ -504,7 +504,6 @@ async function fetchApplicantData(campusName = null, isAborted = false) {
   const {sequelize} = require("_helpers/db");
   const pLimit = await import("p-limit");
 
-  // Set limit for parallel processing
   const limit = pLimit.default(5); // Allow up to 5 concurrent operations
 
   if (campusName) {
@@ -516,27 +515,47 @@ async function fetchApplicantData(campusName = null, isAborted = false) {
   }
 
   const transaction = await sequelize.transaction();
-  let isUpToDate = true; // Flag to check if data is up to date
+  let isUpToDate = true;
 
   try {
     const response = await axios.get(apiUrl);
     if (response.data && Array.isArray(response.data)) {
       const applicantsData = response.data;
 
-      // Fetch all campuses and programs once to reduce repetitive queries
-      const campuses = await db.Campus.findAll();
+      // Fetch campuses and programs with the correct structure
+      const campuses = await db.Campus.findAll(); // Fetch all campuses as usual
       const programs = await db.Program.findAll({
-        include: [{model: db.Department, include: [db.Campus]}],
+        include: [
+          {
+            model: db.Department,
+            include: [
+              {
+                model: db.Campus, // Ensure that the program belongs to the right campus
+                attributes: ["campus_id", "campusName"],
+              },
+            ],
+          },
+        ],
       });
 
+      // Create a campus map to easily find campus records by name
       const campusMap = Object.fromEntries(
         campuses.map((c) => [c.campusName, c])
       );
+
+      // Create a program map based on the correct department-campus relationship
       const programMap = Object.fromEntries(
-        programs.map((p) => [p.programCode, p])
+        programs.map((p) => {
+          const campus = p.department.campus;
+          if (campus) {
+            return [`${campus.campusName}_${p.programCode}`, p];
+          }
+          return [p.programCode, p]; // Fallback if no campus is found
+        })
       );
 
-      // Process applicants in parallel with a concurrency limit
+      let skippedApplicants = []; // Track skipped applicants
+
       await Promise.all(
         applicantsData.map((applicantData) =>
           limit(async () => {
@@ -548,14 +567,24 @@ async function fetchApplicantData(campusName = null, isAborted = false) {
 
             try {
               const campusRecord = campusMap[applicantData.campus];
-              if (!campusRecord) return;
-
-              const programRecord = programMap[applicantData.program];
-              if (
-                !programRecord ||
-                programRecord.department.campus_id !== campusRecord.campus_id
-              )
+              if (!campusRecord) {
+                skippedApplicants.push({
+                  reason: "No campus match",
+                  data: applicantData,
+                });
                 return;
+              }
+
+              const programRecordKey = `${campusRecord.campusName}_${applicantData.program}`;
+              const programRecord = programMap[programRecordKey];
+
+              if (!programRecord) {
+                skippedApplicants.push({
+                  reason: "No program match or program-campus mismatch",
+                  data: applicantData,
+                });
+                return;
+              }
 
               const newApplicant = {
                 firstName: applicantData.first_name
@@ -685,6 +714,10 @@ async function fetchApplicantData(campusName = null, isAborted = false) {
           })
         )
       );
+
+      if (skippedApplicants.length > 0) {
+        console.log("Skipped applicants: ", skippedApplicants);
+      }
     }
 
     await transaction.commit();
