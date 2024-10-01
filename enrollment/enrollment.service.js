@@ -321,25 +321,26 @@ async function fetchApplicantData(campusName = null) {
       const applicantsData = response.data;
 
       for (let applicantData of applicantsData) {
-        try {
-          const {
-            first_name,
-            middle_name,
-            last_name,
-            suffix,
-            is_transferee,
-            year_level,
-            contact_number,
-            address,
-            campus,
-            program,
-            birth_date,
-            sex,
-            email,
-            status,
-            active,
-          } = applicantData;
+        const {
+          first_name,
+          middle_name,
+          last_name,
+          suffix,
+          is_transferee,
+          year_level,
+          contact_number,
+          address,
+          campus,
+          program,
+          birth_date,
+          sex,
+          email,
+          status,
+          active,
+          created_at,
+        } = applicantData;
 
+        try {
           const campusRecord = await db.Campus.findOne({
             where: {campusName: campus},
           });
@@ -420,9 +421,44 @@ async function fetchApplicantData(campusName = null) {
             const newApplicantData = {};
 
             relevantFields.forEach((field) => {
-              existingApplicantData[field] = existingApplicant[field];
-              newApplicantData[field] = newApplicant[field];
+              if (field === "dateEnrolled") {
+                // Normalize dateEnrolled by stripping milliseconds (if any)
+                const normalizeDate = (date) => {
+                  return date
+                    ? new Date(date).toISOString().split(".")[0] + "Z"
+                    : null;
+                };
+
+                existingApplicantData[field] = normalizeDate(
+                  existingApplicant[field]
+                );
+                newApplicantData[field] = normalizeDate(newApplicant[field]);
+              } else if (field === "isTransferee") {
+                existingApplicantData[field] = Boolean(
+                  existingApplicant[field]
+                );
+                newApplicantData[field] = Boolean(newApplicant[field]);
+              } else if (["campus_id", "program_id"].includes(field)) {
+                existingApplicantData[field] = Number(existingApplicant[field]);
+                newApplicantData[field] = Number(newApplicant[field]);
+              } else {
+                existingApplicantData[field] = existingApplicant[field]
+                  ? existingApplicant[field].toString().trim()
+                  : null;
+                newApplicantData[field] = newApplicant[field]
+                  ? newApplicant[field].toString().trim()
+                  : null;
+              }
             });
+
+            // console.log(
+            //   `Normalized existing applicant:`,
+            //   existingApplicantData
+            // );
+            // console.log(
+            //   `With new normalized applicant data:`,
+            //   newApplicantData
+            // );
 
             const isDifferent = !deepEqual(
               existingApplicantData,
@@ -430,13 +466,12 @@ async function fetchApplicantData(campusName = null) {
             );
 
             if (isDifferent) {
-              // Update existing applicant record if there's a difference
               await db.Applicant.update(newApplicant, {
                 where: {applicant_id: existingApplicant.applicant_id},
                 transaction,
               });
               console.log(`Updated applicant: ${first_name} ${last_name}`);
-              isUpToDate = false; // Data was updated
+              isUpToDate = false;
             } else {
               console.log(
                 `Applicant ${first_name} ${last_name} is up to date.`
@@ -450,15 +485,19 @@ async function fetchApplicantData(campusName = null) {
           }
         } catch (err) {
           console.error(`Error processing applicant: ${err.message}`);
+          // Continue processing other applicants but don't interfere with the transaction
+          continue;
         }
       }
     }
 
     await transaction.commit();
-
     return {isUpToDate};
   } catch (error) {
-    await transaction.rollback();
+    // If there was an error in the outer try block, roll back the transaction
+    if (!transaction.finished) {
+      await transaction.rollback();
+    }
     throw error;
   }
 }
