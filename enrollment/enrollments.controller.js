@@ -96,24 +96,42 @@ function getChartData(req, res, next) {
     .catch(next);
 }
 
-function fetchApplicantData(req, res, next) {
+async function fetchApplicantData(req, res, next) {
   const {campusName} = req.query;
 
-  enrollmentService
-    .fetchApplicantData(campusName)
-    .then((result) => {
-      const message = result.isUpToDate
-        ? "All applicants are up to date."
-        : "Fetch Applicant Data Successfully! Updates or new entries have been made.";
-      res.json({message});
-    })
-    .catch((error) => {
+  let isAborted = false;
+
+  // Listen for 'aborted' event
+  req.on("aborted", () => {
+    isAborted = true;
+  });
+
+  try {
+    const result = await enrollmentService.fetchApplicantData(
+      campusName,
+      isAborted
+    );
+
+    if (isAborted) {
+      console.log("Request aborted, stopping processing.");
+      return;
+    }
+
+    const message = result.isUpToDate
+      ? "All applicants are up to date."
+      : "Fetch Applicant Data Successfully! Updates or new entries have been made.";
+    res.json({message});
+  } catch (error) {
+    if (!isAborted) {
       console.error(
         "Error response:",
         error.response ? error.response.data : error.message
       );
       next(error);
-    });
+    } else {
+      console.log("Error handling aborted process");
+    }
+  }
 }
 
 function getAllApplicant(req, res, next) {
