@@ -25,6 +25,10 @@ router.get("/get-chart-data", getChartData);
 router.get("/fetch-applicant-data", fetchApplicantData);
 router.get("/get-all-applicant", getAllApplicant);
 router.get("/get-all-applicant-count", getAllApplicantCount);
+
+router.get("/get-enrollment-status/:id", getEnrollmentStatusById);
+router.get("/get-all-enrollment-status", getAllEnrollmentStatus);
+
 router.get(
   "/:id",
   authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
@@ -32,14 +36,8 @@ router.get(
 );
 router.put(
   "/enrollmentprocess",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
   enrollmentProcessSchema,
   updateEnrollmentProcess
-);
-router.get(
-  "/get-enrollment-process/:id",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
-  getEnrollmentProcessByApplicantId
 );
 router.put(
   "/:id",
@@ -159,26 +157,6 @@ function getStudentById(req, res, next) {
     .catch(next);
 }
 
-function getEnrollmentProcessByApplicantId(req, res, next) {
-  console.log(req.user.role);
-
-  enrollmentService
-    .getEnrollmentProcessByApplicantId(req.params.id)
-    .then((student) => (student ? res.json(student) : res.sendStatus(404)))
-    .catch(next);
-}
-
-function updateStudent(req, res, next) {
-  enrollmentService
-    .updateStudent(req.params.id, req.body)
-    .then(() =>
-      res.json({
-        message: "Student Updated Successfully.",
-      })
-    )
-    .catch(next);
-}
-
 function updateEnrollmentProcess(req, res, next) {
   enrollmentService
     .updateEnrollmentProcess(req.body)
@@ -187,6 +165,22 @@ function updateEnrollmentProcess(req, res, next) {
         message: "Enrollment process updated.",
       })
     )
+    .catch(next);
+}
+
+function getAllEnrollmentStatus(req, res, next) {
+  const {campus_id} = req.query;
+
+  enrollmentService
+    .getAllEnrollmentStatus(campus_id)
+    .then((count) => res.json(count))
+    .catch(next);
+}
+
+function getEnrollmentStatusById(req, res, next) {
+  enrollmentService
+    .getEnrollmentStatusById(req.params.id)
+    .then((student) => (student ? res.json(student) : res.sendStatus(404)))
     .catch(next);
 }
 
@@ -246,4 +240,15 @@ function enrollmentProcessSchema(req, res, next) {
     payment_confirmed: Joi.boolean().empty(""),
   });
   validateRequest(req, next, schema);
+}
+
+function updateStudent(req, res, next) {
+  enrollmentService
+    .updateStudent(req.params.id, req.body)
+    .then(() =>
+      res.json({
+        message: "Student Updated Successfully.",
+      })
+    )
+    .catch(next);
 }

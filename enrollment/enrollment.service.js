@@ -20,7 +20,8 @@ module.exports = {
   // deleteStudent,
 
   updateEnrollmentProcess,
-  getEnrollmentProcessByApplicantId,
+  getAllEnrollmentStatus,
+  getEnrollmentStatusById,
 
   fetchApplicantData,
   getAllApplicant,
@@ -294,211 +295,6 @@ async function generateStudentId(campusName) {
   }
 }
 
-// async function fetchApplicantData(campusName = null, isAborted = false) {
-//   let apiUrl;
-//   const {sequelize} = require("_helpers/db");
-
-//   // Fetch the campus based on the campus name
-//   if (campusName) {
-//     const campus = await db.Campus.findOne({where: {campusName}});
-
-//     if (!campus) {
-//       throw new Error("Campus not found");
-//     }
-
-//     apiUrl = `https://afknon.pythonanywhere.com/api/stdntbasicinfoapplication/?filter=campus=${campus.campusName}`;
-//   } else {
-//     apiUrl = "https://afknon.pythonanywhere.com/api/stdntbasicinfoapplication/";
-//   }
-
-//   const transaction = await sequelize.transaction();
-//   let isUpToDate = true; // Flag to check if data is up to date
-
-//   try {
-//     const response = await axios.get(apiUrl);
-
-//     if (response.data && Array.isArray(response.data)) {
-//       const applicantsData = response.data;
-
-//       for (let applicantData of applicantsData) {
-//         if (isAborted) {
-//           console.log("Processing aborted, rolling back transaction...");
-//           await transaction.rollback();
-//           return;
-//         }
-
-//         const {
-//           first_name,
-//           middle_name,
-//           last_name,
-//           suffix,
-//           is_transferee,
-//           year_level,
-//           contact_number,
-//           address,
-//           campus,
-//           program,
-//           birth_date,
-//           sex,
-//           email,
-//           status,
-//           active,
-//           created_at,
-//         } = applicantData;
-
-//         try {
-//           const campusRecord = await db.Campus.findOne({
-//             where: {campusName: campus},
-//           });
-
-//           if (!campusRecord) continue; // Skip if campus is not found
-
-//           const programRecord = await db.Program.findOne({
-//             where: {programCode: program},
-//             include: [
-//               {
-//                 model: db.Department,
-//                 where: {campus_id: campusRecord.campus_id}, // Ensure the department belongs to the specified campus
-//                 include: [
-//                   {
-//                     model: db.Campus,
-//                     attributes: ["campus_id", "campusName"],
-//                   },
-//                 ],
-//               },
-//             ],
-//           });
-
-//           if (!programRecord) continue; // Skip if program is not found
-
-//           // Create the new applicant object without applicant_id
-//           const newApplicant = {
-//             firstName: first_name ? first_name.trim() : null,
-//             middleName: middle_name ? middle_name.trim() : null,
-//             lastName: last_name ? last_name.trim() : null,
-//             suffix: suffix ? suffix.trim() : null,
-//             gender: sex || null,
-//             email: email ? email.trim().toLowerCase() : null,
-//             contactNumber: contact_number ? contact_number.trim() : null,
-//             address: address ? address.trim() : null,
-//             yearLevel: year_level || null,
-//             isTransferee: is_transferee ? true : false,
-//             campus_id: programRecord.department.campus.campus_id,
-//             program_id: programRecord.program_id,
-//             enrollmentType: "online",
-//             birthDate: birth_date || null,
-//             status: status || null,
-//             isActive: active || null,
-//             dateEnrolled: created_at || null,
-//           };
-
-//           // Check if the applicant already exists based on unique constraints
-//           const existingApplicant = await db.Applicant.findOne({
-//             where: {
-//               firstName: first_name,
-//               lastName: last_name,
-//               birthDate: birth_date,
-//               campus_id: programRecord.department.campus.campus_id,
-//               program_id: programRecord.program_id,
-//             },
-//           });
-
-//           if (existingApplicant) {
-//             // Compare only relevant fields
-//             const relevantFields = [
-//               "firstName",
-//               "middleName",
-//               "lastName",
-//               "suffix",
-//               "gender",
-//               "email",
-//               "contactNumber",
-//               "address",
-//               "yearLevel",
-//               "isTransferee",
-//               "campus_id",
-//               "program_id",
-//               "birthDate",
-//               "status",
-//               "dateEnrolled",
-//             ];
-
-//             const existingApplicantData = {};
-//             const newApplicantData = {};
-
-//             relevantFields.forEach((field) => {
-//               if (field === "dateEnrolled") {
-//                 // Normalize dateEnrolled by stripping milliseconds (if any)
-//                 const normalizeDate = (date) => {
-//                   return date
-//                     ? new Date(date).toISOString().split(".")[0] + "Z"
-//                     : null;
-//                 };
-
-//                 existingApplicantData[field] = normalizeDate(
-//                   existingApplicant[field]
-//                 );
-//                 newApplicantData[field] = normalizeDate(newApplicant[field]);
-//               } else if (field === "isTransferee") {
-//                 existingApplicantData[field] = Boolean(
-//                   existingApplicant[field]
-//                 );
-//                 newApplicantData[field] = Boolean(newApplicant[field]);
-//               } else if (["campus_id", "program_id"].includes(field)) {
-//                 existingApplicantData[field] = Number(existingApplicant[field]);
-//                 newApplicantData[field] = Number(newApplicant[field]);
-//               } else {
-//                 existingApplicantData[field] = existingApplicant[field]
-//                   ? existingApplicant[field].toString().trim()
-//                   : null;
-//                 newApplicantData[field] = newApplicant[field]
-//                   ? newApplicant[field].toString().trim()
-//                   : null;
-//               }
-//             });
-
-//             const isDifferent = !deepEqual(
-//               existingApplicantData,
-//               newApplicantData
-//             );
-
-//             if (isDifferent) {
-//               await db.Applicant.update(newApplicant, {
-//                 where: {applicant_id: existingApplicant.applicant_id},
-//                 transaction,
-//               });
-//               console.log(`Updated applicant: ${first_name} ${last_name}`);
-//               isUpToDate = false;
-//             } else {
-//               console.log(
-//                 `Applicant ${first_name} ${last_name} is up to date.`
-//               );
-//             }
-//           } else {
-//             // Create new applicant record
-//             await db.Applicant.create(newApplicant, {transaction});
-//             console.log(`Inserted new applicant: ${first_name} ${last_name}`);
-//             isUpToDate = false; // New data was inserted
-//           }
-//         } catch (err) {
-//           console.error(`Error processing applicant: ${err.message}`);
-//           // Continue processing other applicants but don't interfere with the transaction
-//           continue;
-//         }
-//       }
-//     }
-
-//     await transaction.commit();
-//     return {isUpToDate};
-//   } catch (error) {
-//     // If there was an error in the outer try block, roll back the transaction
-//     if (!transaction.finished) {
-//       await transaction.rollback();
-//     }
-//     throw error;
-//   }
-// }
-
 async function fetchApplicantData(campusName = null, isAborted = false) {
   let apiUrl;
   const {sequelize} = require("_helpers/db");
@@ -509,9 +305,9 @@ async function fetchApplicantData(campusName = null, isAborted = false) {
   if (campusName) {
     const campus = await db.Campus.findOne({where: {campusName}});
     if (!campus) throw new Error("Campus not found");
-    apiUrl = `https://afknon.pythonanywhere.com/api/stdntbasicinfoapplication/?filter=campus=${campus.campusName}`;
+    apiUrl = `${url}/api/stdntbasicinfoapplication/?filter=campus=${campus.campusName}`;
   } else {
-    apiUrl = "https://afknon.pythonanywhere.com/api/stdntbasicinfoapplication/";
+    apiUrl = `${url}/api/stdntbasicinfoapplication/`;
   }
 
   const transaction = await sequelize.transaction();
@@ -627,6 +423,7 @@ async function fetchApplicantData(campusName = null, isAborted = false) {
                   birthDate: newApplicant.birthDate,
                   campus_id: programRecord.department.campus.campus_id,
                   program_id: programRecord.program_id,
+                  email: newApplicant.email,
                 },
               });
 
@@ -728,7 +525,6 @@ async function fetchApplicantData(campusName = null, isAborted = false) {
   }
 }
 
-// Common function to get applicants based on filter conditions
 async function getApplicants(whereClause, campus_id = null) {
   const applicants = await db.Applicant.findAll({
     where: {
@@ -1084,9 +880,6 @@ async function updateEnrollmentProcess(params) {
   const {applicant_id, status, payment_confirmed, allRoles, specificRole} =
     params;
 
-  // Define the roles that can update the enrollment process
-  const validRoles = [Role.Accounting, Role.Dean, Role.Registrar];
-
   // Ensure the required parameters are present
   if (!applicant_id || !status || !specificRole || !allRoles) {
     throw new Error(
@@ -1100,6 +893,13 @@ async function updateEnrollmentProcess(params) {
   // Check if the specific role is valid and present in the user's roles
   if (!userRoles.includes(specificRole)) {
     throw new Error(`User does not have the role: ${specificRole}`);
+  }
+
+  // Check if the applicant exists in the database
+  const applicant = await db.Applicant.findByPk(applicant_id);
+
+  if (!applicant) {
+    throw new Error(`Applicant with ID ${applicant_id} does not exist.`);
   }
 
   // Fetch the current enrollment process for the applicant
@@ -1177,19 +977,110 @@ async function updateEnrollmentProcess(params) {
   };
 }
 
-// Function to get the enrollment process by applicant ID
-async function getEnrollmentProcessByApplicantId(applicant_id) {
-  if (!applicant_id) {
-    throw new Error("Applicant ID is required.");
-  }
-
-  const enrollmentProcess = await db.EnrollmentProcess.findOne({
-    where: {applicant_id: applicant_id},
+// Get all enrollment statuses
+async function getAllEnrollmentStatus(campus_id = null) {
+  const enrollmentStatuses = await db.EnrollmentProcess.findAll({
+    include: [
+      {
+        model: db.Applicant,
+        attributes: ["firstName", "lastName", "email", "campus_id"],
+        where: {
+          ...(campus_id ? {campus_id} : undefined),
+        },
+        include: [
+          {
+            model: db.Program,
+            attributes: ["programCode", "programDescription"],
+            include: [
+              {
+                model: db.Department,
+                attributes: ["departmentCode", "departmentName"],
+                include: [
+                  {
+                    model: db.Campus,
+                    attributes: ["campusName"],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    order: [["enrollment_id", "ASC"]], // Order by enrollment ID or as needed
   });
 
-  if (!enrollmentProcess) {
-    throw new Error("Enrollment process not found for this applicant.");
+  return enrollmentStatuses.map((status) => ({
+    ...status.toJSON(),
+    applicant: {
+      firstName: status.applicant.firstName,
+      lastName: status.applicant.lastName,
+      email: status.applicant.email,
+      programCode:
+        status.applicant.program.programCode || "programCode not found",
+      departmentName: status.applicant.program.department
+        ? status.applicant.program.department.departmentName
+        : "Department not found",
+      campusName:
+        status.applicant.program.department &&
+        status.applicant.program.department.campus
+          ? status.applicant.program.department.campus.campusName
+          : "Campus not found",
+    },
+  }));
+}
+
+// Get enrollment status by applicant ID
+async function getEnrollmentStatusById(enrollment_id) {
+  const enrollmentStatus = await db.EnrollmentProcess.findOne({
+    where: {enrollment_id},
+    include: [
+      {
+        model: db.Applicant,
+        attributes: ["firstName", "lastName", "email"],
+        include: [
+          {
+            model: db.Program,
+            attributes: ["programCode", "programDescription"],
+            include: [
+              {
+                model: db.Department,
+                attributes: ["departmentCode", "departmentName"],
+                include: [
+                  {
+                    model: db.Campus,
+                    attributes: ["campusName"],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+
+  if (!enrollmentStatus) {
+    throw new Error(`Enrollment status not found for ID ${enrollment_id}`);
   }
 
-  return enrollmentProcess;
+  return {
+    ...enrollmentStatus.toJSON(),
+    applicant: {
+      firstName: enrollmentStatus.applicant.firstName,
+      lastName: enrollmentStatus.applicant.lastName,
+      email: enrollmentStatus.applicant.email,
+      programCode:
+        enrollmentStatus.applicant.program.programCode ||
+        "programCode not found",
+      departmentName: enrollmentStatus.applicant.program.department
+        ? enrollmentStatus.applicant.program.department.departmentName
+        : "Department not found",
+      campusName:
+        enrollmentStatus.applicant.program.department &&
+        enrollmentStatus.applicant.program.department.campus
+          ? enrollmentStatus.applicant.program.department.campus.campusName
+          : "Campus not found",
+    },
+  };
 }
