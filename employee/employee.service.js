@@ -37,6 +37,9 @@ async function createEmployee(params, accountId) {
     "Registrar",
     "Accounting",
     "Dean",
+    "Instructor",
+    "Professor",
+    "Teacher",
   ];
 
   const foundRoles = rolePriority.filter((role) => roleArray.includes(role));
@@ -56,7 +59,9 @@ async function createEmployee(params, accountId) {
   if (
     roleArray.includes("Dean") ||
     roleArray.includes("Teacher") ||
-    roleArray.includes("Instructor")
+    roleArray.includes("Instructor") ||
+    roleArray.includes("Professor") ||
+    roleArray.includes("Teacher")
   ) {
     // Get the campusName based on campus_id and validate
     const campus = await db.Campus.findByPk(params.campus_id);
@@ -185,7 +190,7 @@ function transformEmployeeData(employee, roleFilter = null) {
       } ${employee.lastName}${qualifications} - ${
         firstValidRole ? firstValidRole : forValidRoles
       }` || null,
-      name:
+    name:
       `${employee.firstName}${
         employee.middleName != null ? ` ${`${employee.middleName[0]}.`}` : ""
       } ${employee.lastName}` || null,

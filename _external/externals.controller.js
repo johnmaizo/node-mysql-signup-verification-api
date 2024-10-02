@@ -1,31 +1,20 @@
-// externalController.js
-
 const express = require("express");
 const router = express.Router();
-const ExternalService = require("./external.service");
-const externalService = new ExternalService();
+const Joi = require("joi");
+const validateRequest = require("_middleware/validate-request");
+const authorize = require("_middleware/authorize");
+const Role = require("_helpers/role");
+const externalService = require("./external.service");
 
-/**
- * GET datas from external endpoint
- * @returns datas
- */
-router.get("/datas", async (req, res) => {
-  try {
-    // const newDatas = [];
-    const testData = await externalService.getDatas();
-    // console.log("getDatas...", testData);
-    // newDatas.push(testData);
-
-    // You can manipulate data here as needed
-    // testData.forEach((element) => {
-    //     newDatas.push(element);
-    // });
-
-    // res.json(newDatas);
-    res.json(testData);
-  } catch (error) {
-    res.status(500).json({error: "Failed to fetch data"});
-  }
-});
+router.get('/get-employee-active', getAllEmployeeActive);
 
 module.exports = router;
+
+function getAllEmployeeActive(req, res, next) {
+  const {campus_id, role, forAccounts, departmentCode} = req.query;
+
+  externalService
+    .getAllEmployeeActive(campus_id, role, forAccounts, departmentCode)
+    .then((employees) => res.json(employees))
+    .catch(next);
+}
