@@ -54,7 +54,7 @@ async function InsertSampleData(db) {
 
       { campus_id: campuses[0].campus_id, department_id: departments[1].department_id, title: "Mr.", firstName: "Kervy", middleName: "C", lastName: "Conde", role: ["Instructor"], qualifications: [{abbreviation: "MBA", meaning: "Master of Business Administration"}], gender: "Male", address: "Lapu-Lapu City", contactNumber: "09123456789"},
 
-      { campus_id: campuses[0].campus_id, department_id: departments[0].department_id, title: "Ms.", firstName: "Leny", middleName: "V", lastName: "Yamillo", role: "Instructor, Professor, Teacher, Gwapo", qualifications: [{abbreviation: "MPA", meaning: "Master of Public Administration"}, {abbreviation: "LPT", meaning: "Licensed Professional Teacher"}], gender: "Female", address: "Lapu-Lapu City", contactNumber: "09123456789"},
+      { campus_id: campuses[0].campus_id, department_id: departments[0].department_id, title: "Ms.", firstName: "Leny", middleName: "V", lastName: "Yamillo", role: "Instructor, Professor, Teacher, Gwapo", qualifications: [{abbreviation: "DPA", meaning: "Doctor of Public Administration"}, {abbreviation: "LPT", meaning: "Licensed Professional Teacher"}], gender: "Female", address: "Lapu-Lapu City", contactNumber: "09123456789"},
 
     ]);
 
