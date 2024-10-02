@@ -236,7 +236,9 @@ function enrollmentProcessSchema(req, res, next) {
     applicant_id: Joi.number().required(),
     allRoles: Joi.string().required(),
     specificRole: Joi.string().required(),
-    status: Joi.string().required(),
+    status: Joi.string()
+      .valid("accepted", "in-progress", "upcoming", "rejected")
+      .required(),
     payment_confirmed: Joi.boolean().empty(""),
   });
   validateRequest(req, next, schema);
