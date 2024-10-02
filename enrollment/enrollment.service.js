@@ -295,6 +295,20 @@ async function generateStudentId(campusName) {
   }
 }
 
+/**
+ * Fetch applicant data from the MH Afric API and update or create new records in the
+ * Applicant table. If an applicant record already exists, it will be updated if the
+ * data from the API is different from the existing data. If the data is the same, the
+ * record will not be updated.
+ *
+ * @param {string} [campusName] - The campus name to filter the applicant data by.
+ * @param {boolean} [isAborted] - Whether the processing has been aborted. If true, the
+ * transaction will be rolled back.
+ *
+ * @returns {Promise<{isUpToDate: boolean}>} - A promise that resolves to an object with
+ * a single property, `isUpToDate`, which is a boolean indicating whether the applicant
+ * data was up to date or not.
+ */
 async function fetchApplicantData(campusName = null, isAborted = false) {
   let apiUrl;
   const {sequelize} = require("_helpers/db");
@@ -875,7 +889,7 @@ async function updateStudent(id, params) {
 
 */
 
-// Function to update the enrollment process
+// Updated updateEnrollmentProcess function
 async function updateEnrollmentProcess(params) {
   const {applicant_id, status, payment_confirmed, allRoles, specificRole} =
     params;
@@ -908,45 +922,92 @@ async function updateEnrollmentProcess(params) {
   });
 
   if (!enrollmentProcess) {
-    // If no existing process found, create a new record with default "pending" statuses
+    // If no existing process found, create a new record with default "upcoming" statuses
     enrollmentProcess = await db.EnrollmentProcess.create({
       applicant_id: applicant_id,
-      registrar_status: "pending",
-      dean_status: "pending",
-      accounting_status: "pending",
+      registrar_status: "in-progress",
+      dean_status: "upcoming",
+      accounting_status: "upcoming",
       payment_confirmed: false, // Set payment to false initially
     });
   }
 
+  // Get the current date to track when statuses are updated
+  const currentDate = new Date();
+
   // Step 1: Handle the specific role update based on the provided specificRole
   switch (specificRole) {
     case Role.Registrar:
-      // Registrar can update their own status directly
       enrollmentProcess.registrar_status = status;
+      enrollmentProcess.registrar_status_date = currentDate;
+
+      // If Registrar rejects, stop the process
+      if (status === "rejected") {
+        await enrollmentProcess.save();
+        return {
+          message:
+            "Registrar has rejected the application. Enrollment process cannot continue.",
+          readyForEnrollment: false,
+        };
+      }
+
+      // If Registrar accepts, Dean status moves to "in-progress"
+      if (status === "accepted") {
+        enrollmentProcess.dean_status = "in-progress";
+      }
       break;
 
     case Role.Dean:
-      // Ensure the Registrar has accepted before the Dean can approve
+      // Ensure the Registrar has accepted before the Dean can proceed
       if (enrollmentProcess.registrar_status !== "accepted") {
         throw new Error(
-          "Registrar must accept the application before the Dean can approve."
+          "Registrar must accept the application before the Dean can proceed."
         );
       }
+
       enrollmentProcess.dean_status = status;
+      enrollmentProcess.dean_status_date = currentDate;
+
+      // If Dean rejects, stop the process
+      if (status === "rejected") {
+        await enrollmentProcess.save();
+        return {
+          message:
+            "Dean has rejected the application. Enrollment process cannot continue.",
+          readyForEnrollment: false,
+        };
+      }
+
+      // If Dean accepts, Accounting status moves to "in-progress"
+      if (status === "accepted") {
+        enrollmentProcess.accounting_status = "in-progress";
+      }
       break;
 
     case Role.Accounting:
-      // Ensure both Registrar and Dean have accepted before Accounting can approve
+      // Ensure both Registrar and Dean have accepted before Accounting can proceed
       if (
         enrollmentProcess.registrar_status !== "accepted" ||
         enrollmentProcess.dean_status !== "accepted"
       ) {
         throw new Error(
-          "Both Registrar and Dean must accept the application before Accounting can approve."
+          "Both Registrar and Dean must accept the application before Accounting can proceed."
         );
       }
+
       enrollmentProcess.accounting_status = status;
-      enrollmentProcess.payment_confirmed = payment_confirmed || false; // Confirm payment if available
+      enrollmentProcess.accounting_status_date = currentDate;
+      enrollmentProcess.payment_confirmed = payment_confirmed || false;
+
+      // If Accounting rejects, stop the process
+      if (status === "rejected") {
+        await enrollmentProcess.save();
+        return {
+          message:
+            "Accounting has rejected the application. Enrollment process cannot continue.",
+          readyForEnrollment: false,
+        };
+      }
       break;
 
     default:
@@ -958,7 +1019,7 @@ async function updateEnrollmentProcess(params) {
   // Step 2: Save the updated enrollment process
   await enrollmentProcess.save();
 
-  // Step 3: Check if all approvals are complete and ready for enrollment
+  // Step 3: Check if all approvals are accepted and ready for enrollment
   if (
     enrollmentProcess.registrar_status === "accepted" &&
     enrollmentProcess.dean_status === "accepted" &&
@@ -966,7 +1027,7 @@ async function updateEnrollmentProcess(params) {
     enrollmentProcess.payment_confirmed
   ) {
     return {
-      message: "All approvals completed. Student is ready for enrollment.",
+      message: "All approvals accepted. Student is ready for enrollment.",
       readyForEnrollment: true,
     };
   }
