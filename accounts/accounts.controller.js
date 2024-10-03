@@ -7,22 +7,22 @@ const Role = require('_helpers/role');
 const accountService = require('./account.service');
 
 // routes
-
+router.get('/', getAll);
 // Add new route
-router.get('/me', authorize([Role.SuperAdmin, Role.Admin, Role.DataCenter]), getMe);
+router.get('/me', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter]), getMe);
 router.post('/authenticate', authenticateSchema, authenticate);
 router.post('/refresh-token', refreshToken);
-router.post('/revoke-token', authorize([Role.SuperAdmin, Role.Admin, Role.DataCenter]), revokeTokenSchema, revokeToken);
+router.post('/revoke-token', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter]), revokeTokenSchema, revokeToken);
 router.post('/register', registerSchema, register);
 router.post('/verify-email', verifyEmailSchema, verifyEmail);
 router.post('/forgot-password', forgotPasswordSchema, forgotPassword);
 router.post('/validate-reset-token', validateResetTokenSchema, validateResetToken);
 router.post('/reset-password', resetPasswordSchema, resetPassword);
-router.get('/', authorize([Role.SuperAdmin, Role.Admin, Role.DataCenter]), getAll);
-router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.DataCenter]), getById);
-router.post('/', authorize([Role.SuperAdmin, Role.Admin, Role.DataCenter]), createSchema, create);
-router.put('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.DataCenter]), updateSchema, update);
-router.delete('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.DataCenter]), _delete);
+
+router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter]), getById);
+router.post('/', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter]), createSchema, create);
+router.put('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter]), updateSchema, update);
+router.delete('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter]), _delete);
 
 
 

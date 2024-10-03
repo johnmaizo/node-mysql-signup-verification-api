@@ -8,18 +8,18 @@ const campusService = require("./campus.service");
 
 router.post(
   "/add-campus",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter]),
   addCampusSchema,
   addCampus
 );
 router.get(
   "/",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter]),
   getAllCampus
 );
 router.get(
   "/count",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter]),
   getAllCampusCount
 );
 router.get(
@@ -29,17 +29,17 @@ router.get(
 );
 router.get(
   "/deleted",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter]),
   getAllCampusDeleted
 );
 router.get(
   "/:id",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter]),
   getCampusById
 );
 router.put(
   "/:id",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter]),
   updateCampusSchema,
   updateCampus
 );

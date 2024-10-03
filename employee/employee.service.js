@@ -33,6 +33,7 @@ async function createEmployee(params, accountId) {
   const rolePriority = [
     "SuperAdmin",
     "Admin",
+    "MIS",
     "DataCenter",
     "Registrar",
     "Accounting",
@@ -140,6 +141,7 @@ function transformEmployeeData(employee, roleFilter = null) {
   const validRoles = [
     Role.SuperAdmin,
     Role.Admin,
+    Role.MIS,
     Role.Registrar,
     Role.DataCenter,
     Role.Dean,
@@ -243,6 +245,7 @@ async function getAllEmployee(
   // Array of roles to filter when forAccounts is true
   const accountRoles = [
     "Admin",
+    "MIS",
     "DataCenter",
     "Registrar",
     "Accounting",
@@ -289,6 +292,7 @@ async function getAllEmployeeActive(
   // Array of roles to filter when forAccounts is true
   const accountRoles = [
     "Admin",
+    "MIS",
     "DataCenter",
     "Registrar",
     "Accounting",
@@ -334,6 +338,7 @@ async function getAllEmployeeDeleted(
   // Array of roles to filter when forAccounts is true
   const accountRoles = [
     "Admin",
+    "MIS",
     "DataCenter",
     "Registrar",
     "Accounting",
@@ -379,6 +384,7 @@ async function getAllEmployeeCount(
   // Array of roles to filter when forAccounts is true
   const accountRoles = [
     "Admin",
+    "MIS",
     "DataCenter",
     "Registrar",
     "Accounting",
