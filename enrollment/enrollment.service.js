@@ -423,6 +423,7 @@ async function fetchApplicantData(campusName = null, isAborted = false) {
                 isTransferee: applicantData.is_transferee ? true : false,
                 campus_id: programRecord.department.campus.campus_id,
                 program_id: programRecord.program_id,
+                applicant_id_external: applicantData.applicant_id, 
                 enrollmentType: "online",
                 birthDate: applicantData.birth_date || null,
                 status: applicantData.status || null,

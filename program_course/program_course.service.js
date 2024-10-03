@@ -14,25 +14,21 @@ module.exports = {
 };
 
 async function createProgramAssignCourse(params, accountId) {
+  const pLimit = await import("p-limit");
+
   const {programCode, courseCode, campus_id} = params;
+
+  // Limit concurrency for parallel operations
+  const limit = pLimit.default(5); // Adjust the limit based on your system capacity
 
   // Find the program based on programCode and campus_id via department association
   const program = await db.Program.findOne({
-    where: {
-      programCode: programCode,
-    },
+    where: {programCode: programCode},
     include: [
       {
         model: db.Department,
-        where: {
-          campus_id: campus_id, // Ensure the department belongs to the specified campus
-        },
-        include: [
-          {
-            model: db.Campus,
-            attributes: ["campusName"], // Include campus name for error messages
-          },
-        ],
+        where: {campus_id: campus_id},
+        include: [{model: db.Campus, attributes: ["campusName"]}],
       },
     ],
   });
@@ -46,77 +42,92 @@ async function createProgramAssignCourse(params, accountId) {
   // Handle both single and multiple courseCode inputs
   const courseCodes = Array.isArray(courseCode) ? courseCode : [courseCode];
 
-  // Validation step: Check all course codes before making any changes
-  const courseValidationResults = await Promise.all(
+  // Fetch all courses in one query to reduce multiple roundtrips to the database
+  const courses = await db.CourseInfo.findAll({
+    where: {
+      courseCode: courseCodes,
+      campus_id: campus_id, // Ensure the course belongs to the specified campus
+    },
+  });
+
+  // Create a map of course codes for quick validation
+  const courseMap = Object.fromEntries(
+    courses.map((course) => [course.courseCode, course])
+  );
+
+  // Perform validation in parallel (with concurrency control)
+  const validationResults = await Promise.all(
     courseCodes.map(async (code) => {
-      const course = await db.CourseInfo.findOne({
-        where: {
-          courseCode: code,
-          campus_id: campus_id, // Ensure the course belongs to the specified campus
-        },
+      return limit(async () => {
+        const course = courseMap[code];
+
+        // If the course doesn't exist on the campus, return an error
+        if (!course) {
+          return {
+            error: `Course "${code}" not found on campus "${program.department.campus.campusName}".`,
+          };
+        }
+
+        // Check if the course is already assigned to the program
+        const existingProgramCourse = await db.ProgramCourse.findOne({
+          where: {
+            program_id: program.program_id,
+            course_id: course.course_id,
+          },
+        });
+
+        if (existingProgramCourse) {
+          return {
+            error: `Course "${code}" is already assigned to Program "${programCode}" on campus "${program.department.campus.campusName}".`,
+          };
+        }
+
+        // If no errors, return the valid course object
+        return {course};
       });
-
-      if (!course) {
-        return {
-          error: `Course "${code}" not found on campus "${program.department.campus.campusName}".`,
-        };
-      }
-
-      // Check if the course is already assigned to the program on the same campus
-      const existingProgramCourse = await db.ProgramCourse.findOne({
-        where: {
-          program_id: program.program_id,
-          course_id: course.course_id,
-          // isDeleted: false,
-        },
-      });
-
-      if (existingProgramCourse) {
-        return {
-          error: `Course "${code}" is already assigned to Program "${programCode}" on campus "${program.department.campus.campusName}".`,
-        };
-      }
-
-      // If validation passes, return the course object
-      return {course};
     })
   );
 
-  // Check if any validation errors occurred
-  const validationError = courseValidationResults.find(
-    (result) => result.error
-  );
-
+  // Check for validation errors
+  const validationError = validationResults.find((result) => result.error);
   if (validationError) {
     throw new Error(validationError.error);
   }
 
-  // Proceed to create associations after all validations pass
-  for (const result of courseValidationResults) {
-    const {course} = result;
+  // Create a map of course ids for quick validation (key by course_id, not courseCode)
+  const courseMap2nd = Object.fromEntries(
+    courses.map((course) => [course.course_id, course]) // Keyed by course_id now
+  );
 
-    // Create the new program-course association
-    const programCourse = new db.ProgramCourse({
-      program_id: program.program_id,
-      course_id: course.course_id,
-    });
+  // Proceed to create associations in bulk after validations pass
+  const newProgramCourses = validationResults.map((result) => ({
+    program_id: program.program_id,
+    course_id: result.course.course_id,
+  }));
 
-    // Save the association
-    await programCourse.save();
+  // Bulk insert the new program-course associations and capture the inserted records
+  const insertedProgramCourses = await db.ProgramCourse.bulkCreate(
+    newProgramCourses,
+    {
+      returning: true, // Ensure Sequelize returns the created records with their IDs
+    }
+  );
 
-    // Log the creation action
-    await db.History.create({
-      action: "create",
-      entity: "ProgramCourse",
-      entityId: programCourse.programCourse_id,
-      changes: {
-        programCode,
-        courseCode: course.courseCode,
-        campus_id,
-      },
-      accountId: accountId,
-    });
-  }
+  // Log history actions in bulk using programCourse_id from the inserted records
+  const historyLogs = insertedProgramCourses.map((programCourse) => ({
+    action: "create",
+    entity: "ProgramCourse",
+    entityId: programCourse.programCourse_id, // Use the programCourse_id here
+    changes: {
+      programCode,
+      courseCode: courseMap2nd[programCourse.course_id].courseCode, // Access the courseCode using course_id from courseMap2nd
+      campus_id,
+    },
+    accountId: accountId,
+  }));
+
+  // Bulk insert history logs
+  await db.History.bulkCreate(historyLogs);
 }
 
 // Common function to handle the transformation

@@ -40,6 +40,8 @@ function model(sequelize) {
       },
     },
 
+    applicant_id_external: {type: DataTypes.INTEGER, allowNull: true},
+
     enrollmentType: {
       type: DataTypes.STRING(20),
       allowNull: false,
