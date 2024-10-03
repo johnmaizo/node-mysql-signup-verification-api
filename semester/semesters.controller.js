@@ -8,33 +8,33 @@ const semesterService = require("./semester.service");
 
 router.post(
   "/add-semester",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   addSemesterSchema,
   addSemester
 );
 router.get(
   "/",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getAllSemester
 );
 router.get(
   "/active",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getAllSemesterActive
 );
 router.get(
   "/deleted",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getAllSemesterDeleted
 );
 router.get(
   "/:id",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getSemesterById
 );
 router.put(
   "/:id",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   updateSemesterSchema,
   updateSemester
 );

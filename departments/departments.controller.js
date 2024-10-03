@@ -8,38 +8,38 @@ const departmentService = require("./department.service");
 
 router.post(
   "/add-department",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   addDepartmentSchema,
   addDepartment
 );
 router.get(
   "/",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getAllDepartment
 );
 router.get(
   "/count",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getAllDepartmentCount
 );
 router.get(
   "/active",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getAllDepartmentsActive
 );
 router.get(
   "/deleted",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getAllDepartmentsDeleted
 );
 router.get(
   "/:id",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getDepartmentById
 );
 router.put(
   "/:id",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   updateDepartmentSchema,
   updateDepartment
 );

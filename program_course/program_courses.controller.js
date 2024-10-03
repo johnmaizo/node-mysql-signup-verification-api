@@ -6,34 +6,34 @@ const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const programCourseService = require("./program_course.service");
 
-// router.post("/add-course", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]), addProgramAssignCourseSchema, addProgramAssignCourse);
+// router.post("/add-course", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]), addProgramAssignCourseSchema, addProgramAssignCourse);
 
 router.post(
   "/assign-program-course",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   addProgramAssignCourseSchema,
   addProgramAssignCourse
 );
 router.get("/", getAllProgramAssignCourse);
 router.get(
   "/count",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getAllProgramAssignCourseCount
 );
 router.get(
   "/active",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getAllProgramAssignCourseActive
 );
 router.get(
   "/deleted",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getAllProgramAssignCourseDeleted
 );
-// router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]), getCourseById);
+// router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]), getCourseById);
 router.put(
   "/:id",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   updateCourseSchema,
   updateCourse
 );

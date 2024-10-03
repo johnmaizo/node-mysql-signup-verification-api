@@ -9,20 +9,20 @@ const accountService = require('./account.service');
 // routes
 router.get('/', getAll);
 // Add new route
-router.get('/me', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter]), getMe);
+router.get('/me', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS]), getMe);
 router.post('/authenticate', authenticateSchema, authenticate);
 router.post('/refresh-token', refreshToken);
-router.post('/revoke-token', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter]), revokeTokenSchema, revokeToken);
+router.post('/revoke-token', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS]), revokeTokenSchema, revokeToken);
 router.post('/register', registerSchema, register);
 router.post('/verify-email', verifyEmailSchema, verifyEmail);
 router.post('/forgot-password', forgotPasswordSchema, forgotPassword);
 router.post('/validate-reset-token', validateResetTokenSchema, validateResetToken);
 router.post('/reset-password', resetPasswordSchema, resetPassword);
 
-router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter]), getById);
-router.post('/', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter]), createSchema, create);
-router.put('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter]), updateSchema, update);
-router.delete('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter]), _delete);
+router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS]), getById);
+router.post('/', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS]), createSchema, create);
+router.put('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS]), updateSchema, update);
+router.delete('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS]), _delete);
 
 
 
@@ -237,8 +237,8 @@ function updateSchema(req, res, next) {
 
     // Check if roles include SuperAdmin, Admin, or Registrar
     const requirePassword = Array.isArray(roles)
-        ? roles.some(role => [Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter].includes(role))
-        : [Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter].includes(roles);
+        ? roles.some(role => [Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS].includes(role))
+        : [Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS].includes(roles);
 
     const schemaRules = {
         // title: Joi.string().empty(''),

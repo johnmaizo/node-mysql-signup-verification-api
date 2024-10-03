@@ -8,38 +8,38 @@ const studentService = require("./student.service");
 
 router.post(
   "/add-student",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   addStudentSchema,
   addStudent
 );
 router.get(
   "/",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getAllStudents
 );
 router.get(
   "/active",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getAllStudentsActive
 );
 router.get(
   "/previous",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getPreviousTotalStudents
 );
 router.get(
   "/previous-active",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getPreviousTotalStudentsActive
 );
 router.get(
   "/:id",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getStudentById
 );
 router.put(
   "/:id",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   updateStudentSchema,
   updateStudent
 );
