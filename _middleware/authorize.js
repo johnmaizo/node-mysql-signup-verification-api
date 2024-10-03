@@ -46,7 +46,12 @@ function authorize(roles = []) {
 
             const accountRoles = employee.role.split(',').map(role => role.trim());
 
+            console.log("\n\n\n\nRoles that are authorized: ", roles)
+            console.log("\n\n\n\nAccount Roles: ", accountRoles)
+
             const isAuthorized = roles.some(role => accountRoles.includes(role));
+
+            console.log(`IS AUTHORIZED??: ${isAuthorized}\n\n\n\n`)
             
             if (roles.length && !isAuthorized) {
                 return res.status(401).json({ message: 'Unauthorized' });

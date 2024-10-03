@@ -275,6 +275,7 @@ async function create(params, accountId) {
   const allowedRoles = [
     Role.SuperAdmin,
     Role.Admin,
+    Role.MIS,
     Role.Registrar,
     Role.DataCenter,
     Role.Dean,
@@ -424,6 +425,7 @@ function basicDetails(account, campus, employee) {
   const validRoles = [
     Role.SuperAdmin,
     Role.Admin,
+    Role.MIS,
     Role.Registrar,
     Role.DataCenter,
     Role.Dean,
