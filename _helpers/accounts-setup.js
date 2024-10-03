@@ -25,7 +25,7 @@ async function setupAccounts(db) {
     });
 
     if (!superAdminUser || !superAdminEmployee) {
-      const superAdminPasswordHash = await bcrypt.hash("aw12345", 10);
+      const superAdminPasswordHash = await bcrypt.hash("maizo12345", 10);
 
       const newSuperAdmin = new db.Account({
         employee_id: 1,
@@ -54,7 +54,7 @@ async function setupAccounts(db) {
     });
 
     if (!adminUser || !adminEmployee) {
-      const adminPasswordHash = await bcrypt.hash("aw12345", 10);
+      const adminPasswordHash = await bcrypt.hash("maizo12345", 10);
 
       const newAdmin = new db.Account({
         employee_id: 2,
@@ -83,7 +83,7 @@ async function setupAccounts(db) {
     });
 
     if (!adminUserCebu || !adminCebuEmployee) {
-      const adminPasswordHash = await bcrypt.hash("aw12345", 10);
+      const adminPasswordHash = await bcrypt.hash("maizo12345", 10);
 
       const newAdmin = new db.Account({
         employee_id: 3,
