@@ -102,6 +102,39 @@ async function setupAccounts(db) {
     }
 
 
+
+    // MIS Employee Setup
+    const misEmployee = await db.Employee.findOne({
+      where: {role: Role.MIS, campus_id: 1},
+    });
+
+    // MIS Setup
+    const misUser = await db.Account.findOne({
+      where: {email: "mis@gmail.com"},
+    });
+
+    if (!misUser || !misEmployee) {
+      const adminPasswordHash = await bcrypt.hash("aw12345", 10);
+
+      const newMIS = new db.Account({
+        employee_id: 4,
+
+        email: "mis@gmail.com",
+        passwordHash: adminPasswordHash,
+        acceptTerms: true,
+        verified: new Date(),
+        created: new Date(),
+      });
+
+      await newMIS.save();
+      console.log("MIS account created successfully.");
+    } else {
+      console.log("MIS account already exists.");
+    }
+
+
+
+
     // Registrar Employee Setup
     const registrarEmployee = await db.Employee.findOne({
       where: {role: Role.Registrar, campus_id: 1},
@@ -116,7 +149,7 @@ async function setupAccounts(db) {
       const adminPasswordHash = await bcrypt.hash("aw12345", 10);
 
       const newRegistrar = new db.Account({
-        employee_id: 4,
+        employee_id: 5,
 
         email: "registrar@gmail.com",
         passwordHash: adminPasswordHash,
@@ -147,7 +180,7 @@ async function setupAccounts(db) {
       const adminPasswordHash = await bcrypt.hash("aw12345", 10);
 
       const newDataCenter = new db.Account({
-        employee_id: 5,
+        employee_id: 6,
 
         email: "datacenter@gmail.com",
         passwordHash: adminPasswordHash,

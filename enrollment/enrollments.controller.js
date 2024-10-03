@@ -8,17 +8,17 @@ const enrollmentService = require("./enrollment.service");
 
 router.post(
   "/enroll-student",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   enrollStudent
 );
 router.get(
   "/",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getAllStudentsOfficial
 );
 router.get(
   "/count",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getAllStudentOfficialCount
 );
 router.get("/get-chart-data", getChartData);
@@ -31,7 +31,7 @@ router.get("/get-all-enrollment-status", getAllEnrollmentStatus);
 
 router.get(
   "/:id",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getStudentById
 );
 router.put(
@@ -41,7 +41,7 @@ router.put(
 );
 router.put(
   "/:id",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   updateStudentSchema,
   updateStudent
 );
