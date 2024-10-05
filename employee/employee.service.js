@@ -197,6 +197,7 @@ function transformEmployeeData(employee, roleFilter = null) {
         employee.middleName != null ? ` ${`${employee.middleName[0]}.`}` : ""
       } ${employee.lastName}` || null,
     campusName: employee.campus?.campusName || "Campus name not found",
+    departmentCodeForClass: employee.department ? employee.department.departmentCode : null,
   };
 }
 

@@ -16,16 +16,16 @@ function model(sequelize) {
               model: "campuses",
               key: "campus_id",
             },
-            allowNull: false, // Department must belong to a campus
+            allowNull: false,
         },
 
         department_id: { 
             type: DataTypes.INTEGER,
             references: {
-                model: 'departments', // refers to the table name
-                key: 'department_id'  // refers to the column name in the departments table
+                model: 'departments',
+                key: 'department_id'
             },
-            allowNull: true, // SuperAdmin won't have a campus_id
+            allowNull: true,
         }, 
 
         
@@ -47,7 +47,6 @@ function model(sequelize) {
     };
 
     const options = {
-        // disable default timestamp fields (createdAt and updatedAt)
         timestamps: true, 
         defaultScope: {
         },
