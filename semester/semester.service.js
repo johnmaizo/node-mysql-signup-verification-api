@@ -25,7 +25,11 @@ async function createSemester(params, accountId) {
   });
 
   if (activeSemester) {
-    throw `Error: There's currently an active semester: "${activeSemester.semesterName} - S.Y. "${activeSemester.schoolYear}". You must inactivate it in order to add a new semester.`;
+    // Set isActive to false since there's already an active semester
+    params.isActive = false;
+  } else {
+    // Set isActive to true if no active semester is found
+    params.isActive = true;
   }
 
   // Check existing semesters for the given school year and campus_id, including deleted ones
@@ -103,6 +107,9 @@ function transformSemesterData(semester) {
     fullSemesterNameWithCampus:
       `${semester.schoolYear} - ${semester.semesterName} - ${semester.campus.campusName}` ||
       "fullSemesterNameWithCampus not found",
+    fullSemesterName:
+      `${semester.schoolYear} - ${semester.semesterName}` ||
+      "fullSemesterName not found",
     campusName: semester.campus.campusName || "campusName not found",
   };
 }

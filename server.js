@@ -77,6 +77,9 @@ app.use(
 // ! Enrollment Student
 app.use("/enrollment", require("./enrollment/enrollments.controller"));
 
+// ! Class
+app.use("/class", require("./class/classes.controller"))
+
 // swagger docs route
 app.use("/api-docs", require("_helpers/swagger"));
 

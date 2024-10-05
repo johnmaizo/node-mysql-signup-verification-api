@@ -116,6 +116,9 @@ async function initialize() {
     sequelize
   );
 
+  // ! Class
+  db.Class = require("../models/class.model")(sequelize);
+
   // define relationships using the imported function
   defineRelationships(db);
 

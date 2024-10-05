@@ -50,9 +50,13 @@ async function createCourse(params, accountId) {
 function transformCourseData(course) {
   return {
     ...course.toJSON(),
+    departmentCodeForClass: course.department ? course.department.departmentCode : "CEA",
     fullCourseNameWithCampus:
       `${course.courseCode} - ${course.courseDescription} - ${course.campus.campusName}` ||
       "fullCourseNameWithCampus not found",
+    fullCourseName:
+      `${course.courseCode} - ${course.courseDescription}` ||
+      "fullCourseName not found",
     fullDepartmentNameWithCampus: course.department
       ? `${course.department.departmentCode} - ${course.department.departmentName} - ${course.campus.campusName}`
       : null,

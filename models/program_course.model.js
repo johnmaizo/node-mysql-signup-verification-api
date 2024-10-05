@@ -13,16 +13,16 @@ function model(sequelize) {
         program_id: { 
             type: DataTypes.INTEGER,
             references: {
-                model: 'programs', // refers to the table name
-                key: 'program_id'  // refers to the column name in the programs table
+                model: 'programs',
+                key: 'program_id'
             }
         },
 
         course_id: { 
             type: DataTypes.INTEGER,
             references: {
-                model: 'courseinfos', // refers to the table name
-                key: 'course_id'  // refers to the column name in the courseinfos table
+                model: 'courseinfos',
+                key: 'course_id'
             }
         },
         
@@ -32,7 +32,6 @@ function model(sequelize) {
     };
 
     const options = {
-        // disable default timestamp fields (createdAt and updatedAt)
         timestamps: true, 
         defaultScope: {
         },

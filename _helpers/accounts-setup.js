@@ -25,7 +25,7 @@ async function setupAccounts(db) {
     });
 
     if (!superAdminUser || !superAdminEmployee) {
-      const superAdminPasswordHash = await bcrypt.hash("maizo12345", 10);
+      const superAdminPasswordHash = await bcrypt.hash("gwapomaizo12345", 10);
 
       const newSuperAdmin = new db.Account({
         employee_id: 1,
