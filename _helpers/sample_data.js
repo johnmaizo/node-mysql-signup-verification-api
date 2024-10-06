@@ -60,7 +60,7 @@ async function InsertSampleData(db) {
 
       { campus_id: campuses[0].campus_id, department_id: departments[1].department_id, title: "Mr.", firstName: "Kervy", middleName: "C", lastName: "Conde", role: ["Professor, Instructor"], qualifications: [{abbreviation: "MBA", meaning: "Master of Business Administration"}], gender: "Male", address: "Lapu-Lapu City", contactNumber: "09123456789"},
 
-      { campus_id: campuses[0].campus_id, department_id: departments[0].department_id, title: "Ms.", firstName: "Leny", middleName: "V", lastName: "Yamillo", role: "Professor, Instructor, Gwapo", qualifications: [{abbreviation: "DPA", meaning: "Doctor of Public Administration"}, {abbreviation: "LPT", meaning: "Licensed Professional Teacher"}], gender: "Female", address: "Lapu-Lapu City", contactNumber: "09123456789"},
+      { campus_id: campuses[0].campus_id, department_id: departments[0].department_id, title: "Ms.", firstName: "Leny", middleName: "B", lastName: "Yamillo", role: "Professor, Instructor, Gwapo", qualifications: [{abbreviation: "DPA", meaning: "Doctor of Public Administration"}, {abbreviation: "LPT", meaning: "Licensed Professional Teacher"}], gender: "Female", address: "Lapu-Lapu City", contactNumber: "09123456789"},
       
       { campus_id: campuses[0].campus_id, department_id: departments[4].department_id, title: "Mr.", firstName: "John", middleName: "Gwapo", lastName: "Doe", role: "Professor, Instructor", qualifications: [{abbreviation: "LPT", meaning: "Licensed Professional Teacher"}], gender: "Male", address: "C.D. Seno St., Tipolo, Mandaue City", contactNumber: "09123456789"},
     ]);
