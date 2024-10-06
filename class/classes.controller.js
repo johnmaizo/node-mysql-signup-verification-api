@@ -8,7 +8,7 @@ const classService = require("./class.service");
 
 router.post(
   "/add-class",
-  //   authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   addClassSchema,
   addClass
 );
@@ -46,8 +46,8 @@ module.exports = router;
 // Modify existing functions to pass the accountId
 function addClass(req, res, next) {
   classService
-    .createClass(req.body)
-    // .createClass(req.body, req.user.id)
+    // .createClass(req.body)
+    .createClass(req.body, req.user.id)
     .then(() => res.json({message: "Class Added Successfully."}))
     .catch(next);
 }
