@@ -41,11 +41,11 @@ async function InsertSampleData(db) {
 
       { campus_id: campuses[1].campus_id, department_id: null, title: "Administrator", firstName: "Juan", middleName: "Cingko", lastName: "Makabugto", role: ["Admin"], qualifications: null, gender: "Male", address: "Lahug, Cebu City", contactNumber: "09485324123"},
 
-      { campus_id: campuses[0].campus_id, department_id: null, title: "MIS", firstName: "Yoshihisa", middleName: null, lastName: "Iguchi", role: ["MIS"], qualifications: null, gender: "Male", address: "1152 Poplar Chase Lane", contactNumber: "09485324123"},
+      { campus_id: campuses[0].campus_id, department_id: null, title: "Mr.", firstName: "Yoshihisa", middleName: null, lastName: "Iguchi", role: ["MIS"], qualifications: null, gender: "Male", address: "1152 Poplar Chase Lane", contactNumber: "09485324123"},
 
-      { campus_id: campuses[0].campus_id, department_id: null, title: "Registrar", firstName: "Registrar", middleName: "Gwapo", lastName: "Choyins", role: ["Registrar"], qualifications: null, gender: "Male", address: "Registrar, Mandaue City", contactNumber: "09485324123"},
+      { campus_id: campuses[0].campus_id, department_id: null, title: "Mr.", firstName: "Registrar", middleName: "Gwapo", lastName: "Choyins", role: ["Registrar"], qualifications: null, gender: "Male", address: "Registrar, Mandaue City", contactNumber: "09485324123"},
 
-      { campus_id: campuses[0].campus_id, department_id: null, title: "DC.", firstName: "Data", middleName: "Gwapo", lastName: "Center", role: ["DataCenter"], qualifications: null, gender: "Male", address: "Data Center, Mandaue City", contactNumber: "09485324123"},
+      { campus_id: campuses[0].campus_id, department_id: null, title: "Mr.", firstName: "Data", middleName: "Gwapo", lastName: "Center", role: ["DataCenter"], qualifications: null, gender: "Male", address: "Data Center, Mandaue City", contactNumber: "09485324123"},
 
 
       { campus_id: campuses[0].campus_id, department_id: departments[0].department_id, title: "Prof.", firstName: "Gene Paul", middleName: "Rubia", lastName: "Cueva", role: ["Dean, Professor"], qualifications: [{abbreviation: "MBA", meaning: "Master of Business Administration"}, {abbreviation: "MSIT", meaning: "Master of Science in Information Technology"}], gender: "Male", address: "Cordova, Cebu", contactNumber: "09123456789"},
