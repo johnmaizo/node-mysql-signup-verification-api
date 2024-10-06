@@ -14,8 +14,8 @@ module.exports = {
   updateClass,
 };
 
-// async function createClass(params, accountId) {
-async function createClass(params) {
+// async function createClass(params) {
+async function createClass(params, accountId) {
   // Check if a class with the same name already exists
   const existingClass = await db.Class.findOne({
     where: {className: params.className},
@@ -116,17 +116,17 @@ async function createClass(params) {
 
   // Create the new class if all validations pass
   const newClass = await db.Class.create(params);
-  return newClass;
-}
+  //   return newClass;
 
-// Log the creation action
-//   await db.History.create({
-//     action: "create",
-//     entity: "Course",
-//     entityId: newCourse.course_id,
-//     changes: params,
-//     accountId: accountId,
-//   });
+  // Log the creation action
+  await db.History.create({
+    action: "create",
+    entity: "Class",
+    entityId: newClass.class_id,
+    changes: params,
+    accountId: accountId,
+  });
+}
 
 function transformClassData(cls) {
   let roles = cls.employee.role
