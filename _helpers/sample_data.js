@@ -104,7 +104,7 @@ async function InsertSampleData(db) {
       { campus_id: campuses[0].campus_id, courseCode: "EE201", courseDescription: "Basic Electrical Engineering - Lec", unit: 2, department_id: departments[5].department_id},
       { campus_id: campuses[0].campus_id, courseCode: "EE201L", courseDescription: "Basic Electrical Engineering - Lab", unit: 1, department_id: departments[5].department_id},
       { campus_id: campuses[0].campus_id, courseCode: "ES211", courseDescription: "Statics of Rigid Bodies", unit: 3, department_id: departments[5].department_id},
-      { campus_id: campuses[0].campus_id, courseCode: "ES212", courseDescription: "Computer Fund. & Programming 1 - Lab", unit: 1, department_id: departments[5].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "ES212", courseDescription: "Computer Fund. & Programming 1 - Lab", unit: 1, department_id: departments[0].department_id},
       { campus_id: campuses[0].campus_id, courseCode: "ES213", courseDescription: "Environmental Science", unit: 3, department_id: departments[5].department_id},
       { campus_id: campuses[0].campus_id, courseCode: "MATH214", courseDescription: "Differential Equation", unit: 3, department_id: departments[5].department_id},
       { campus_id: campuses[0].campus_id, courseCode: "ME211", courseDescription: "Thermodynamics 1", unit: 3, department_id: departments[5].department_id},

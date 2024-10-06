@@ -9,7 +9,7 @@ const employeeService = require("./employee.service");
 router.post('/add-employee', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS]), createEmployeeSchema, createEmployee);
 router.get('/', getAllEmployee);
 router.get('/count', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS]), getAllEmployeeCount);
-router.get('/active', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS]), getAllEmployeeActive);
+router.get('/active', getAllEmployeeActive);
 router.get('/deleted', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS]), getAllEmployeeDeleted);
 router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS]), getEmployeeById);
 router.put('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS]), updateEmployeeSchema, updateEmployee);
@@ -48,10 +48,10 @@ function createEmployee(req, res, next) {
   }
 
   function getAllEmployeeActive(req, res, next) {
-    const {campus_id, role, forAccounts, departmentCode} = req.query;
+    const {campus_id, role, forAccounts, departmentCode, orderByField} = req.query;
 
     employeeService
-      .getAllEmployeeActive(campus_id, role, forAccounts, departmentCode)
+      .getAllEmployeeActive(campus_id, role, forAccounts, departmentCode, orderByField)
       .then((employees) => res.json(employees))
       .catch(next);
   }
