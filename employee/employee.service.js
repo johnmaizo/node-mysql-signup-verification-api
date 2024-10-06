@@ -196,8 +196,15 @@ function transformEmployeeData(employee, roleFilter = null) {
       `${employee.firstName}${
         employee.middleName != null ? ` ${`${employee.middleName[0]}.`}` : ""
       } ${employee.lastName}` || null,
+    fullNameWithDepartmentCode: `${employee.title} ${employee.firstName}${
+      employee.middleName != null ? ` ${`${employee.middleName[0]}.`}` : ""
+    } ${employee.lastName}${qualifications} - ${
+      employee.department?.departmentCode || "Department code not found"
+    }`,
     campusName: employee.campus?.campusName || "Campus name not found",
-    departmentCodeForClass: employee.department ? employee.department.departmentCode : null,
+    departmentCodeForClass: employee.department
+      ? employee.department.departmentCode
+      : null,
   };
 }
 
@@ -305,13 +312,22 @@ async function getAllEmployeeActive(
   }
 
   if (role) {
+    // Split the role string by commas if multiple roles are provided
+    const rolesArray = role.includes(",")
+      ? role.split(",").map((r) => r.trim())
+      : [role];
+
+    // Set the where clause for roles
     whereClause.role = {
-      [Op.like]: `%${role}%`,
+      [Op.or]: rolesArray.map((r) => ({
+        [Op.like]: `%${r}%`,
+      })),
     };
 
-    if (role === "Admin") {
+    // Special case for 'Admin' role, excluding 'SuperAdmin'
+    if (rolesArray.includes("Admin")) {
       whereClause.role = {
-        [Op.like]: `%${role}%`, // Search for 'Admin'
+        [Op.like]: `%Admin%`, // Search for 'Admin'
         [Op.notLike]: `%SuperAdmin%`, // Exclude 'SuperAdmin'
       };
     }
