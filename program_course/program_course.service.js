@@ -132,7 +132,7 @@ async function createProgramAssignCourse(params, accountId) {
 
 // Common function to handle the transformation
 function transformProgramCourseData(programCourse) {
-  const gwapo = {
+  return {
     ...programCourse.toJSON(),
     courseCode: programCourse.courseinfo.courseCode || null,
     courseDescription: programCourse.courseinfo.courseDescription || null,
@@ -145,8 +145,6 @@ function transformProgramCourseData(programCourse) {
       ? `${programCourse.courseinfo.department.departmentCode} - ${programCourse.courseinfo.department.departmentName} - ${programCourse.courseinfo.department.campus.campusName}`
       : null,
   };
-  console.log(gwapo);
-  return gwapo;
 }
 
 // Helper function to generate include conditions
