@@ -6,7 +6,11 @@ const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const externalService = require("./external.service");
 
-router.get('/get-employee-active', getAllEmployeeActive);
+router.get("/get-employee-active", getAllEmployeeActive);
+router.get("/get-campus-active", getAllCampusActive);
+router.get("/get-department-active", getAllDepartmentsActive);
+router.get("/get-programs-active", getAllProgramActive);
+router.get("/get-class-active", getAllClassActive);
 
 module.exports = router;
 
@@ -16,5 +20,40 @@ function getAllEmployeeActive(req, res, next) {
   externalService
     .getAllEmployeeActive(campus_id, role, forAccounts, departmentCode)
     .then((employees) => res.json(employees))
+    .catch(next);
+}
+
+function getAllCampusActive(req, res, next) {
+  externalService
+    .getAllCampusActive()
+    .then((campuses) => res.json(campuses))
+    .catch(next);
+}
+
+function getAllDepartmentsActive(req, res, next) {
+  const {campus_id, campusName} = req.query;
+
+  externalService
+    .getAllDepartmentsActive(campus_id, campusName)
+    .then((departments) => res.json(departments))
+    .catch(next);
+}
+
+function getAllProgramActive(req, res, next) {
+  const campus_id = req.query.campus_id;
+  const campusName = req.query.campusName;
+
+  externalService
+    .getAllProgramsActive(campus_id, campusName)
+    .then((program) => res.json(program))
+    .catch(next);
+}
+
+function getAllClassActive(req, res, next) {
+  const {campus_id, campusName} = req.query;
+
+  externalService
+    .getAllClassActive(campus_id, campusName)
+    .then((courses) => res.json(courses))
     .catch(next);
 }

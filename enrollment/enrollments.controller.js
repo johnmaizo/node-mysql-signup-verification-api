@@ -21,13 +21,13 @@ router.get(
   authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getAllStudentOfficialCount
 );
-router.get("/get-chart-data", getChartData);
-router.get("/fetch-applicant-data", fetchApplicantData);
-router.get("/get-all-applicant", getAllApplicant);
-router.get("/get-all-applicant-count", getAllApplicantCount);
+router.get("/get-chart-data", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]), getChartData);
+router.get("/fetch-applicant-data", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]), fetchApplicantData);
+router.get("/get-all-applicant", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]), getAllApplicant);
+router.get("/get-all-applicant-count", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]), getAllApplicantCount);
 
-router.get("/get-enrollment-status/:id", getEnrollmentStatusById);
-router.get("/get-all-enrollment-status", getAllEnrollmentStatus);
+router.get("/get-enrollment-status/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]), getEnrollmentStatusById);
+router.get("/get-all-enrollment-status", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]), getAllEnrollmentStatus);
 
 router.get(
   "/:id",
@@ -35,7 +35,7 @@ router.get(
   getStudentById
 );
 router.put(
-  "/enrollmentprocess",
+  "/enrollmentprocess", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   enrollmentProcessSchema,
   updateEnrollmentProcess
 );

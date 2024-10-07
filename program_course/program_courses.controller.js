@@ -14,7 +14,7 @@ router.post(
   addProgramAssignCourseSchema,
   addProgramAssignCourse
 );
-router.get("/", getAllProgramAssignCourse);
+router.get("/", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]), getAllProgramAssignCourse);
 router.get(
   "/count",
   authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
