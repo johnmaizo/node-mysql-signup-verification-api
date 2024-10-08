@@ -87,18 +87,18 @@ async function initialize() {
   );
 
   // ! Student
-  db.Student = require("../models/student.model")(sequelize);
-  db.StudentContact = require("../models/student_contact.model")(sequelize);
-  db.StudentFamily = require("../models/student_family.model")(sequelize);
-  db.StudentCurrentAcademic =
-    require("../models/student_current_academic_background.model")(sequelize);
-  db.AcademicHistory = require("../models/student_academic_history.model")(
-    sequelize
-  );
-  db.StudentSchoolDetail = require("../models/student_school_detail.model")(
-    sequelize
-  );
-  db.StudentSubject = require("../models/student_subject.model")(sequelize);
+  // db.Student = require("../models/student.model")(sequelize);
+  // db.StudentContact = require("../models/student_contact.model")(sequelize);
+  // db.StudentFamily = require("../models/student_family.model")(sequelize);
+  // db.StudentCurrentAcademic =
+  //   require("../models/student_current_academic_background.model")(sequelize);
+  // db.AcademicHistory = require("../models/student_academic_history.model")(
+  //   sequelize
+  // );
+  // db.StudentSchoolDetail = require("../models/student_school_detail.model")(
+  //   sequelize
+  // );
+  // db.StudentSubject = require("../models/student_subject.model")(sequelize);
 
   // ! Employee
   db.Employee = require("../models/employee.model")(sequelize);
@@ -118,6 +118,17 @@ async function initialize() {
 
   // ! Class
   db.Class = require("../models/class.model")(sequelize);
+
+  // ! Prospectus
+  db.Prospectus = require("../models/prospectus.model")(sequelize);
+
+  // ! Prospectus Subject
+  db.ProspectusSubject = require("../models/prospectus_subjects.model")(
+    sequelize
+  );
+
+  // ! Pre Requisite
+  db.PreRequisite = require("../models/prospectus_pre_requisite.model")(sequelize);
 
   // define relationships using the imported function
   defineRelationships(db);
