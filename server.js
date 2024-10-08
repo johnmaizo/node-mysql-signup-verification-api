@@ -44,9 +44,6 @@ app.use("/employee", require("./employee/employees.controller"));
 // ! Accounts
 app.use("/accounts", require("./accounts/accounts.controller"));
 
-// ! Student
-app.use("/students", require("./students/students.controller"));
-
 // ! Semester
 app.use("/semesters", require("./semester/semesters.controller"));
 
@@ -78,7 +75,13 @@ app.use(
 app.use("/enrollment", require("./enrollment/enrollments.controller"));
 
 // ! Class
-app.use("/class", require("./class/classes.controller"))
+app.use("/class", require("./class/classes.controller"));
+
+// ! Prospectus
+app.use("/prospectus", require("./prospectus/prospectuses.controller"));
+
+// ! Student
+// app.use("/students", require("./students/students.controller"));
 
 // swagger docs route
 app.use("/api-docs", require("_helpers/swagger"));
