@@ -370,7 +370,7 @@ async function createProspectusAssignSubject(params, accountId) {
 
         // Check if the prospectus exists and is linked to the specified campus
         const prospectus = await db.Prospectus.findOne({
-          where: {prospectus_id: prospectus_id},
+          where: {prospectus_id},
           include: [
             {
               model: db.Program,
@@ -378,13 +378,13 @@ async function createProspectusAssignSubject(params, accountId) {
               include: [
                 {
                   model: db.Department,
-                  where: {campus_id: campus_id},
                   required: true,
+                  where: {campus_id},
                   include: [
                     {
                       model: db.Campus,
+                      attributes: ["campusName"],
                       required: true,
-                      where: {campus_id: campus_id},
                     },
                   ],
                 },
@@ -397,10 +397,6 @@ async function createProspectusAssignSubject(params, accountId) {
           return {
             error: `Prospectus with ID "${prospectus_id}" not found for campus ID "${campus_id}".`,
           };
-        } else if (!prospectus.program || !prospectus.program.department) {
-          return {
-            error: `Prospectus with ID "${prospectus_id}" does not belong to a valid department on campus ID "${campus_id}".`,
-          };
         }
 
         // Ensure subjectCode is an array
@@ -408,11 +404,11 @@ async function createProspectusAssignSubject(params, accountId) {
           ? subjectCode
           : [subjectCode];
 
-        // Check if the courses exist for the specified campus
+        // Check if all subjects are valid for the specified campus
         const subjects = await db.CourseInfo.findAll({
           where: {
             courseCode: subjectCodesArray,
-            campus_id: campus_id, // Ensure that the subjects are linked to the specified campus
+            campus_id,
           },
         });
 
@@ -430,72 +426,32 @@ async function createProspectusAssignSubject(params, accountId) {
           };
         }
 
-        // Check for existing ProspectusSubjects and throw an error if already assigned
+        // Check if any of these courses are already assigned to the prospectus
         const existingAssignments = await db.ProspectusSubject.findAll({
           where: {
-            prospectus_id: prospectus_id,
+            prospectus_id,
             course_id: subjects.map((subject) => subject.course_id),
           },
         });
 
         if (existingAssignments.length > 0) {
+          const existingCourses = existingAssignments.map(
+            (assignment) => assignment.course_id
+          );
+          const existingCourseCodes = subjects
+            .filter((subject) => existingCourses.includes(subject.course_id))
+            .map((subject) => subject.courseCode);
+
           return {
-            error: `Some of the subject codes are already assigned to Prospectus "${prospectus_id}" on campus "${campus_id}".`,
+            error: `Course(s) "${existingCourseCodes.join(
+              ", "
+            )}" is already assigned to Prospectus "${
+              prospectus.prospectusName
+            }" on campus "${prospectus.program.department.campus.campusName}".`,
           };
         }
 
-        // Bulk insert the ProspectusSubject records and retrieve their IDs
-        const insertedProspectusSubjects =
-          await db.ProspectusSubject.bulkCreate(
-            subjects.map((subject) => ({
-              prospectus_id: prospectus_id,
-              yearLevel: yearLevel,
-              course_id: subject.course_id,
-              isActive: true,
-              isDeleted: false,
-            })),
-            {returning: true}
-          );
-
-        // Map the subject codes to their corresponding prospectus_subject_id
-        const subjectCodeToIdMap = {};
-        insertedProspectusSubjects.forEach((record) => {
-          const subject = subjects.find(
-            (sub) => sub.course_id === record.course_id
-          );
-          if (subject) {
-            subjectCodeToIdMap[subject.courseCode] =
-              record.prospectus_subject_id;
-          }
-        });
-
-        // Insert prerequisites for each ProspectusSubject
-        for (const preReq of preRequisite || []) {
-          const preReqProspectusSubjectId =
-            subjectCodeToIdMap[preReq.prospectus_subject_code];
-          if (!preReqProspectusSubjectId) {
-            return {
-              error: `Cannot find the prospectus_subject_id for subject code "${preReq.prospectus_subject_code}".`,
-            };
-          }
-
-          const preRequisiteSubjects = await db.CourseInfo.findAll({
-            where: {
-              courseCode: preReq.subjectCode,
-              campus_id: campus_id,
-            },
-          });
-
-          const preRequisiteData = preRequisiteSubjects.map((subject) => ({
-            prospectus_subject_id: preReqProspectusSubjectId,
-            course_id: subject.course_id,
-            isActive: true,
-            isDeleted: false,
-          }));
-
-          await db.PreRequisite.bulkCreate(preRequisiteData);
-        }
-
+        // Return the data to be used for insertion
         return {prospectus_id, yearLevel, subjects};
       });
     })
@@ -507,8 +463,8 @@ async function createProspectusAssignSubject(params, accountId) {
     throw new Error(validationError.error);
   }
 
-  // Prepare data for bulk insert into ProspectusSubject table.
-  const insertedProspectusSubjects = validationResults.flatMap((result) =>
+  // Prepare the data for bulk insertion into the ProspectusSubject table
+  const prospectusSubjects = validationResults.flatMap((result) =>
     result.subjects.map((subject) => ({
       prospectus_id: result.prospectus_id,
       yearLevel: result.yearLevel,
@@ -517,6 +473,106 @@ async function createProspectusAssignSubject(params, accountId) {
       isDeleted: false,
     }))
   );
+
+  // Bulk insert the data into the ProspectusSubject table
+  const insertedProspectusSubjects = await db.ProspectusSubject.bulkCreate(
+    prospectusSubjects,
+    {returning: true}
+  );
+
+  // Now handle prerequisite validation and insertion
+  const preRequisiteData = [];
+  await Promise.all(
+    data.map(async (entry) => {
+      const {prospectus_id, preRequisite} = entry;
+
+      if (preRequisite && Array.isArray(preRequisite)) {
+        for (const prereq of preRequisite) {
+          const {prospectus_subject_code, subjectCode: prereqSubjectCodes} =
+            prereq;
+
+          // Find prospectus_subject_id based on prospectus_subject_code
+          const preReqProspectusSubject = await db.ProspectusSubject.findOne({
+            where: {
+              prospectus_id,
+            },
+            include: [
+              {
+                model: db.CourseInfo,
+                where: {
+                  courseCode: prospectus_subject_code,
+                },
+                attributes: ["courseCode"],
+              },
+            ],
+          });
+
+          if (!preReqProspectusSubject) {
+            throw new Error(
+              `Prospectus subject with course code "${prospectus_subject_code}" not found for prospectus ID "${prospectus_id}".`
+            );
+          }
+
+          // Validate the prerequisite subject codes
+          const prereqSubjects = await db.CourseInfo.findAll({
+            where: {
+              courseCode: prereqSubjectCodes,
+              campus_id: entry.campus_id, // Use the campus_id from the current entry
+            },
+          });
+
+          const validPrereqCodes = prereqSubjects.map(
+            (subject) => subject.courseCode
+          );
+          const invalidPrereqCodes = prereqSubjectCodes.filter(
+            (code) => !validPrereqCodes.includes(code)
+          );
+
+          if (invalidPrereqCodes.length > 0) {
+            throw new Error(
+              `Invalid prerequisite subject codes: ${invalidPrereqCodes.join(
+                ", "
+              )} for prospectus subject course code "${prospectus_subject_code}".`
+            );
+          }
+
+          // Add to the prerequisite data array for later insertion
+          preRequisiteData.push(
+            ...prereqSubjects.map((subject) => ({
+              prospectus_subject_id:
+                preReqProspectusSubject.prospectus_subject_id,
+              course_id: subject.course_id,
+              isActive: true,
+              isDeleted: false,
+            }))
+          );
+        }
+      }
+    })
+  );
+
+  // Insert prerequisite data into the prospectus_pre_requisite table
+  if (preRequisiteData.length > 0) {
+    await db.PreRequisite.bulkCreate(preRequisiteData);
+  }
+
+  // Log history actions for each inserted record
+  const historyLogs = insertedProspectusSubjects.map((prospectusSubject) => ({
+    action: "create",
+    entity: "ProspectusSubject",
+    entityId: prospectusSubject.prospectus_subject_id,
+    changes: {
+      prospectus_id: prospectusSubject.prospectus_id,
+      yearLevel: prospectusSubject.yearLevel,
+      course_id: prospectusSubject.course_id,
+    },
+    accountId: accountId,
+  }));
+
+  // Bulk insert history logs
+  await db.History.bulkCreate(historyLogs);
+
+  return insertedProspectusSubjects;
 }
 
 function transformProspectusSubjectData(prospectusSubject) {
@@ -602,7 +658,10 @@ async function getAllProspectusSubjects(campus_id = null) {
         attributes: ["course_id", "courseCode", "courseDescription", "unit"],
       },
     ],
-    order : [["yearLevel", "ASC"], ["prospectus_subject_id", "ASC"] ],
+    order: [
+      ["yearLevel", "ASC"],
+      ["prospectus_subject_id", "ASC"],
+    ],
   });
 
   return prospectusSubjects.map(transformProspectusSubjectData);
