@@ -16,6 +16,7 @@ module.exports = {
   // ! Prospectus Assign Subject
   createProspectusAssignSubject,
   getAllProspectusSubjects,
+  getProspectusSubjectByProspectusId,
 };
 
 // async function createProspectus(params, accountId) {
@@ -664,5 +665,67 @@ async function getAllProspectusSubjects(campus_id = null) {
     ],
   });
 
+  return prospectusSubjects.map(transformProspectusSubjectData);
+}
+
+async function getProspectusSubjectByProspectusId(prospectus_id) {
+  const prospectusSubjects = await db.ProspectusSubject.findAll({
+    where: {
+      prospectus_id: prospectus_id,
+      isDeleted: false,
+    },
+    include: [
+      {
+        model: db.PreRequisite,
+        required: false, // Include prerequisites if they exist
+        include: [
+          {
+            model: db.CourseInfo,
+            required: false, // Include course info for each prerequisite
+            attributes: ["courseCode", "courseDescription", "unit"],
+          },
+        ],
+        attributes: ["pre_requisite_id"],
+      },
+      {
+        model: db.Prospectus,
+        required: true,
+        include: [
+          {
+            model: db.Program,
+            required: true,
+            include: [
+              {
+                model: db.Department,
+                required: true,
+                include: [
+                  {
+                    model: db.Campus,
+                    required: true,
+                    attributes: ["campusName"],
+                  },
+                ],
+                attributes: ["department_id"],
+              },
+            ],
+            attributes: ["program_id"],
+          },
+        ],
+        attributes: ["prospectus_id", "prospectusName"],
+      },
+      {
+        model: db.CourseInfo,
+        required: false,
+        attributes: ["courseCode", "courseDescription", "unit"],
+      },
+    ],
+    order: [
+      ["yearLevel", "ASC"],
+      ["prospectus_subject_id", "ASC"],
+    ],
+  });
+
+  if (!prospectusSubjects || prospectusSubjects.length === 0)
+    throw "No prospectus subjects found";
   return prospectusSubjects.map(transformProspectusSubjectData);
 }

@@ -31,6 +31,7 @@ router.get("/get-all-prospectus/count", getAllProspectusCount);
 router.get("/get-all-prospectus/active", getAllProspectusActive);
 router.get("/get-all-prospectus/deleted", getAllProspectusDeleted);
 router.get("/get-prospectus-by-id/:id", getProspectusById);
+router.get("/get-prospectus-subjects-by-id/:id", getProspectusSubjectsById);
 router.put("/update-prospectus/:id", updateProspectusSchema, updateProspectus);
 
 module.exports = router;
@@ -107,6 +108,15 @@ function getAllProspectusCount(req, res, next) {
 function getProspectusById(req, res, next) {
   prospectusService
     .getProspectusById(req.params.id)
+    .then((prospectus) =>
+      prospectus ? res.json(prospectus) : res.sendStatus(404)
+    )
+    .catch(next);
+}
+
+function getProspectusSubjectsById(req, res, next) {
+  prospectusService
+    .getProspectusSubjectByProspectusId(req.params.id)
     .then((prospectus) =>
       prospectus ? res.json(prospectus) : res.sendStatus(404)
     )
