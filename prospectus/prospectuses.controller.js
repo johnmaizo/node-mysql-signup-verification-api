@@ -61,10 +61,10 @@ function addProspectusAssignSubject(req, res, next) {
 }
 
 function getAllProspectus(req, res, next) {
-  const {campus_id} = req.query;
+  const {campus_id, campusName, program_id, programCode} = req.query;
 
   prospectusService
-    .getAllProspectus(campus_id)
+    .getAllProspectus(campus_id, campusName, programCode, program_id)
     .then((prospectuses) => res.json(prospectuses))
     .catch(next);
 }
