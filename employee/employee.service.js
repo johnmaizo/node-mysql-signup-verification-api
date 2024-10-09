@@ -304,7 +304,7 @@ async function getAllEmployeeActive(
     "DataCenter",
     "Registrar",
     "Accounting",
-    "Dean",
+    // "Dean",
   ];
 
   if (campus_id) {
