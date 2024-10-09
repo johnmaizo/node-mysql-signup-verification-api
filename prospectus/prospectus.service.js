@@ -110,10 +110,62 @@ function transformProspectusData(prospectus) {
   return {
     ...prospectus.toJSON(),
     campusName: prospectus?.program?.department?.campus?.campusName || null,
+    fullDepartmentNameWithCampusForSubject: prospectus?.program?.department
+      ? `${prospectus?.program?.department.departmentCode} - ${prospectus?.program?.department.departmentName} - ${prospectus?.program?.department.campus.campusName}`
+      : null,
   };
 }
 
-async function getAllProspectus(campus_id = null) {
+async function getAllProspectus(
+  campus_id = null,
+  campusName = null,
+  programCode = null,
+  program_id = null
+) {
+  // Validate Campus
+  const campusWhereClause = {};
+  if (campus_id) campusWhereClause.campus_id = campus_id;
+  if (campusName) campusWhereClause.campusName = campusName;
+
+  const campus = await db.Campus.findOne({
+    where: campusWhereClause,
+  });
+
+  if (!campus) {
+    throw new Error(
+      "Campus not found with the provided campus_id and/or campusName"
+    );
+  }
+
+  // Validate Program
+  const programWhereClause = {};
+  if (program_id) programWhereClause.program_id = program_id;
+  if (programCode) programWhereClause.programCode = programCode;
+
+  const program = await db.Program.findOne({
+    where: programWhereClause,
+    include: [
+      {
+        model: db.Department,
+        required: true,
+        include: [
+          {
+            model: db.Campus,
+            required: true,
+            where: campusWhereClause,
+          },
+        ],
+      },
+    ],
+  });
+
+  if (!program) {
+    throw new Error(
+      "Program not found with the provided program_id and/or programCode, or it is not associated with the specified campus."
+    );
+  }
+
+  // If validation passes, proceed to find the Prospectus
   const prospectus = await db.Prospectus.findAll({
     where: {
       isDeleted: false,
@@ -122,16 +174,16 @@ async function getAllProspectus(campus_id = null) {
       {
         model: db.Program,
         required: true,
+        where: programWhereClause,
         include: [
           {
             model: db.Department,
             required: true,
-            where: campus_id ? {campus_id: campus_id} : null,
             include: [
               {
                 model: db.Campus,
                 required: true,
-                where: campus_id ? {campus_id: campus_id} : null,
+                where: campusWhereClause,
               },
             ],
           },
@@ -143,7 +195,56 @@ async function getAllProspectus(campus_id = null) {
   return prospectus.map(transformProspectusData);
 }
 
-async function getAllProspectusActive(campus_id = null) {
+async function getAllProspectusActive(
+  campus_id = null,
+  campusName = null,
+  programCode = null,
+  program_id = null
+) {
+  // Validate Campus
+  const campusWhereClause = {};
+  if (campus_id) campusWhereClause.campus_id = campus_id;
+  if (campusName) campusWhereClause.campusName = campusName;
+
+  const campus = await db.Campus.findOne({
+    where: campusWhereClause,
+  });
+
+  if (!campus) {
+    throw new Error(
+      "Campus not found with the provided campus_id and/or campusName"
+    );
+  }
+
+  // Validate Program
+  const programWhereClause = {};
+  if (program_id) programWhereClause.program_id = program_id;
+  if (programCode) programWhereClause.programCode = programCode;
+
+  const program = await db.Program.findOne({
+    where: programWhereClause,
+    include: [
+      {
+        model: db.Department,
+        required: true,
+        include: [
+          {
+            model: db.Campus,
+            required: true,
+            where: campusWhereClause,
+          },
+        ],
+      },
+    ],
+  });
+
+  if (!program) {
+    throw new Error(
+      "Program not found with the provided program_id and/or programCode, or it is not associated with the specified campus."
+    );
+  }
+
+  // Fetch Active Prospectus
   const prospectus = await db.Prospectus.findAll({
     where: {
       isActive: true,
@@ -153,16 +254,16 @@ async function getAllProspectusActive(campus_id = null) {
       {
         model: db.Program,
         required: true,
+        where: programWhereClause,
         include: [
           {
             model: db.Department,
             required: true,
-            where: campus_id ? {campus_id: campus_id} : null,
             include: [
               {
                 model: db.Campus,
                 required: true,
-                where: campus_id ? {campus_id: campus_id} : null,
+                where: campusWhereClause,
               },
             ],
           },
@@ -174,7 +275,56 @@ async function getAllProspectusActive(campus_id = null) {
   return prospectus.map(transformProspectusData);
 }
 
-async function getAllProspectusDeleted(campus_id = null) {
+async function getAllProspectusDeleted(
+  campus_id = null,
+  campusName = null,
+  programCode = null,
+  program_id = null
+) {
+  // Validate Campus
+  const campusWhereClause = {};
+  if (campus_id) campusWhereClause.campus_id = campus_id;
+  if (campusName) campusWhereClause.campusName = campusName;
+
+  const campus = await db.Campus.findOne({
+    where: campusWhereClause,
+  });
+
+  if (!campus) {
+    throw new Error(
+      "Campus not found with the provided campus_id and/or campusName"
+    );
+  }
+
+  // Validate Program
+  const programWhereClause = {};
+  if (program_id) programWhereClause.program_id = program_id;
+  if (programCode) programWhereClause.programCode = programCode;
+
+  const program = await db.Program.findOne({
+    where: programWhereClause,
+    include: [
+      {
+        model: db.Department,
+        required: true,
+        include: [
+          {
+            model: db.Campus,
+            required: true,
+            where: campusWhereClause,
+          },
+        ],
+      },
+    ],
+  });
+
+  if (!program) {
+    throw new Error(
+      "Program not found with the provided program_id and/or programCode, or it is not associated with the specified campus."
+    );
+  }
+
+  // Fetch Deleted Prospectus
   const prospectus = await db.Prospectus.findAll({
     where: {
       isDeleted: true,
@@ -183,16 +333,16 @@ async function getAllProspectusDeleted(campus_id = null) {
       {
         model: db.Program,
         required: true,
+        where: programWhereClause,
         include: [
           {
             model: db.Department,
             required: true,
-            where: campus_id ? {campus_id: campus_id} : null,
             include: [
               {
                 model: db.Campus,
                 required: true,
-                where: campus_id ? {campus_id: campus_id} : null,
+                where: campusWhereClause,
               },
             ],
           },
@@ -204,7 +354,56 @@ async function getAllProspectusDeleted(campus_id = null) {
   return prospectus.map(transformProspectusData);
 }
 
-async function getAllProspectusCount(campus_id = null) {
+async function getAllProspectusCount(
+  campus_id = null,
+  campusName = null,
+  programCode = null,
+  program_id = null
+) {
+  // Validate Campus
+  const campusWhereClause = {};
+  if (campus_id) campusWhereClause.campus_id = campus_id;
+  if (campusName) campusWhereClause.campusName = campusName;
+
+  const campus = await db.Campus.findOne({
+    where: campusWhereClause,
+  });
+
+  if (!campus) {
+    throw new Error(
+      "Campus not found with the provided campus_id and/or campusName"
+    );
+  }
+
+  // Validate Program
+  const programWhereClause = {};
+  if (program_id) programWhereClause.program_id = program_id;
+  if (programCode) programWhereClause.programCode = programCode;
+
+  const program = await db.Program.findOne({
+    where: programWhereClause,
+    include: [
+      {
+        model: db.Department,
+        required: true,
+        include: [
+          {
+            model: db.Campus,
+            required: true,
+            where: campusWhereClause,
+          },
+        ],
+      },
+    ],
+  });
+
+  if (!program) {
+    throw new Error(
+      "Program not found with the provided program_id and/or programCode, or it is not associated with the specified campus."
+    );
+  }
+
+  // Count Active Prospectus
   const count = await db.Prospectus.count({
     where: {
       isActive: true,
@@ -214,16 +413,16 @@ async function getAllProspectusCount(campus_id = null) {
       {
         model: db.Program,
         required: true,
+        where: programWhereClause,
         include: [
           {
             model: db.Department,
             required: true,
-            where: campus_id ? {campus_id: campus_id} : null,
             include: [
               {
                 model: db.Campus,
                 required: true,
-                where: campus_id ? {campus_id: campus_id} : null,
+                where: campusWhereClause,
               },
             ],
           },
@@ -362,12 +561,104 @@ async function createProspectusAssignSubject(params, accountId) {
   // Assuming params is an array of objects with campus_id, prospectus_id, yearLevel, subjectCode, and preRequisite
   const data = Array.isArray(params) ? params : [params];
 
+  // Define the regex pattern for validating yearLevel (e.g., 1st Year, 2nd Year, etc.)
+  const validYearLevelPattern = /^(\d+)(st|nd|rd|th) Year$/;
+
   // Validate each prospectus entry and handle prerequisites
   const validationResults = await Promise.all(
     data.map(async (entry) => {
       return limit(async () => {
         const {campus_id, prospectus_id, yearLevel, subjectCode, preRequisite} =
           entry;
+
+        // Check if yearLevel matches the valid pattern
+        if (!validYearLevelPattern.test(yearLevel)) {
+          return {
+            error: `Invalid yearLevel format "${yearLevel}". Accepted format is "1st Year", "2nd Year", "3rd Year", and so on.`,
+          };
+        }
+
+        // New validation to check if the 1st Year exists before allowing higher years
+        if (yearLevel !== "1st Year") {
+          const firstYearExists = await db.ProspectusSubject.findOne({
+            where: {
+              prospectus_id,
+              yearLevel: "1st Year",
+            },
+            include: [
+              {
+                model: db.Prospectus,
+                required: true,
+                include: [
+                  {
+                    model: db.Program,
+                    required: true,
+                    include: [
+                      {
+                        model: db.Department,
+                        required: true,
+                        where: {campus_id},
+                        include: [
+                          {
+                            model: db.Campus,
+                            attributes: ["campusName"],
+                            required: true,
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          });
+
+          if (!firstYearExists) {
+            return {
+              error: `You cannot create "${yearLevel}" because "1st Year" does not exist for Prospectus ID "${prospectus_id}" on Campus ID "${campus_id}". Please create "1st Year" first.`,
+            };
+          }
+        }
+
+        // Validation to check if the yearLevel already exists for the specified campus_id and prospectus_id
+        const existingYearLevel = await db.ProspectusSubject.findOne({
+          where: {
+            prospectus_id,
+            yearLevel,
+          },
+          include: [
+            {
+              model: db.Prospectus,
+              required: true,
+              include: [
+                {
+                  model: db.Program,
+                  required: true,
+                  include: [
+                    {
+                      model: db.Department,
+                      required: true,
+                      where: {campus_id},
+                      include: [
+                        {
+                          model: db.Campus,
+                          attributes: ["campusName"],
+                          required: true,
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        });
+
+        if (existingYearLevel) {
+          return {
+            error: `Year Level "${yearLevel}" already exists for Prospectus ID "${prospectus_id}" on Campus ID "${campus_id}".`,
+          };
+        }
 
         // Check if the prospectus exists and is linked to the specified campus
         const prospectus = await db.Prospectus.findOne({
@@ -485,7 +776,14 @@ async function createProspectusAssignSubject(params, accountId) {
   const preRequisiteData = [];
   await Promise.all(
     data.map(async (entry) => {
-      const {prospectus_id, preRequisite} = entry;
+      const {prospectus_id, yearLevel, preRequisite} = entry;
+
+      // New validation: prerequisites cannot be added if the yearLevel is "1st Year"
+      if (yearLevel === "1st Year" && preRequisite && preRequisite.length > 0) {
+        throw new Error(
+          `Prerequisites cannot be added for "1st Year" courses.`
+        );
+      }
 
       if (preRequisite && Array.isArray(preRequisite)) {
         for (const prereq of preRequisite) {
