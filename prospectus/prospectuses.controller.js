@@ -12,7 +12,7 @@ const prospectusService = require("./prospectus.service");
 //   addProspectusSchema,
 //   addProspectus
 // );
-router.post("/add-prospectus", addProspectusSchema, addProspectus);
+router.post("/add-prospectus", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS]), addProspectusSchema, addProspectus);
 router.post(
   "/assign-prospectus-subject",
   authorize([
@@ -38,8 +38,8 @@ module.exports = router;
 
 function addProspectus(req, res, next) {
   prospectusService
-    // .createProspectus(req.body, req.user.id)
-    .createProspectus(req.body)
+  // .createProspectus(req.body)
+  .createProspectus(req.body, req.user.id)
     .then(() =>
       res.json({
         message: "Prospectus Added Successfully.",
