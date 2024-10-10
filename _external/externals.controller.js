@@ -24,7 +24,7 @@ function getAllEmployeeActive(req, res, next) {
 }
 
 function getAllCampusActive(req, res, next) {
-  externalService
+  externalService``
     .getAllCampusActive()
     .then((campuses) => res.json(campuses))
     .catch(next);

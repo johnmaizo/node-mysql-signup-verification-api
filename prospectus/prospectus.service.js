@@ -19,8 +19,7 @@ module.exports = {
   getProspectusSubjectByProspectusId,
 };
 
-// async function createProspectus(params, accountId) {
-async function createProspectus(params) {
+async function createProspectus(params, accountId) {
   // Fetch the campus by name
   const campus = await db.Campus.findOne({
     where: {campusName: params.campusName},
@@ -101,9 +100,13 @@ async function createProspectus(params) {
     ],
   });
 
-  // Return or log the result
-  console.log(prospectusWithProgram.toJSON());
-  return prospectusWithProgram;
+  return await db.History.create({
+    action: "create",
+    entity: "Prospectus",
+    entityId: newProspectus.prospectus_id,
+    changes: params,
+    accountId: accountId,
+  });
 }
 
 function transformProspectusData(prospectus) {
@@ -554,113 +557,61 @@ async function updateProspectus(id, params, accountId) {
 // ! Prospectus Assign Sujbect
 async function createProspectusAssignSubject(params, accountId) {
   const pLimit = await import("p-limit");
-
-  // Limit concurrency for parallel operations
   const limit = pLimit.default(5);
-
-  // Assuming params is an array of objects with campus_id, prospectus_id, yearLevel, subjectCode, and preRequisite
   const data = Array.isArray(params) ? params : [params];
-
-  // Define the regex pattern for validating yearLevel (e.g., 1st Year, 2nd Year, etc.)
   const validYearLevelPattern = /^(\d+)(st|nd|rd|th) Year$/;
 
-  // Validate each prospectus entry and handle prerequisites
+  function logDebug(message, data) {
+    console.log(`[DEBUG] ${message}`, data || "");
+  }
+
   const validationResults = await Promise.all(
     data.map(async (entry) => {
       return limit(async () => {
         const {campus_id, prospectus_id, yearLevel, subjectCode, preRequisite} =
           entry;
 
-        // Check if yearLevel matches the valid pattern
+        logDebug("Processing entry", {campus_id, prospectus_id, yearLevel});
+
         if (!validYearLevelPattern.test(yearLevel)) {
           return {
             error: `Invalid yearLevel format "${yearLevel}". Accepted format is "1st Year", "2nd Year", "3rd Year", and so on.`,
           };
         }
 
-        // New validation to check if the 1st Year exists before allowing higher years
         if (yearLevel !== "1st Year") {
           const firstYearExists = await db.ProspectusSubject.findOne({
             where: {
               prospectus_id,
               yearLevel: "1st Year",
             },
-            include: [
-              {
-                model: db.Prospectus,
-                required: true,
-                include: [
-                  {
-                    model: db.Program,
-                    required: true,
-                    include: [
-                      {
-                        model: db.Department,
-                        required: true,
-                        where: {campus_id},
-                        include: [
-                          {
-                            model: db.Campus,
-                            attributes: ["campusName"],
-                            required: true,
-                          },
-                        ],
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
           });
 
           if (!firstYearExists) {
+            logDebug("1st Year not found for prospectus", {
+              prospectus_id,
+              campus_id,
+            });
             return {
               error: `You cannot create "${yearLevel}" because "1st Year" does not exist for Prospectus ID "${prospectus_id}" on Campus ID "${campus_id}". Please create "1st Year" first.`,
             };
           }
         }
 
-        // Validation to check if the yearLevel already exists for the specified campus_id and prospectus_id
         const existingYearLevel = await db.ProspectusSubject.findOne({
           where: {
             prospectus_id,
             yearLevel,
           },
-          include: [
-            {
-              model: db.Prospectus,
-              required: true,
-              include: [
-                {
-                  model: db.Program,
-                  required: true,
-                  include: [
-                    {
-                      model: db.Department,
-                      required: true,
-                      where: {campus_id},
-                      include: [
-                        {
-                          model: db.Campus,
-                          attributes: ["campusName"],
-                          required: true,
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
         });
 
         if (existingYearLevel) {
+          logDebug("Year level already exists", {yearLevel, prospectus_id});
           return {
             error: `Year Level "${yearLevel}" already exists for Prospectus ID "${prospectus_id}" on Campus ID "${campus_id}".`,
           };
         }
 
-        // Check if the prospectus exists and is linked to the specified campus
         const prospectus = await db.Prospectus.findOne({
           where: {prospectus_id},
           include: [
@@ -672,13 +623,6 @@ async function createProspectusAssignSubject(params, accountId) {
                   model: db.Department,
                   required: true,
                   where: {campus_id},
-                  include: [
-                    {
-                      model: db.Campus,
-                      attributes: ["campusName"],
-                      required: true,
-                    },
-                  ],
                 },
               ],
             },
@@ -686,17 +630,15 @@ async function createProspectusAssignSubject(params, accountId) {
         });
 
         if (!prospectus) {
+          logDebug("Prospectus not found", {prospectus_id, campus_id});
           return {
             error: `Prospectus with ID "${prospectus_id}" not found for campus ID "${campus_id}".`,
           };
         }
 
-        // Ensure subjectCode is an array
         const subjectCodesArray = Array.isArray(subjectCode)
           ? subjectCode
           : [subjectCode];
-
-        // Check if all subjects are valid for the specified campus
         const subjects = await db.CourseInfo.findAll({
           where: {
             courseCode: subjectCodesArray,
@@ -704,13 +646,13 @@ async function createProspectusAssignSubject(params, accountId) {
           },
         });
 
-        // Create a map of subject codes for quick validation
         const validSubjectCodes = subjects.map((subject) => subject.courseCode);
         const invalidSubjectCodes = subjectCodesArray.filter(
           (code) => !validSubjectCodes.includes(code)
         );
 
         if (invalidSubjectCodes.length > 0) {
+          logDebug("Invalid subject codes found", invalidSubjectCodes);
           return {
             error: `Invalid subject codes: ${invalidSubjectCodes.join(
               ", "
@@ -718,7 +660,6 @@ async function createProspectusAssignSubject(params, accountId) {
           };
         }
 
-        // Check if any of these courses are already assigned to the prospectus
         const existingAssignments = await db.ProspectusSubject.findAll({
           where: {
             prospectus_id,
@@ -734,28 +675,80 @@ async function createProspectusAssignSubject(params, accountId) {
             .filter((subject) => existingCourses.includes(subject.course_id))
             .map((subject) => subject.courseCode);
 
+          logDebug(
+            "Courses already assigned to the prospectus",
+            existingCourseCodes
+          );
           return {
             error: `Course(s) "${existingCourseCodes.join(
               ", "
             )}" is already assigned to Prospectus "${
               prospectus.prospectusName
-            }" on campus "${prospectus.program.department.campus.campusName}".`,
+            }".`,
           };
         }
 
-        // Return the data to be used for insertion
+        // Fetch all prospectus subjects for validation of prerequisites
+        const allProspectusSubjects = await db.ProspectusSubject.findAll({
+          where: {
+            prospectus_id,
+            isActive: true,
+            isDeleted: false,
+          },
+          include: [
+            {
+              model: db.CourseInfo,
+              as: "CourseInfo", // Use the alias defined in the association
+              attributes: ["courseCode"],
+              required: true, // Ensure that only records with associated CourseInfo are included
+            },
+          ],
+        });
+
+        const prospectusSubjectCodes = allProspectusSubjects
+          .map((ps) => ps.CourseInfo?.courseCode)
+          .filter(Boolean);
+
+        logDebug("Fetched prospectus subjects for validation", {
+          totalFetched: allProspectusSubjects.length,
+          subjectCodes: prospectusSubjectCodes,
+        });
+
+        // Validate prerequisites based on prospectus subjects
+        if (preRequisite && Array.isArray(preRequisite)) {
+          for (const prereq of preRequisite) {
+            const {subjectCode: prereqSubjectCodes} = prereq;
+
+            logDebug("Checking prerequisite subjects", prereqSubjectCodes);
+
+            const invalidPrereqCodes = prereqSubjectCodes.filter(
+              (code) => !prospectusSubjectCodes.includes(code)
+            );
+
+            if (invalidPrereqCodes.length > 0) {
+              logDebug(
+                "Invalid prerequisite subject codes found",
+                invalidPrereqCodes
+              );
+              throw new Error(
+                `Invalid prerequisite subject codes: ${invalidPrereqCodes.join(
+                  ", "
+                )}. These subjects must already exist in the prospectus subjects for prospectus ID "${prospectus_id}".`
+              );
+            }
+          }
+        }
+
         return {prospectus_id, yearLevel, subjects};
       });
     })
   );
 
-  // Check for validation errors
   const validationError = validationResults.find((result) => result.error);
   if (validationError) {
     throw new Error(validationError.error);
   }
 
-  // Prepare the data for bulk insertion into the ProspectusSubject table
   const prospectusSubjects = validationResults.flatMap((result) =>
     result.subjects.map((subject) => ({
       prospectus_id: result.prospectus_id,
@@ -766,19 +759,16 @@ async function createProspectusAssignSubject(params, accountId) {
     }))
   );
 
-  // Bulk insert the data into the ProspectusSubject table
   const insertedProspectusSubjects = await db.ProspectusSubject.bulkCreate(
     prospectusSubjects,
     {returning: true}
   );
 
-  // Now handle prerequisite validation and insertion
   const preRequisiteData = [];
   await Promise.all(
     data.map(async (entry) => {
       const {prospectus_id, yearLevel, preRequisite} = entry;
 
-      // New validation: prerequisites cannot be added if the yearLevel is "1st Year"
       if (yearLevel === "1st Year" && preRequisite && preRequisite.length > 0) {
         throw new Error(
           `Prerequisites cannot be added for "1st Year" courses.`
@@ -790,7 +780,6 @@ async function createProspectusAssignSubject(params, accountId) {
           const {prospectus_subject_code, subjectCode: prereqSubjectCodes} =
             prereq;
 
-          // Find prospectus_subject_id based on prospectus_subject_code
           const preReqProspectusSubject = await db.ProspectusSubject.findOne({
             where: {
               prospectus_id,
@@ -798,6 +787,7 @@ async function createProspectusAssignSubject(params, accountId) {
             include: [
               {
                 model: db.CourseInfo,
+                as: "CourseInfo", // Use the alias defined in your relationship
                 where: {
                   courseCode: prospectus_subject_code,
                 },
@@ -807,16 +797,19 @@ async function createProspectusAssignSubject(params, accountId) {
           });
 
           if (!preReqProspectusSubject) {
+            logDebug("Prerequisite course not found in prospectus", {
+              prospectus_subject_code,
+              prospectus_id,
+            });
             throw new Error(
               `Prospectus subject with course code "${prospectus_subject_code}" not found for prospectus ID "${prospectus_id}".`
             );
           }
 
-          // Validate the prerequisite subject codes
           const prereqSubjects = await db.CourseInfo.findAll({
             where: {
               courseCode: prereqSubjectCodes,
-              campus_id: entry.campus_id, // Use the campus_id from the current entry
+              campus_id: entry.campus_id,
             },
           });
 
@@ -828,6 +821,10 @@ async function createProspectusAssignSubject(params, accountId) {
           );
 
           if (invalidPrereqCodes.length > 0) {
+            logDebug(
+              "Invalid prerequisite codes found during final validation",
+              invalidPrereqCodes
+            );
             throw new Error(
               `Invalid prerequisite subject codes: ${invalidPrereqCodes.join(
                 ", "
@@ -835,7 +832,6 @@ async function createProspectusAssignSubject(params, accountId) {
             );
           }
 
-          // Add to the prerequisite data array for later insertion
           preRequisiteData.push(
             ...prereqSubjects.map((subject) => ({
               prospectus_subject_id:
@@ -851,11 +847,54 @@ async function createProspectusAssignSubject(params, accountId) {
   );
 
   // Insert prerequisite data into the prospectus_pre_requisite table
+  let insertedPreRequisites = [];
   if (preRequisiteData.length > 0) {
+    // Perform the bulk insert without 'returning: true' since it may not be supported by your database
     await db.PreRequisite.bulkCreate(preRequisiteData);
+
+    // Fetch the inserted PreRequisite records based on the data that was inserted
+    insertedPreRequisites = await db.PreRequisite.findAll({
+      where: {
+        prospectus_subject_id: preRequisiteData.map(
+          (preReq) => preReq.prospectus_subject_id
+        ),
+        course_id: preRequisiteData.map((preReq) => preReq.course_id),
+      },
+    });
+
+    // Check if any records were actually fetched
+    if (insertedPreRequisites.length === 0) {
+      throw new Error("No PreRequisite records were found after insertion.");
+    }
+
+    // Log the fetched records to help with debugging
+    console.log("[DEBUG] Fetched PreRequisite records:", insertedPreRequisites);
   }
 
-  // Log history actions for each inserted record
+  // Create history logs for the prerequisites based on the fetched PreRequisite records
+  const preRequisiteHistoryLogs = insertedPreRequisites.map((preReq) => {
+    if (!preReq.pre_requisite_id) {
+      console.log(
+        "[DEBUG] PreRequisite record missing pre_requisite_id:",
+        preReq
+      );
+      throw new Error("PreRequisite record is missing a pre_requisite_id.");
+    }
+
+    return {
+      action: "create",
+      entity: "PreRequisite",
+      entityId: preReq.pre_requisite_id,
+      changes: {
+        prospectus_subject_id: preReq.prospectus_subject_id,
+        course_id: preReq.course_id,
+        isActive: preReq.isActive,
+        isDeleted: preReq.isDeleted,
+      },
+      accountId: accountId,
+    };
+  });
+
   const historyLogs = insertedProspectusSubjects.map((prospectusSubject) => ({
     action: "create",
     entity: "ProspectusSubject",
@@ -868,8 +907,13 @@ async function createProspectusAssignSubject(params, accountId) {
     accountId: accountId,
   }));
 
-  // Bulk insert history logs
-  await db.History.bulkCreate(historyLogs);
+  // await db.History.bulkCreate(historyLogs);
+
+  // Combine the prospectus subject history logs with the prerequisite history logs
+  const allHistoryLogs = [...historyLogs, ...preRequisiteHistoryLogs];
+
+  // Bulk insert all history logs
+  await db.History.bulkCreate(allHistoryLogs);
 
   return insertedProspectusSubjects;
 }
