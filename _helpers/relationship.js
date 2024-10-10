@@ -108,8 +108,10 @@ function defineRelationships(db) {
   db.ProspectusSubject.belongsTo(db.Prospectus, {foreignKey: "prospectus_id"});
 
   // ! Course Info -> Prospectus Subject
-  db.CourseInfo.hasMany(db.ProspectusSubject, {foreignKey: "course_id"});
-  db.ProspectusSubject.belongsTo(db.CourseInfo, {foreignKey: "course_id"});
+  // db.CourseInfo.hasMany(db.ProspectusSubject, {foreignKey: "course_id"});
+  // db.ProspectusSubject.belongsTo(db.CourseInfo, {foreignKey: "course_id"});
+  db.CourseInfo.hasMany(db.ProspectusSubject, { foreignKey: "course_id", as: "ProspectusSubjects" });
+  db.ProspectusSubject.belongsTo(db.CourseInfo, { foreignKey: "course_id", as: "CourseInfo" });
 
   // ! Prospectus Subject -> Pre Requisite
   db.ProspectusSubject.hasMany(db.PreRequisite, {
