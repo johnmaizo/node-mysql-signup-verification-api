@@ -460,7 +460,6 @@ async function getEmployeeById(id) {
 
 async function updateEmployee(id, params, accountId) {
   const employee = await getEmployeeById(id);
-
   if (!employee) throw "Employee not found";
 
   // Convert role to an array if it is not already
@@ -479,53 +478,84 @@ async function updateEmployee(id, params, accountId) {
     throw "Department is required for roles: Dean, Instructor, or Teacher.";
   }
 
-  // Convert the role array to a comma-separated string
-  params.role = roleArray.join(", ");
+  const rolePriority = [
+    "SuperAdmin",
+    "Admin",
+    "MIS",
+    "DataCenter",
+    "Registrar",
+    "Accounting",
+    "Dean",
+    "Instructor",
+    "Professor",
+    "Teacher",
+  ];
 
-  // Check if the action is only to delete the employee
-  if (params.isDeleted !== undefined) {
-    if (params.isDeleted && employee.isActive) {
-      throw new Error(
-        `You must set the Status of Employee "${employee.firstName} ${employee.lastName}" to Inactive before you can delete this employee.`
-      );
-    }
+  const foundRoles = rolePriority.filter((role) => roleArray.includes(role));
 
-    Object.assign(employee, {isDeleted: params.isDeleted});
-    await employee.save();
-
-    // Log the update action
-    await db.History.create({
-      action: "update",
-      entity: "Employee",
-      entityId: employee.employee_id,
-      changes: {isDeleted: params.isDeleted},
-      accountId: accountId,
-    });
-
-    return;
+  // If we found any relevant roles, re-arrange them according to the priority
+  if (foundRoles.length > 0) {
+    // First, remove found roles from the original array
+    roleArray = roleArray.filter((role) => !foundRoles.includes(role));
+    // Then prepend the found roles in the correct priority order
+    roleArray = [...foundRoles, ...roleArray];
   }
 
-  // Log the original state before update
-  const originalData = {...employee.dataValues};
+  // Convert the role array back to a comma-separated string
+  params.role = roleArray.join(", ");
 
-  // If firstName or lastName are not provided, use existing values
-  const firstName = params.firstName || employee.firstName;
-  const lastName = params.lastName || employee.lastName;
-  const campus_id = params.campus_id || employee.campus_id;
+  // Validate and adjust campus and department based on role
+  if (
+    roleArray.includes("Dean") ||
+    roleArray.includes("Teacher") ||
+    roleArray.includes("Instructor") ||
+    roleArray.includes("Professor")
+  ) {
+    const campus = await db.Campus.findByPk(params.campus_id);
+    if (!campus) {
+      throw `Campus with ID "${params.campus_id}" not found.`;
+    }
+
+    const department = await db.Department.findByPk(params.department_id, {
+      include: [
+        {
+          model: db.Campus,
+          as: "campus",
+          where: {
+            campus_id: params.campus_id,
+          },
+        },
+      ],
+    });
+    if (!department) {
+      throw `Department with ID "${params.department_id}" not found.`;
+    }
+  } else if (roleArray.includes("SuperAdmin")) {
+    params.campus_id = null;
+    params.department_id = null;
+  } else {
+    const campus = await db.Campus.findByPk(params.campus_id);
+    if (!campus) {
+      throw `Campus with ID "${params.campus_id}" not found.`;
+    }
+    params.department_id = null;
+  }
 
   // Validate if firstName and lastName combination exists for another employee
   const existingEmployee = await db.Employee.findOne({
     where: {
-      firstName: firstName,
-      lastName: lastName,
-      campus_id: campus_id,
-      employee_id: {[Op.ne]: id}, // Ensure the employee being updated is excluded from this check
+      firstName: params.firstName || employee.firstName,
+      lastName: params.lastName || employee.lastName,
+      campus_id: params.campus_id || employee.campus_id,
+      employee_id: {[Op.ne]: id}, // Exclude the current employee
     },
   });
-
   if (existingEmployee) {
-    throw `Employee "${firstName} ${lastName}" already exists on this campus.`;
+    throw `Employee "${params.firstName} ${params.lastName}" already exists on this campus.`;
   }
+
+  // Log the original state before update
+  const originalData = {...employee.dataValues};
 
   // Update employee with new params
   Object.assign(employee, params);
@@ -533,15 +563,11 @@ async function updateEmployee(id, params, accountId) {
 
   // Check if there are actual changes
   const hasChanges = !deepEqual(originalData, employee.dataValues);
-
   if (hasChanges) {
-    // Log the update action with changes
     const changes = {
       original: originalData,
       updated: params,
     };
-
-    // Log the update action
     await db.History.create({
       action: "update",
       entity: "Employee",

@@ -919,15 +919,26 @@ async function createProspectusAssignSubject(params, accountId) {
 }
 
 function transformProspectusSubjectData(prospectusSubject) {
+  console.log(prospectusSubject.toJSON());
+
   return {
-    ...prospectusSubject.toJSON(),
-    prospectusSubjectCodoe: prospectusSubject.courseinfo.courseCode || null,
-    prospectusSubjectDescription:
-      prospectusSubject.courseinfo.courseDescription || null,
-    prospectusSubjectUnit: prospectusSubject.courseinfo.unit || null,
+    prospectus_subject_id: prospectusSubject.prospectus_subject_id,
+    prospectus_id: prospectusSubject.prospectus_id,
+    yearLevel: prospectusSubject.yearLevel,
+    course_id: prospectusSubject.course_id,
+    isActive: prospectusSubject.isActive,
+    isDeleted: prospectusSubject.isDeleted,
+    createdAt: prospectusSubject.createdAt,
+  updatedAt: prospectusSubject.updatedAt,
+    courseCode: prospectusSubject.CourseInfo?.courseCode || null,
+    courseDescription: prospectusSubject.CourseInfo?.courseDescription || null,
+    unit: prospectusSubject.CourseInfo?.unit || null,
     prerequisites: prospectusSubject.prospectus_pre_requisites
       ? prospectusSubject.prospectus_pre_requisites.map((prerequisite) => ({
+          pre_requisite_id: prerequisite.pre_requisite_id,
           courseCode: prerequisite.courseinfo?.courseCode || null,
+          courseDescription: prerequisite.courseinfo?.courseDescription || null,
+          unit: prerequisite.courseinfo?.unit || null,
         }))
       : [],
     campusName:
@@ -997,6 +1008,7 @@ async function getAllProspectusSubjects(campus_id = null) {
       },
       {
         model: db.CourseInfo,
+        as: "CourseInfo",
         required: false,
         attributes: ["course_id", "courseCode", "courseDescription", "unit"],
       },
@@ -1057,6 +1069,7 @@ async function getProspectusSubjectByProspectusId(prospectus_id) {
       },
       {
         model: db.CourseInfo,
+        as: "CourseInfo",
         required: false,
         attributes: ["courseCode", "courseDescription", "unit"],
       },
