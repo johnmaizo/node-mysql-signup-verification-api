@@ -35,6 +35,15 @@ app.use(
   })
 );
 
+const {
+  fetchDepartmentCountJob,
+  getDepartmentCountData,
+} = require("./cron-jobs/departmentCron");
+fetchDepartmentCountJob(); // Start the cron job
+
+// Add a new route for fetching department count and next update time
+app.get("/departments/cron-count", getDepartmentCountData);
+
 app.use("/external", require("./_external/externals.controller")); // ! Externals
 
 // api routes

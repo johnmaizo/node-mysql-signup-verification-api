@@ -1,4 +1,4 @@
-const {Op} = require("sequelize");
+const {Op, fn, col} = require("sequelize");
 const db = require("_helpers/db");
 
 const deepEqual = require("deep-equal");
@@ -11,6 +11,7 @@ module.exports = {
   getAllDepartmentsDeleted,
   getDepartmentById,
   updateDepartment,
+  getAllCampusIds,
 };
 
 async function createDepartment(params, accountId) {
@@ -105,6 +106,18 @@ async function getAllDepartmentCount(campus_id = null) {
   return await db.Department.count({
     where: whereClause,
   });
+}
+
+// New function to get all distinct campus IDs
+async function getAllCampusIds() {
+  const campuses = await db.Department.findAll({
+    attributes: [
+      [fn("DISTINCT", col("campus_id")), "campus_id"],
+    ],
+    where: {isActive: true, isDeleted: false},
+  });
+
+  return campuses.map((campus) => campus.campus_id);
 }
 
 async function getAllDepartmentsActive(campus_id = null) {
