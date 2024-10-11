@@ -201,6 +201,9 @@ function transformEmployeeData(employee, roleFilter = null) {
     } ${employee.lastName}${qualifications} - ${
       employee.department?.departmentCode || "Department code not found"
     }`,
+    fullDepartmentNameWithCampus:
+      `${employee.department?.departmentCode} - ${employee.department?.departmentName} - ${employee.department?.campus?.campusName}` ||
+      "Department name not found",
     campusName: employee.campus?.campusName || "Campus name not found",
     departmentCodeForClass: employee.department
       ? employee.department.departmentCode
@@ -450,6 +453,10 @@ async function getEmployeeById(id) {
       {
         model: db.Campus,
       },
+      {
+        model: db.Department,
+        attributes: ["departmentName", "departmentCode"],
+      },
     ],
   });
 
@@ -464,9 +471,13 @@ async function updateEmployee(id, params, accountId) {
       {
         model: db.Campus,
       },
+      {
+        model: db.Department,
+        attributes: ["departmentName", "departmentCode"],
+      },
     ],
   });
-  
+
   if (!employee) throw "Employee not found";
 
   // Convert role to an array if it is not already
