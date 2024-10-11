@@ -41,5 +41,5 @@ function model(sequelize) {
     scopes: {},
   };
 
-  return sequelize.define("BuildingStructure", attributes, options);
+  return sequelize.define("buildingstructure", attributes, options);
 }

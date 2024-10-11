@@ -2,7 +2,7 @@ const {DataTypes} = require("sequelize");
 
 module.exports = (sequelize) => {
   const History = sequelize.define(
-    "History",
+    "history",
     {
       action: {type: DataTypes.STRING, allowNull: false}, // e.g., 'create', 'update', 'delete'
       entity: {type: DataTypes.STRING, allowNull: false}, // e.g., 'Course', 'Department'
