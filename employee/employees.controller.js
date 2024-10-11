@@ -125,39 +125,41 @@ function updateEmployeeSchema(req, res, next) {
 
   // Check if roles include SuperAdmin for campus requirement
   const requireCampus = Array.isArray(roles)
-      ? roles.some(role => [Role.SuperAdmin].includes(role))
-      : [Role.SuperAdmin].includes(roles);
+    ? roles.some(role => [Role.SuperAdmin].includes(role))
+    : [Role.SuperAdmin].includes(roles);
 
   // Check if roles include Instructor, Teacher, or Dean for department requirement
   const requireDepartment = Array.isArray(roles)
-      ? roles.some(role => [Role.Instructor, Role.Teacher, Role.Dean].includes(role))
-      : [Role.Instructor, Role.Teacher, Role.Dean].includes(roles);
+    ? roles.some(role => [Role.Instructor, Role.Teacher, Role.Dean].includes(role))
+    : [Role.Instructor, Role.Teacher, Role.Dean].includes(roles);
 
   const schema = Joi.object({
-      role: Joi.alternatives().try(
-          Joi.string(),
-          Joi.array().items(Joi.string())
-      ).optional(),
+    role: Joi.alternatives().try(
+      Joi.string(),
+      Joi.array().items(Joi.string())
+    ).optional(),
 
-      title: Joi.string().optional(),
-      firstName: Joi.string().optional(),
-      middleName: Joi.string().allow(null, '').optional(),
-      lastName: Joi.string().optional(),
-      
-      gender: Joi.string().optional(),
-      address: Joi.string().optional(),
-      contactNumber: Joi.string().optional(),
+    title: Joi.string().optional(),
+    firstName: Joi.string().optional(),
+    middleName: Joi.string().allow(null, '').optional(),
+    lastName: Joi.string().optional(),
+    
+    gender: Joi.string().optional(),
+    address: Joi.string().optional(),
+    contactNumber: Joi.string().optional(),
 
-      campus_id: requireCampus ? Joi.number().empty("") : Joi.number().optional(),
-      
-      department_id: requireDepartment ? Joi.number().empty("") : Joi.number().optional(),
+    campus_id: requireCampus ? Joi.number().empty("") : Joi.number().optional(),
+    
+    department_id: requireDepartment
+      ? Joi.number().empty("").allow(null).custom(value => isNaN(value) ? null : value)
+      : Joi.number().optional().allow(null).custom(value => isNaN(value) ? null : value),
 
-      qualifications: Joi.array().items(
-          Joi.object({
-              abbreviation: Joi.string().required(),
-              meaning: Joi.string().required(),
-          })
-      ).optional().allow(null), // Allow null or an empty array for employees without qualifications
+    qualifications: Joi.array().items(
+      Joi.object({
+        abbreviation: Joi.string().required(),
+        meaning: Joi.string().required(),
+      })
+    ).optional().allow(null), // Allow null or an empty array for employees without qualifications
   });
 
   validateRequest(req, next, schema);
