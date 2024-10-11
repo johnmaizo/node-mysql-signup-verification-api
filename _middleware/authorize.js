@@ -1,4 +1,4 @@
-require('dotenv').config();
+require("dotenv").config();
 const jwt = require('express-jwt');
 const db = require('_helpers/db');
 
