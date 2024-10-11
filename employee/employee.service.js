@@ -459,7 +459,14 @@ async function getEmployeeById(id) {
 }
 
 async function updateEmployee(id, params, accountId) {
-  const employee = await getEmployeeById(id);
+  const employee = await db.Employee.findByPk(id, {
+    include: [
+      {
+        model: db.Campus,
+      },
+    ],
+  });
+  
   if (!employee) throw "Employee not found";
 
   // Convert role to an array if it is not already
