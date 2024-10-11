@@ -35,34 +35,34 @@ async function InsertSampleData(db) {
     ]);
 
     const employees = await db.Employee.bulkCreate([
-      { campus_id: null, department_id: null, title: "SuperAdmin", firstName: "John Robert", middleName: "Libaton", lastName: "Maizo", role: ["SuperAdmin"], qualifications: null, gender: "Male", address: "C.D. Seno St., Tipolo, Mandaue City", contactNumber: "09321146580"},
+      { campus_id: null, department_id: null, title: "SuperAdmin", firstName: "John Robert", middleName: "Libaton", lastName: "Maizo", role: ["SuperAdmin"], qualifications: null, gender: "Male", address: "C.D. Seno St., Tipolo, Mandaue City", contactNumber: "09321146580", birthDate: "2002-07-30"},
 
-      { campus_id: campuses[0].campus_id, department_id: null, title: "Administrator", firstName: "John Robert", middleName: "Dope", lastName: "Gwapo", role: ["Admin"], qualifications: null, gender: "Male", address: "C.D. Seno St., Tipolo, Mandaue City", contactNumber: "09321146580"},
+      { campus_id: campuses[0].campus_id, department_id: null, title: "Administrator", firstName: "John Robert", middleName: "Dope", lastName: "Gwapo", role: ["Admin"], qualifications: null, gender: "Male", address: "C.D. Seno St., Tipolo, Mandaue City", contactNumber: "09321146580", birthDate: "2002-07-30"},
 
-      { campus_id: campuses[1].campus_id, department_id: null, title: "Administrator", firstName: "Juan", middleName: "Cingko", lastName: "Makabugto", role: ["Admin"], qualifications: null, gender: "Male", address: "Lahug, Cebu City", contactNumber: "09485324123"},
+      { campus_id: campuses[1].campus_id, department_id: null, title: "Administrator", firstName: "Juan", middleName: "Cingko", lastName: "Makabugto", role: ["Admin"], qualifications: null, gender: "Male", address: "Lahug, Cebu City", contactNumber: "09485324123", birthDate: "1999-05-28"},
 
-      { campus_id: campuses[0].campus_id, department_id: null, title: "Mr.", firstName: "Yoshihisa", middleName: null, lastName: "Iguchi", role: ["MIS"], qualifications: null, gender: "Male", address: "1152 Poplar Chase Lane", contactNumber: "09485324123"},
+      { campus_id: campuses[0].campus_id, department_id: null, title: "Mr.", firstName: "Yoshihisa", middleName: null, lastName: "Iguchi", role: ["MIS"], qualifications: null, gender: "Male", address: "1152 Poplar Chase Lane", contactNumber: "09485324123", birthDate: "1999-05-28"},
 
-      { campus_id: campuses[0].campus_id, department_id: null, title: "Mr.", firstName: "Registrar", middleName: "Gwapo", lastName: "Choyins", role: ["Registrar"], qualifications: null, gender: "Male", address: "Registrar, Mandaue City", contactNumber: "09485324123"},
+      { campus_id: campuses[0].campus_id, department_id: null, title: "Mr.", firstName: "Registrar", middleName: "Gwapo", lastName: "Choyins", role: ["Registrar"], qualifications: null, gender: "Male", address: "Registrar, Mandaue City", contactNumber: "09485324123", birthDate: "1999-05-28"},
 
-      { campus_id: campuses[0].campus_id, department_id: null, title: "Mr.", firstName: "Data", middleName: "Gwapo", lastName: "Center", role: ["DataCenter"], qualifications: null, gender: "Male", address: "Data Center, Mandaue City", contactNumber: "09485324123"},
+      { campus_id: campuses[0].campus_id, department_id: null, title: "Mr.", firstName: "Data", middleName: "Gwapo", lastName: "Center", role: ["DataCenter"], qualifications: null, gender: "Male", address: "Data Center, Mandaue City", contactNumber: "09485324123", birthDate: "1999-05-28"},
 
 
-      { campus_id: campuses[0].campus_id, department_id: departments[0].department_id, title: "Prof.", firstName: "Gene Paul", middleName: "Rubia", lastName: "Cueva", role: ["Dean, Professor"], qualifications: [{abbreviation: "MBA", meaning: "Master of Business Administration"}, {abbreviation: "MSIT", meaning: "Master of Science in Information Technology"}], gender: "Male", address: "Cordova, Cebu", contactNumber: "09123456789"},
+      { campus_id: campuses[0].campus_id, department_id: departments[0].department_id, title: "Prof.", firstName: "Gene Paul", middleName: "Rubia", lastName: "Cueva", role: ["Dean, Professor"], qualifications: [{abbreviation: "MBA", meaning: "Master of Business Administration"}, {abbreviation: "MSIT", meaning: "Master of Science in Information Technology"}], gender: "Male", address: "Cordova, Cebu", contactNumber: "09123456789", birthDate: "1999-05-28"},
 
-      { campus_id: campuses[0].campus_id, department_id: departments[1].department_id, title: "Dr.", firstName: "Jaypee", middleName: "Y", lastName: "Zoilo", role: ["Dean, Professor"], qualifications: [{abbreviation: "MBA", meaning: "Master of Business Administration"}], gender: "Male", address: "Lapu-Lapu City", contactNumber: "09123456789"},
+      { campus_id: campuses[0].campus_id, department_id: departments[1].department_id, title: "Dr.", firstName: "Jaypee", middleName: "Y", lastName: "Zoilo", role: ["Dean, Professor"], qualifications: [{abbreviation: "MBA", meaning: "Master of Business Administration"}], gender: "Male", address: "Lapu-Lapu City", contactNumber: "09123456789", birthDate: "1999-05-28"},
 
-      { campus_id: campuses[0].campus_id, department_id: departments[4].department_id, title: "Dr.", firstName: "Johner", middleName: "D", lastName: "Montegrande", role: ["Dean, Professor"], qualifications: null, gender: "Male", address: "Cebu", contactNumber: "09123456789"},
+      { campus_id: campuses[0].campus_id, department_id: departments[4].department_id, title: "Dr.", firstName: "Johner", middleName: "D", lastName: "Montegrande", role: ["Dean, Professor"], qualifications: null, gender: "Male", address: "Cebu", contactNumber: "09123456789", birthDate: "1999-05-28"},
 
-      { campus_id: campuses[0].campus_id, department_id: departments[5].department_id, title: "Dr.", firstName: "Nimfa", middleName: null, lastName: "Ramirez", role: ["Dean, Professor"], qualifications: null, gender: "Female", address: "Cebu", contactNumber: "09123456789"},
+      { campus_id: campuses[0].campus_id, department_id: departments[5].department_id, title: "Dr.", firstName: "Nimfa", middleName: null, lastName: "Ramirez", role: ["Dean, Professor"], qualifications: null, gender: "Female", address: "Cebu", contactNumber: "09123456789", birthDate: "1999-05-28"},
 
-      { campus_id: campuses[0].campus_id, department_id: null, title: "Mrs.", firstName: "Leah", middleName: "B", lastName: "Artap", role: ["Accounting"], qualifications: [{abbreviation: "CPA", meaning: "Certified Public Accountant"}], gender: "Female", address: "Minglanilla City", contactNumber: "09123456789"},
+      { campus_id: campuses[0].campus_id, department_id: null, title: "Mrs.", firstName: "Leah", middleName: "B", lastName: "Artap", role: ["Accounting"], qualifications: [{abbreviation: "CPA", meaning: "Certified Public Accountant"}], gender: "Female", address: "Minglanilla City", contactNumber: "09123456789", birthDate: "1999-05-28"},
 
-      { campus_id: campuses[0].campus_id, department_id: departments[1].department_id, title: "Mr.", firstName: "Kervy", middleName: "C", lastName: "Conde", role: ["Professor, Instructor"], qualifications: [{abbreviation: "MBA", meaning: "Master of Business Administration"}], gender: "Male", address: "Lapu-Lapu City", contactNumber: "09123456789"},
+      { campus_id: campuses[0].campus_id, department_id: departments[1].department_id, title: "Mr.", firstName: "Kervy", middleName: "C", lastName: "Conde", role: ["Professor, Instructor"], qualifications: [{abbreviation: "MBA", meaning: "Master of Business Administration"}], gender: "Male", address: "Lapu-Lapu City", contactNumber: "09123456789", birthDate: "1999-05-28"},
 
-      { campus_id: campuses[0].campus_id, department_id: departments[0].department_id, title: "Ms.", firstName: "Leny", middleName: "B", lastName: "Yamillo", role: "Professor, Instructor, Gwapo", qualifications: [{abbreviation: "DPA", meaning: "Doctor of Public Administration"}, {abbreviation: "LPT", meaning: "Licensed Professional Teacher"}], gender: "Female", address: "Lapu-Lapu City", contactNumber: "09123456789"},
+      { campus_id: campuses[0].campus_id, department_id: departments[0].department_id, title: "Ms.", firstName: "Leny", middleName: "B", lastName: "Yamillo", role: "Professor, Instructor, Gwapo", qualifications: [{abbreviation: "DPA", meaning: "Doctor of Public Administration"}, {abbreviation: "LPT", meaning: "Licensed Professional Teacher"}], gender: "Female", address: "Lapu-Lapu City", contactNumber: "09123456789", birthDate: "1999-05-28"},
       
-      { campus_id: campuses[0].campus_id, department_id: departments[4].department_id, title: "Mr.", firstName: "John", middleName: "Gwapo", lastName: "Doe", role: "Professor, Instructor", qualifications: [{abbreviation: "LPT", meaning: "Licensed Professional Teacher"}], gender: "Male", address: "C.D. Seno St., Tipolo, Mandaue City", contactNumber: "09123456789"},
+      { campus_id: campuses[0].campus_id, department_id: departments[4].department_id, title: "Mr.", firstName: "John", middleName: "Gwapo", lastName: "Doe", role: "Professor, Instructor", qualifications: [{abbreviation: "LPT", meaning: "Licensed Professional Teacher"}], gender: "Male", address: "C.D. Seno St., Tipolo, Mandaue City", contactNumber: "09123456789", birthDate: "1999-05-28"},
     ]);
 
     // Insert sample programs

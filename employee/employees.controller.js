@@ -102,6 +102,7 @@ function createEmployeeSchema(req, res, next) {
         gender: Joi.string().required(),
         address: Joi.string().required(),
         contactNumber: Joi.string().required(),
+        birthDate: Joi.date().required(),
 
         campus_id: requireCampus ? Joi.number().empty("") : Joi.number().required(),
         
@@ -147,6 +148,7 @@ function updateEmployeeSchema(req, res, next) {
     gender: Joi.string().optional(),
     address: Joi.string().optional(),
     contactNumber: Joi.string().optional(),
+    birthDate: Joi.date().optional(),
 
     campus_id: requireCampus ? Joi.number().empty("") : Joi.number().optional(),
     
