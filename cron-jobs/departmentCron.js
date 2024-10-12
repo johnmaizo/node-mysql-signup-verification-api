@@ -8,7 +8,7 @@ let nextUpdateTime = null;
 
 // Schedule a cron job to fetch department count every 5 minutes
 const fetchDepartmentCountJob = () => {
-  cron.schedule("*/3 * * * *", async () => {
+  cron.schedule("*/1 * * * *", async () => {
     try {
       // Dynamically fetch all campus IDs
       const campusIds = await departmentService.getAllCampusIds();
@@ -24,7 +24,7 @@ const fetchDepartmentCountJob = () => {
         return total + (departmentCounts[campusId] || 0);
       }, 0);
 
-      nextUpdateTime = new Date(Date.now() + 3 * 60 * 1000); // Next update in 5 minutes
+      nextUpdateTime = new Date(Date.now() + 1 * 60 * 1000); // Next update in 5 minutes
       console.log(
         `Department counts updated at ${new Date()}`,
         departmentCounts
