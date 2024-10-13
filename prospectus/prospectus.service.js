@@ -561,10 +561,51 @@ async function createProspectusAssignSubject(params, accountId) {
   const pLimit = await import("p-limit");
   const limit = pLimit.default(5);
   const data = Array.isArray(params) ? params : [params];
-  const validYearLevelPattern = /^(\d+)(st|nd|rd|th) Year$/;
 
-  // List of valid semesters
-  const validSemesters = ["First Semester", "Second Semester", "Summer"];
+  // Function to convert numbers to words for the year level
+  function numberToWords(num) {
+    const words = [
+      "Zero",
+      "First",
+      "Second",
+      "Third",
+      "Fourth",
+      "Fifth",
+      "Sixth",
+      "Seventh",
+      "Eighth",
+      "Ninth",
+      "Tenth",
+      "Eleventh",
+      "Twelfth",
+      "Thirteenth",
+      "Fourteenth",
+      "Fifteenth",
+      "Sixteenth",
+      "Seventeenth",
+      "Eighteenth",
+      "Nineteenth",
+      "Twentieth",
+      "Twenty-First",
+      "Twenty-Second",
+      "Twenty-Third",
+      "Twenty-Fourth",
+    ];
+    return words[num] || `${num}th`;
+  }
+
+  // Function to validate yearLevel as "First Year", "Second Year", etc.
+  function isValidYearLevel(yearLevel) {
+    const yearMatch = yearLevel.match(/^(\w+)\sYear$/);
+    if (!yearMatch) return false;
+
+    // Extract the word part (e.g., "First") and validate it
+    const yearWord = yearMatch[1];
+    return numberToWords(yearMatch.indexOf(yearWord)) !== "Zero";
+  }
+
+  // Pattern to validate semester name (e.g., "1st Semester", "2nd Semester", "Summer")
+  const validSemesterPattern = /^(1st|2nd) Semester$|^Summer$/;
 
   function logDebug(message, data) {
     console.log(`[DEBUG] ${message}`, data || "");
@@ -576,31 +617,34 @@ async function createProspectusAssignSubject(params, accountId) {
         const {
           campus_id,
           prospectus_id,
-          yearLevel,
+          yearLevel, // Now contains "First Year", "Second Year", etc.
           subjectCode,
           preRequisite,
-          semesterName, // New semester field
+          semesterName, // Validated using pattern "1st Semester", "2nd Semester", "Summer"
         } = entry;
 
-        logDebug("Processing entry", {campus_id, prospectus_id, yearLevel});
+        logDebug("Processing entry", {
+          campus_id,
+          prospectus_id,
+          yearLevel,
+          semesterName,
+        });
 
-        // Validate semester
-        if (!validSemesters.includes(semesterName)) {
+        // Validate yearLevel as words (e.g., "First Year", "Second Year", etc.)
+        if (!isValidYearLevel(yearLevel)) {
           return {
-            error: `Invalid semester "${semesterName}". Valid semesters are: ${validSemesters.join(
-              ", "
-            )}.`,
+            error: `Invalid yearLevel "${yearLevel}". Accepted format is "First Year", "Second Year", "Third Year", and so on.`,
           };
         }
 
-        // Validate yearLevel format
-        if (!validYearLevelPattern.test(yearLevel)) {
+        // Validate semesterName format
+        if (!validSemesterPattern.test(semesterName)) {
           return {
-            error: `Invalid yearLevel format "${yearLevel}". Accepted format is "1st Year", "2nd Year", "3rd Year", and so on.`,
+            error: `Invalid semesterName "${semesterName}". Accepted format is "1st Semester", "2nd Semester", or "Summer".`,
           };
         }
 
-        // Check if the yearLevel and semesterName combination already exists
+        // Check if the semesterName and yearLevel combination already exists
         const existingYearLevelAndSemester = await db.ProspectusSubject.findOne(
           {
             where: {
@@ -727,14 +771,14 @@ async function createProspectusAssignSubject(params, accountId) {
 
         // Validate prerequisites based on prospectus subjects
         if (preRequisite && Array.isArray(preRequisite)) {
-          // New validation: prerequisites cannot be added for "1st Year" in "First Semester"
+          // New validation: prerequisites cannot be added for "First Year" in "1st Semester"
           if (
-            yearLevel === "1st Year" &&
-            semesterName === "First Semester" &&
+            yearLevel === "First Year" &&
+            semesterName === "1st Semester" &&
             preRequisite.length > 0
           ) {
             throw new Error(
-              `Prerequisites cannot be added for "1st Year" First semester courses.`
+              `Prerequisites cannot be added for "First Year" 1st Semester courses.`
             );
           }
 
@@ -794,14 +838,13 @@ async function createProspectusAssignSubject(params, accountId) {
     data.map(async (entry) => {
       const {prospectus_id, yearLevel, preRequisite, semesterName} = entry;
 
-      // if (yearLevel === "1st Year" && preRequisite && preRequisite.length > 0) {
       if (
-        yearLevel === "1st Year" &&
-        semesterName === "First Semester" &&
+        yearLevel === "First Year" &&
+        semesterName === "1st Semester" &&
         preRequisite.length > 0
       ) {
         throw new Error(
-          `Prerequisites cannot be added for "1st Year" First semester courses.`
+          `Prerequisites cannot be added for "First Year" 1st Semester courses.`
         );
       }
 
@@ -879,10 +922,8 @@ async function createProspectusAssignSubject(params, accountId) {
   // Insert prerequisite data into the prospectus_pre_requisite table
   let insertedPreRequisites = [];
   if (preRequisiteData.length > 0) {
-    // Perform the bulk insert without 'returning: true' since it may not be supported by your database
     await db.PreRequisite.bulkCreate(preRequisiteData);
 
-    // Fetch the inserted PreRequisite records based on the data that was inserted
     insertedPreRequisites = await db.PreRequisite.findAll({
       where: {
         prospectus_subject_id: preRequisiteData.map(
@@ -892,12 +933,10 @@ async function createProspectusAssignSubject(params, accountId) {
       },
     });
 
-    // Check if any records were actually fetched
     if (insertedPreRequisites.length === 0) {
       throw new Error("No PreRequisite records were found after insertion.");
     }
 
-    // Log the fetched records to help with debugging
     console.log("[DEBUG] Fetched PreRequisite records:", insertedPreRequisites);
   }
 
@@ -936,8 +975,6 @@ async function createProspectusAssignSubject(params, accountId) {
     },
     accountId: accountId,
   }));
-
-  // await db.History.bulkCreate(historyLogs);
 
   // Combine the prospectus subject history logs with the prerequisite history logs
   const allHistoryLogs = [...historyLogs, ...preRequisiteHistoryLogs];
@@ -1118,7 +1155,13 @@ async function getAllProspectusSubjects(
         model: db.CourseInfo,
         as: "CourseInfo",
         required: false,
-        attributes: ["course_id", "courseCode", "courseDescription", "unit", "department_id"],
+        attributes: [
+          "course_id",
+          "courseCode",
+          "courseDescription",
+          "unit",
+          "department_id",
+        ],
       },
     ],
     order: [
