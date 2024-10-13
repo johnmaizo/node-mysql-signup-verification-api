@@ -70,10 +70,10 @@ function getAllProspectus(req, res, next) {
 }
 
 function getAllProspectusSubjects(req, res, next) {
-  const {campus_id} = req.query;
+  const {campus_id, campusName, prospectus_id, programCode} = req.query;
 
   prospectusService
-    .getAllProspectusSubjects(campus_id)
+    .getAllProspectusSubjects(campus_id, campusName, prospectus_id, programCode)
     .then((prospectuses) => res.json(prospectuses))
     .catch(next);
 }
@@ -153,6 +153,7 @@ function addProspectusAssignSubjectSchema(req, res, next) {
       campus_id: Joi.number().required(),
       prospectus_id: Joi.number().required(),
       yearLevel: Joi.string().required(),
+      semesterName: Joi.string().required(),
       subjectCode: Joi.array().items(Joi.string()).required(),
 
       // Validate the preRequisite field as an array of objects with specific structure
@@ -171,6 +172,7 @@ function addProspectusAssignSubjectSchema(req, res, next) {
         campus_id: Joi.number().required(),
         prospectus_id: Joi.number().required(),
         yearLevel: Joi.string().required(),
+        semesterName: Joi.string().required(),
         subjectCode: Joi.array().items(Joi.string()).required(),
 
         preRequisite: Joi.array()

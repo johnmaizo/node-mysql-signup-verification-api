@@ -50,7 +50,9 @@ async function createCourse(params, accountId) {
 function transformCourseData(course) {
   return {
     ...course.toJSON(),
-    departmentCodeForClass: course.department ? course.department.departmentCode : "CEA",
+    departmentCodeForClass: course.department
+      ? course.department.departmentCode
+      : "CEA",
     fullCourseNameWithCampus:
       `${course.courseCode} - ${course.courseDescription} - ${course.campus.campusName}` ||
       "fullCourseNameWithCampus not found",
@@ -101,6 +103,7 @@ async function getCourses(whereClause, program_id = null) {
   const courses = await db.CourseInfo.findAll({
     where: whereClause,
     include: includeConditions,
+    order: [["courseCode", "ASC"]],
   });
 
   return courses.map(transformCourseData);

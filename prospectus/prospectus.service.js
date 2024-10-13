@@ -112,7 +112,9 @@ async function createProspectus(params, accountId) {
 function transformProspectusData(prospectus) {
   return {
     ...prospectus.toJSON(),
+    campus_id: prospectus?.program?.department?.campus?.campus_id || null,
     campusName: prospectus?.program?.department?.campus?.campusName || null,
+    programCode: prospectus?.program?.programCode || null,
     fullDepartmentNameWithCampusForSubject: prospectus?.program?.department
       ? `${prospectus?.program?.department.departmentCode} - ${prospectus?.program?.department.departmentName} - ${prospectus?.program?.department.campus.campusName}`
       : null,
@@ -561,6 +563,9 @@ async function createProspectusAssignSubject(params, accountId) {
   const data = Array.isArray(params) ? params : [params];
   const validYearLevelPattern = /^(\d+)(st|nd|rd|th) Year$/;
 
+  // List of valid semesters
+  const validSemesters = ["First Semester", "Second Semester", "Summer"];
+
   function logDebug(message, data) {
     console.log(`[DEBUG] ${message}`, data || "");
   }
@@ -568,50 +573,56 @@ async function createProspectusAssignSubject(params, accountId) {
   const validationResults = await Promise.all(
     data.map(async (entry) => {
       return limit(async () => {
-        const {campus_id, prospectus_id, yearLevel, subjectCode, preRequisite} =
-          entry;
+        const {
+          campus_id,
+          prospectus_id,
+          yearLevel,
+          subjectCode,
+          preRequisite,
+          semesterName, // New semester field
+        } = entry;
 
         logDebug("Processing entry", {campus_id, prospectus_id, yearLevel});
 
+        // Validate semester
+        if (!validSemesters.includes(semesterName)) {
+          return {
+            error: `Invalid semester "${semesterName}". Valid semesters are: ${validSemesters.join(
+              ", "
+            )}.`,
+          };
+        }
+
+        // Validate yearLevel format
         if (!validYearLevelPattern.test(yearLevel)) {
           return {
             error: `Invalid yearLevel format "${yearLevel}". Accepted format is "1st Year", "2nd Year", "3rd Year", and so on.`,
           };
         }
 
-        if (yearLevel !== "1st Year") {
-          const firstYearExists = await db.ProspectusSubject.findOne({
+        // Check if the yearLevel and semesterName combination already exists
+        const existingYearLevelAndSemester = await db.ProspectusSubject.findOne(
+          {
             where: {
               prospectus_id,
-              yearLevel: "1st Year",
+              yearLevel,
+              semesterName,
             },
-          });
-
-          if (!firstYearExists) {
-            logDebug("1st Year not found for prospectus", {
-              prospectus_id,
-              campus_id,
-            });
-            return {
-              error: `You cannot create "${yearLevel}" because "1st Year" does not exist for Prospectus ID "${prospectus_id}" on Campus ID "${campus_id}". Please create "1st Year" first.`,
-            };
           }
-        }
+        );
 
-        const existingYearLevel = await db.ProspectusSubject.findOne({
-          where: {
-            prospectus_id,
+        if (existingYearLevelAndSemester) {
+          logDebug("Year level and semester already exists", {
             yearLevel,
-          },
-        });
-
-        if (existingYearLevel) {
-          logDebug("Year level already exists", {yearLevel, prospectus_id});
+            semesterName,
+            prospectus_id,
+          });
           return {
-            error: `Year Level "${yearLevel}" already exists for Prospectus ID "${prospectus_id}" on Campus ID "${campus_id}".`,
+            error: `The combination of Year Level "${yearLevel}" and Semester "${semesterName}" already exists for Prospectus ID "${prospectus_id}" on Campus ID "${campus_id}".`,
           };
         }
 
+        // Check if the prospectus exists
         const prospectus = await db.Prospectus.findOne({
           where: {prospectus_id},
           include: [
@@ -716,6 +727,17 @@ async function createProspectusAssignSubject(params, accountId) {
 
         // Validate prerequisites based on prospectus subjects
         if (preRequisite && Array.isArray(preRequisite)) {
+          // New validation: prerequisites cannot be added for "1st Year" in "First Semester"
+          if (
+            yearLevel === "1st Year" &&
+            semesterName === "First Semester" &&
+            preRequisite.length > 0
+          ) {
+            throw new Error(
+              `Prerequisites cannot be added for "1st Year" First semester courses.`
+            );
+          }
+
           for (const prereq of preRequisite) {
             const {subjectCode: prereqSubjectCodes} = prereq;
 
@@ -739,7 +761,7 @@ async function createProspectusAssignSubject(params, accountId) {
           }
         }
 
-        return {prospectus_id, yearLevel, subjects};
+        return {prospectus_id, yearLevel, subjects, semesterName}; // Include semester in the return
       });
     })
   );
@@ -749,16 +771,19 @@ async function createProspectusAssignSubject(params, accountId) {
     throw new Error(validationError.error);
   }
 
+  // Prepare data for bulk insertion
   const prospectusSubjects = validationResults.flatMap((result) =>
     result.subjects.map((subject) => ({
       prospectus_id: result.prospectus_id,
       yearLevel: result.yearLevel,
       course_id: subject.course_id,
+      semesterName: result.semesterName, // Include semester in the bulk insert data
       isActive: true,
       isDeleted: false,
     }))
   );
 
+  // Bulk insert the prospectus subjects
   const insertedProspectusSubjects = await db.ProspectusSubject.bulkCreate(
     prospectusSubjects,
     {returning: true}
@@ -767,11 +792,16 @@ async function createProspectusAssignSubject(params, accountId) {
   const preRequisiteData = [];
   await Promise.all(
     data.map(async (entry) => {
-      const {prospectus_id, yearLevel, preRequisite} = entry;
+      const {prospectus_id, yearLevel, preRequisite, semesterName} = entry;
 
-      if (yearLevel === "1st Year" && preRequisite && preRequisite.length > 0) {
+      // if (yearLevel === "1st Year" && preRequisite && preRequisite.length > 0) {
+      if (
+        yearLevel === "1st Year" &&
+        semesterName === "First Semester" &&
+        preRequisite.length > 0
+      ) {
         throw new Error(
-          `Prerequisites cannot be added for "1st Year" courses.`
+          `Prerequisites cannot be added for "1st Year" First semester courses.`
         );
       }
 
@@ -925,11 +955,19 @@ function transformProspectusSubjectData(prospectusSubject) {
     prospectus_subject_id: prospectusSubject.prospectus_subject_id,
     prospectus_id: prospectusSubject.prospectus_id,
     yearLevel: prospectusSubject.yearLevel,
+    semesterName: prospectusSubject.semesterName,
     course_id: prospectusSubject.course_id,
+    course_department_id: prospectusSubject.CourseInfo?.department_id || null,
+    programCode: prospectusSubject.prospectu.program.programCode,
+    programDescription: prospectusSubject.prospectu.program.programDescription,
+    departmentCode:
+      prospectusSubject.prospectu.program.department.departmentCode,
+    departmentName:
+      prospectusSubject.prospectu.program.department.departmentName,
     isActive: prospectusSubject.isActive,
     isDeleted: prospectusSubject.isDeleted,
     createdAt: prospectusSubject.createdAt,
-  updatedAt: prospectusSubject.updatedAt,
+    updatedAt: prospectusSubject.updatedAt,
     courseCode: prospectusSubject.CourseInfo?.courseCode || null,
     courseDescription: prospectusSubject.CourseInfo?.courseDescription || null,
     unit: prospectusSubject.CourseInfo?.unit || null,
@@ -947,19 +985,89 @@ function transformProspectusSubjectData(prospectusSubject) {
   };
 }
 
-async function getAllProspectusSubjects(campus_id = null) {
+async function getAllProspectusSubjects(
+  campus_id = null,
+  campusName = null,
+  prospectus_id = null,
+  programCode = null
+) {
+  // Validate Campus
+  const campusWhereClause = {};
+  if (campus_id) campusWhereClause.campus_id = campus_id;
+  if (campusName) campusWhereClause.campusName = campusName;
+
+  const campus = await db.Campus.findOne({
+    where: campusWhereClause,
+  });
+
+  if (!campus) {
+    throw new Error(
+      "Campus not found with the provided campus_id and/or campusName"
+    );
+  }
+
+  // Validate Program
+  const programWhereClause = {};
+  if (programCode) programWhereClause.programCode = programCode;
+
+  const program = await db.Program.findOne({
+    where: programWhereClause,
+    include: [
+      {
+        model: db.Department,
+        required: true,
+        include: [
+          {
+            model: db.Campus,
+            required: true,
+            where: campusWhereClause, // Campus filter handled here
+          },
+        ],
+      },
+    ],
+  });
+
+  if (!program) {
+    throw new Error(
+      "Program not found with the provided programCode, or it is not associated with the specified campus."
+    );
+  }
+
+  // Add prospectus_id validation if provided
+  const prospectusWhereClause = {isDeleted: false};
+  if (prospectus_id) prospectusWhereClause.prospectus_id = prospectus_id;
+
+  // Validate the relationship between prospectus_id and programCode
+  if (prospectus_id && programCode) {
+    const prospectus = await db.Prospectus.findOne({
+      where: prospectusWhereClause,
+      include: [
+        {
+          model: db.Program,
+          required: true,
+          where: {programCode: programCode}, // Match programCode
+        },
+      ],
+    });
+
+    if (!prospectus) {
+      throw new Error(
+        "Mismatch: The provided prospectus_id is not associated with the specified programCode."
+      );
+    }
+  }
+
+  // If validation passes, proceed to find the Prospectus Subjects
   const prospectusSubjects = await db.ProspectusSubject.findAll({
-    where: {
-      isDeleted: false,
-    },
+    where: prospectusWhereClause,
     include: [
       {
         model: db.PreRequisite,
-        required: false, // Include prerequisites even if they don't exist
+        required: false,
         include: [
           {
             model: db.CourseInfo,
-            required: false, // Include course info for each prerequisite
+            required: false,
             attributes: [
               "course_id",
               "courseCode",
@@ -977,16 +1085,16 @@ async function getAllProspectusSubjects(campus_id = null) {
           {
             model: db.Program,
             required: true,
+            where: programWhereClause, // Filters by programCode if provided
             include: [
               {
                 model: db.Department,
                 required: true,
-                where: campus_id ? {campus_id: campus_id} : null,
                 include: [
                   {
                     model: db.Campus,
                     required: true,
-                    where: campus_id ? {campus_id: campus_id} : null,
+                    where: campusWhereClause, // Filters by campus_id or campusName
                     attributes: ["campusName"],
                   },
                 ],
@@ -1010,12 +1118,13 @@ async function getAllProspectusSubjects(campus_id = null) {
         model: db.CourseInfo,
         as: "CourseInfo",
         required: false,
-        attributes: ["course_id", "courseCode", "courseDescription", "unit"],
+        attributes: ["course_id", "courseCode", "courseDescription", "unit", "department_id"],
       },
     ],
     order: [
-      ["yearLevel", "ASC"],
       ["prospectus_subject_id", "ASC"],
+      ["yearLevel", "ASC"],
+      ["semesterName", "ASC"],
     ],
   });
 

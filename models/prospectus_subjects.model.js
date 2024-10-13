@@ -19,6 +19,7 @@ function model(sequelize) {
     },
 
     yearLevel: {type: DataTypes.STRING, allowNull: false},
+    semesterName: {type: DataTypes.STRING, allowNull: false},
 
     course_id: {
       type: DataTypes.INTEGER,
