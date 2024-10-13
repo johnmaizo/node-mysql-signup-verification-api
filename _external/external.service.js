@@ -393,7 +393,14 @@ function transformClassData(cls) {
       : "";
 
   return {
-    ...cls.toJSON(),
+    // ...cls.toJSON(),
+    class_id: cls.class_id,
+    className: cls.className,
+    course_id: cls.course_id,
+    semester_id: cls.semester_id,
+    employee_id: cls.employee_id,
+    schedule: cls.schedule,
+    createdAt: cls.createdAt,
     instructureFullName:
       `${cls.employee.title} ${cls.employee.firstName}${
         cls.employee.middleName != null
@@ -419,7 +426,6 @@ function transformClassData(cls) {
     campusName: cls.semester.campus.campusName,
     subjectCode: cls.courseinfo.courseCode,
     subjectDescription: cls.courseinfo.courseDescription,
-    schedule: cls.schedule,
   };
 }
 
