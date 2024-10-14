@@ -690,28 +690,6 @@ async function createProspectusAssignSubject(params, accountId) {
           };
         }
 
-        // Check if the semesterName and yearLevel combination already exists
-        const existingYearLevelAndSemester = await db.ProspectusSubject.findOne(
-          {
-            where: {
-              prospectus_id,
-              yearLevel,
-              semesterName,
-            },
-          }
-        );
-
-        if (existingYearLevelAndSemester) {
-          logDebug("Year level and semester already exists", {
-            yearLevel,
-            semesterName,
-            prospectus_id,
-          });
-          return {
-            error: `The combination of Year Level "${yearLevel}" and Semester "${semesterName}" already exists for Prospectus ID "${prospectus_id}" on Campus ID "${campus_id}".`,
-          };
-        }
-
         // Validation for semester dependencies
         if (semesterName === "2nd Semester") {
           // Ensure 1st Semester exists before allowing 2nd Semester creation
