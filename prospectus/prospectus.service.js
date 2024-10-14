@@ -666,6 +666,49 @@ async function createProspectusAssignSubject(params, accountId) {
           };
         }
 
+        // Validation for semester dependencies
+        if (semesterName === "2nd Semester") {
+          // Ensure 1st Semester exists before allowing 2nd Semester creation
+          const firstSemesterExists = await db.ProspectusSubject.findOne({
+            where: {
+              prospectus_id,
+              yearLevel,
+              semesterName: "1st Semester",
+            },
+          });
+
+          if (!firstSemesterExists) {
+            return {
+              error: `You cannot create "2nd Semester" for Year Level "${yearLevel}" because "1st Semester" does not exist for Prospectus ID "${prospectus_id}". Please create "1st Semester" first.`,
+            };
+          }
+        }
+
+        if (semesterName === "Summer") {
+          // Ensure both 1st Semester and 2nd Semester exist before allowing Summer creation
+          const firstSemesterExists = await db.ProspectusSubject.findOne({
+            where: {
+              prospectus_id,
+              yearLevel,
+              semesterName: "1st Semester",
+            },
+          });
+
+          const secondSemesterExists = await db.ProspectusSubject.findOne({
+            where: {
+              prospectus_id,
+              yearLevel,
+              semesterName: "2nd Semester",
+            },
+          });
+
+          if (!firstSemesterExists || !secondSemesterExists) {
+            return {
+              error: `You cannot create "Summer" for Year Level "${yearLevel}" because both "1st Semester" and "2nd Semester" must exist for Prospectus ID "${prospectus_id}". Please create those semesters first.`,
+            };
+          }
+        }
+
         // Check if the prospectus exists
         const prospectus = await db.Prospectus.findOne({
           where: {prospectus_id},
