@@ -245,7 +245,7 @@ async function InsertSampleData(db) {
       { campus_id: campuses[0].campus_id, courseCode: "ITELEC3", courseDescription: "IT Elective III (Lec)", unit: 2, department_id: departments[0].department_id},
       { campus_id: campuses[0].campus_id, courseCode: "ITELEC3L", courseDescription: "IT Elective III (Lab)", unit: 1, department_id: departments[0].department_id},
       { campus_id: campuses[0].campus_id, courseCode: "IT420", courseDescription: "IT Seminars & Tours", unit: 3, department_id: departments[0].department_id},
-      { campus_id: campuses[0].campus_id, courseCode: "OJT", courseDescription: "On the Job Training (500 Hours)", unit: 6, department_id: departments[0].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "OJT", courseDescription: "On the Job Training (500 Hours) (Lab)", unit: 6, department_id: departments[0].department_id},
     ])
 
     // const programcourses = await db.ProgramCourse.bulkCreate([
