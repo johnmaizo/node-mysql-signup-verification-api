@@ -67,7 +67,7 @@ function transformCourseData(course) {
 }
 
 // Common function to get courses based on filter conditions
-async function getCourses(whereClause, program_id = null) {
+async function getCourses(whereClause, program_id = null, programCode = null) {
   const includeConditions = [
     {
       model: db.Campus,
@@ -87,6 +87,25 @@ async function getCourses(whereClause, program_id = null) {
         {
           model: db.Program,
           where: {program_id: program_id}, // Match the program_id
+          attributes: ["programCode", "programDescription", "department_id"], // Include program details
+        },
+      ],
+      attributes: ["department_id"], // Include department_id to match with CourseInfo
+    });
+
+    // Modify where clause to fetch courses with either a matching department_id or null
+    whereClause[Op.or] = [
+      {department_id: {[Op.eq]: col("department.department_id")}}, // Matching department
+      {department_id: null}, // Allow department_id to be null
+    ];
+  } else if (programCode) {
+    includeConditions.push({
+      model: db.Department,
+      required: false, // Allow fetching records even when department is null
+      include: [
+        {
+          model: db.Program,
+          where: {programCode: programCode}, // Match the programCode
           attributes: ["programCode", "programDescription", "department_id"], // Include program details
         },
       ],
@@ -119,14 +138,18 @@ async function getAllCourse(campus_id = null, program_id = null) {
   return await getCourses(whereClause, program_id);
 }
 
-async function getAllCourseActive(campus_id = null, program_id = null) {
+async function getAllCourseActive(
+  campus_id = null,
+  program_id = null,
+  programCode = null
+) {
   const whereClause = {isActive: true, isDeleted: false};
 
   if (campus_id) {
     whereClause.campus_id = campus_id;
   }
 
-  return await getCourses(whereClause, program_id);
+  return await getCourses(whereClause, program_id, programCode);
 }
 
 async function getAllCourseDeleted(campus_id = null, program_id = null) {

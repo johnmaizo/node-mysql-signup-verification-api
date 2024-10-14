@@ -60,10 +60,10 @@ function getAllCourse(req, res, next) {
 }
 
 function getAllCourseActive(req, res, next) {
-  const {campus_id, program_id} = req.query;
+  const {campus_id, program_id, programCode} = req.query;
 
   courseService
-    .getAllCourseActive(campus_id, program_id)
+    .getAllCourseActive(campus_id, program_id, programCode)
     .then((courses) => res.json(courses))
     .catch(next);
 }

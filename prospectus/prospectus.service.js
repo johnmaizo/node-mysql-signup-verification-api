@@ -994,9 +994,10 @@ function transformProspectusSubjectData(prospectusSubject) {
     yearLevel: prospectusSubject.yearLevel,
     semesterName: prospectusSubject.semesterName,
     course_id: prospectusSubject.course_id,
-    course_department_id: prospectusSubject.CourseInfo?.department_id || null,
+    program_id: prospectusSubject.prospectu.program.program_id,
     programCode: prospectusSubject.prospectu.program.programCode,
     programDescription: prospectusSubject.prospectu.program.programDescription,
+    course_department_id: prospectusSubject.CourseInfo?.department_id || null,
     departmentCode:
       prospectusSubject.prospectu.program.department.departmentCode,
     departmentName:
