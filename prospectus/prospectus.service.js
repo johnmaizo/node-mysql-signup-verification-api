@@ -604,6 +604,33 @@ async function createProspectusAssignSubject(params, accountId) {
     return numberToWords(yearMatch.indexOf(yearWord)) !== "Zero";
   }
 
+  // Function to get the previous year in words
+  function getPreviousYearLevel(yearLevel) {
+    const wordsToNumbers = {
+      First: 1,
+      Second: 2,
+      Third: 3,
+      Fourth: 4,
+      Fifth: 5,
+      Sixth: 6,
+      Seventh: 7,
+      Eighth: 8,
+      Ninth: 9,
+      Tenth: 10,
+    };
+
+    const yearMatch = yearLevel.match(/^(\w+)\sYear$/);
+    if (!yearMatch) return null;
+
+    const yearWord = yearMatch[1];
+    const currentYearNumber = wordsToNumbers[yearWord];
+
+    if (currentYearNumber > 1) {
+      return `${numberToWords(currentYearNumber - 1)} Year`;
+    }
+    return null; // No previous year for "First Year"
+  }
+
   // Pattern to validate semester name (e.g., "1st Semester", "2nd Semester", "Summer")
   const validSemesterPattern = /^(1st|2nd) Semester$|^Summer$/;
 
@@ -635,6 +662,25 @@ async function createProspectusAssignSubject(params, accountId) {
           return {
             error: `Invalid yearLevel "${yearLevel}". Accepted format is "First Year", "Second Year", "Third Year", and so on.`,
           };
+        }
+
+        // Check for previous year validation (cannot create Second Year without First Year)
+        const previousYearLevel = getPreviousYearLevel(yearLevel);
+
+        if (previousYearLevel) {
+          const previousYearExists = await db.ProspectusSubject.findOne({
+            where: {
+              prospectus_id,
+              yearLevel: previousYearLevel,
+            },
+          });
+
+          if (!previousYearExists) {
+            logDebug("Previous year does not exist", {previousYearLevel});
+            return {
+              error: `You cannot create "${yearLevel}" because "${previousYearLevel}" does not exist for Prospectus ID "${prospectus_id}". Please create "${previousYearLevel}" first.`,
+            };
+          }
         }
 
         // Validate semesterName format
