@@ -1,4 +1,4 @@
-const {Op, where} = require("sequelize");
+const {Op, where, col} = require("sequelize");
 const db = require("_helpers/db");
 const Role = require("_helpers/role");
 
