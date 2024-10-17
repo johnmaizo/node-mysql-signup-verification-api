@@ -557,6 +557,19 @@ async function updateProspectus(id, params, accountId) {
 }
 
 // ! Prospectus Assign Sujbect
+
+/**
+ * Creates prospectus assignments for subjects based on specified parameters.
+ * Validates the input data including year level, semester name, subject codes, and prerequisites.
+ * Ensures prerequisites are valid and exist in the prospectus subjects.
+ * Logs debug information during processing.
+ * Inserts prospectus subjects and their prerequisites into the database.
+ * Generates history logs for the created prospectus subjects and prerequisites.
+ * 
+ * @param {Array} params - Array of objects containing assignment parameters like campus ID, prospectus ID, year level, subject code, prerequisites, and semester name.
+ * @param {string} accountId - The ID of the account associated with the prospectus assignments.
+ * @returns {Promise<Array>} - A promise that resolves to an array of inserted prospectus subjects.
+ */
 async function createProspectusAssignSubject(params, accountId) {
   const pLimit = await import("p-limit");
   const limit = pLimit.default(5);
