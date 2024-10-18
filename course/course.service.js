@@ -122,7 +122,7 @@ async function getCourses(whereClause, program_id = null, programCode = null) {
   const courses = await db.CourseInfo.findAll({
     where: whereClause,
     include: includeConditions,
-    order: [["courseCode", "ASC"]],
+    order: [["course_id", "ASC"], ["department_id", "ASC"]],
   });
 
   return courses.map(transformCourseData);
