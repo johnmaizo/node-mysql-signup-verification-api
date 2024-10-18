@@ -496,7 +496,7 @@ async function InsertSampleData(db) {
       { campus_id: campuses[0].campus_id, courseCode: "MM3", courseDescription: "Sales Management", unit: 3, department_id: departments[1].department_id},
       { campus_id: campuses[0].campus_id, courseCode: "MM2", courseDescription: "Professional Salesmanship", unit: 3, department_id: departments[1].department_id},
       { campus_id: campuses[0].campus_id, courseCode: "ECON100", courseDescription: "Basic Micro Economics", unit: 3, department_id: departments[1].department_id},
-      { campus_id: campuses[0].campus_id, courseCode: "ENTREP", courseDescription: "Entrepreneurial Management", unit: 3, department_id: departments[1].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "ENTREP", courseDescription: "Entrepeneurial Management", unit: 3, department_id: departments[1].department_id},
       { campus_id: campuses[0].campus_id, courseCode: "MM4", courseDescription: "Product Management", unit: 3, department_id: departments[1].department_id},
       { campus_id: campuses[0].campus_id, courseCode: "MM5", courseDescription: "Distribution Management", unit: 3, department_id: departments[1].department_id},
       { campus_id: campuses[0].campus_id, courseCode: "MM6", courseDescription: "Retail Management", unit: 3, department_id: departments[1].department_id},
@@ -548,6 +548,19 @@ async function InsertSampleData(db) {
       { campus_id: campuses[0].campus_id, courseCode: "HMLAW", courseDescription: "Legal Aspect of Hospitality Management", unit: 3, department_id: departments[1].department_id},
       { campus_id: campuses[0].campus_id, courseCode: "FORLANG2", courseDescription: "Foreign Language 2", unit: 3, department_id: departments[1].department_id},
       { campus_id: campuses[0].campus_id, courseCode: "PRACUM2", courseDescription: "Practicum 2 (600 Hours of Industry Experience with Seminars & Conferences) (Lab)", unit: 6, department_id: departments[1].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "HRDM1", courseDescription: "Administrative and Office Management", unit: 3, department_id: departments[1].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "HRDM3", courseDescription: "Training and Development", unit: 3, department_id: departments[1].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "ECON100", courseDescription: "Basic Micro Economic", unit: 3, department_id: departments[1].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "HRDM4", courseDescription: "Labor law and legistation", unit: 3, department_id: departments[1].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "HRDM2", courseDescription: "Recruitment and Selection Process", unit: 3, department_id: departments[1].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "HRDM5", courseDescription: "Labor Relation and Negotiation", unit: 3, department_id: departments[1].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "MANACC", courseDescription: "Managerial Accounting", unit: 3, department_id: departments[1].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "HRDM7", courseDescription: "Project Management", unit: 3, department_id: departments[1].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "MM100", courseDescription: "Marketing Management", unit: 3, department_id: departments[1].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "HRDM8", courseDescription: "Compensation Administration", unit: 3, department_id: departments[1].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "HRDM10", courseDescription: "Environmental Management System", unit: 3, department_id: departments[1].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "HRDM9", courseDescription: "Organizational Development", unit: 3, department_id: departments[1].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "HRDM11", courseDescription: "Human Resource Management", unit: 3, department_id: departments[1].department_id},
 
     ])
 
