@@ -437,6 +437,16 @@ async function InsertSampleData(db) {
       { campus_id: campuses[0].campus_id, courseCode: "ELEC100", courseDescription: "Teaching Multi-Grade Classes", unit: 3, department_id: departments[4].department_id},
       { campus_id: campuses[0].campus_id, courseCode: "RGEC 2", courseDescription: "Review on Professional Education Courses", unit: 3, department_id: departments[4].department_id},
       { campus_id: campuses[0].campus_id, courseCode: "TI100", courseDescription: "Teaching Internship (Lab)", unit: 6, department_id: departments[4].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "CREWRI", courseDescription: "Creative Writing", unit: 3, department_id: departments[4].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "ELT227", courseDescription: "Language Education Research", unit: 3, department_id: departments[4].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "ELT228", courseDescription: "Technical Writing", unit: 3, department_id: departments[4].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "LIT201", courseDescription: "Children & Adolescent Literature", unit: 3, department_id: departments[4].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "LIT202", courseDescription: "Mythodology & Folklore", unit: 3, department_id: departments[4].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "EDUC221", courseDescription: "The Teacher & the Community, School & Organizational Leadership", unit: 3, department_id: departments[4].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "EDUC222", courseDescription: "Foundation of Special & Inclusive Education", unit: 3, department_id: departments[4].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "CAMJOUR", courseDescription: "Campus Journalism", unit: 3, department_id: departments[4].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "LIT327", courseDescription: "Literary Critism", unit: 3, department_id: departments[4].department_id},
+      { campus_id: campuses[0].campus_id, courseCode: "ESP100", courseDescription: "English for Special Purpose", unit: 3, department_id: departments[4].department_id},
     ])
 
     // const programcourses = await db.ProgramCourse.bulkCreate([
