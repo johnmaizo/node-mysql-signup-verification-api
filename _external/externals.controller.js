@@ -28,7 +28,7 @@ function getAllEmployeeActive(req, res, next) {
 }
 
 function getAllCampusActive(req, res, next) {
-  externalService``
+  externalService
     .getAllCampusActive()
     .then((campuses) => res.json(campuses))
     .catch(next);
@@ -70,7 +70,6 @@ function getAllCourseActive(req, res, next) {
     .then((courses) => res.json(courses))
     .catch(next);
 }
-
 
 function getAllStructuresActive(req, res, next) {
   const {
