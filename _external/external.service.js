@@ -11,6 +11,7 @@ module.exports = {
   getAllProgramsActive,
   getAllClassActive,
   getAllCourseActive,
+  getAllStructuresActive,
 };
 
 // ! Employee START
@@ -587,4 +588,61 @@ async function getAllCourseActive(
   }
 
   return await getCourses(whereClause, program_id, programCode);
+}
+
+// ! Building Structures
+function transformStructureData(structure) {
+  return {
+    ...structure.toJSON(),
+    fullStructureDetails: `${
+      (structure.buildingName && `${structure.buildingName} `) || ""
+    }${(structure.floorName && `- ${structure.floorName} `) || ""}${
+      (structure.roomName && `- ${structure.roomName}`) || ""
+    }`.trim(),
+  };
+}
+
+async function getStructures(whereClause) {
+  const structures = await db.BuildingStructure.findAll({
+    where: whereClause,
+    include: [
+      {
+        model: db.Campus,
+        attributes: ["campusName", "campus_id"], // Include only the campus name
+      },
+    ],
+  });
+
+  return structures.map(transformStructureData);
+}
+
+async function getAllStructuresActive(
+  campus_id = null,
+  filterBuilding = null,
+  filterFloor = null,
+  filterRoom = null,
+  buildingName = null,
+  floorName = null
+) {
+  const whereClause = {isActive: true, isDeleted: false};
+
+  // Apply filtering based on the parameters
+  if (campus_id) {
+    whereClause.campus_id = campus_id;
+  }
+  if (buildingName) {
+    whereClause.buildingName = buildingName;
+  }
+  if (filterBuilding === "true") {
+    whereClause.isBuilding = true;
+  } else if (filterFloor === "true") {
+    whereClause.isFloor = true;
+  } else if (filterRoom === "true") {
+    whereClause.isRoom = true;
+    if (floorName) {
+      whereClause.floorName = floorName;
+    }
+  }
+
+  return await getStructures(whereClause);
 }

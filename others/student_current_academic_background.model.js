@@ -11,13 +11,13 @@ function model(sequelize) {
                 key: 'student_id'
             }
         },
-        department_id: { 
-            type: DataTypes.INTEGER,
-            references: {
-                model: 'departments',
-                key: 'department_id'
-            }
-        },
+        // department_id: { 
+        //     type: DataTypes.INTEGER,
+        //     references: {
+        //         model: 'departments',
+        //         key: 'department_id'
+        //     }
+        // },
 
         program_id: { 
             type: DataTypes.INTEGER,

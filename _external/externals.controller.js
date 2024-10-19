@@ -12,6 +12,7 @@ router.get("/get-department-active", getAllDepartmentsActive);
 router.get("/get-programs-active", getAllProgramActive);
 router.get("/get-class-active", getAllClassActive);
 router.get("/get-subjects-active", getAllCourseActive);
+router.get("/get-structures-active", getAllStructuresActive);
 
 module.exports = router;
 
@@ -65,5 +66,29 @@ function getAllCourseActive(req, res, next) {
   externalService
     .getAllCourseActive(campus_id, program_id, programCode)
     .then((courses) => res.json(courses))
+    .catch(next);
+}
+
+
+function getAllStructuresActive(req, res, next) {
+  const {
+    campus_id,
+    filterBuilding,
+    filterFloor,
+    filterRoom,
+    buildingName,
+    floorName,
+  } = req.query;
+
+  externalService
+    .getAllStructuresActive(
+      campus_id,
+      filterBuilding,
+      filterFloor,
+      filterRoom,
+      buildingName,
+      floorName
+    )
+    .then((structures) => res.json(structures))
     .catch(next);
 }

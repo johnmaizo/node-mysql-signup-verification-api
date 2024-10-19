@@ -319,9 +319,9 @@ async function fetchApplicantData(campusName = null, isAborted = false) {
   if (campusName) {
     const campus = await db.Campus.findOne({where: {campusName}});
     if (!campus) throw new Error("Campus not found");
-    apiUrl = `${url}/api/stdntbasicinfoapplication/?filter=campus=${campus.campusName}`;
+    apiUrl = `${url}/api/stdntbasicinfo?filter=campus=${campus.campus_id}`;
   } else {
-    apiUrl = `${url}/api/stdntbasicinfoapplication/`;
+    apiUrl = `${url}/api/stdntbasicinfo/`;
   }
 
   const transaction = await sequelize.transaction();
@@ -350,7 +350,7 @@ async function fetchApplicantData(campusName = null, isAborted = false) {
 
       // Create a campus map to easily find campus records by name
       const campusMap = Object.fromEntries(
-        campuses.map((c) => [c.campusName, c])
+        campuses.map((c) => [c.campus_id, c])
       );
 
       // Create a program map based on the correct department-campus relationship
@@ -358,7 +358,7 @@ async function fetchApplicantData(campusName = null, isAborted = false) {
         programs.map((p) => {
           const campus = p.department.campus;
           if (campus) {
-            return [`${campus.campusName}_${p.programCode}`, p];
+            return [`${campus.campus_id}_${p.programCode}`, p];
           }
           return [p.programCode, p]; // Fallback if no campus is found
         })
@@ -385,7 +385,7 @@ async function fetchApplicantData(campusName = null, isAborted = false) {
                 return;
               }
 
-              const programRecordKey = `${campusRecord.campusName}_${applicantData.program}`;
+              const programRecordKey = `${campusRecord.campus_id}_${applicantData.program}`;
               const programRecord = programMap[programRecordKey];
 
               if (!programRecord) {
@@ -397,6 +397,8 @@ async function fetchApplicantData(campusName = null, isAborted = false) {
               }
 
               const newApplicant = {
+                applicant_id_external: applicantData.applicant_id,
+                enrollmentType: "online",
                 firstName: applicantData.first_name
                   ? applicantData.first_name.trim()
                   : null,
@@ -423,8 +425,6 @@ async function fetchApplicantData(campusName = null, isAborted = false) {
                 isTransferee: applicantData.is_transferee ? true : false,
                 campus_id: programRecord.department.campus.campus_id,
                 program_id: programRecord.program_id,
-                applicant_id_external: applicantData.applicant_id, 
-                enrollmentType: "online",
                 birthDate: applicantData.birth_date || null,
                 status: applicantData.status || null,
                 isActive: applicantData.active || null,
