@@ -7,6 +7,8 @@ module.exports = {
 
   getAllEmployeeActive,
   getAllCampusActive,
+  getAllSemester,
+  getAllSemesterActive,
   getAllDepartmentsActive,
   getAllProgramsActive,
   getAllClassActive,
@@ -645,4 +647,54 @@ async function getAllStructuresActive(
   }
 
   return await getStructures(whereClause);
+}
+
+// ! Semesters
+// Common function to handle the transformation
+function transformSemesterData(semester) {
+  return {
+    ...semester.toJSON(),
+    fullSemesterNameWithCampus:
+      `${semester.schoolYear} - ${semester.semesterName} - ${semester.campus.campusName}` ||
+      "fullSemesterNameWithCampus not found",
+    fullSemesterName:
+      `${semester.schoolYear} - ${semester.semesterName}` ||
+      "fullSemesterName not found",
+    campusName: semester.campus.campusName || "campusName not found",
+  };
+}
+
+// Common function to get semesters based on filter conditions
+async function getSemesters(whereClause) {
+  const semesters = await db.Semester.findAll({
+    where: whereClause,
+    include: [
+      {
+        model: db.Campus,
+        attributes: ["campusName"], // Include only the campus name
+      },
+    ],
+  });
+
+  return semesters.map(transformSemesterData);
+}
+
+async function getAllSemester(campus_id = null) {
+  const whereClause = {isDeleted: false};
+
+  if (campus_id) {
+    whereClause.campus_id = campus_id;
+  }
+
+  return await getSemesters(whereClause);
+}
+
+async function getAllSemesterActive(campus_id = null) {
+  const whereClause = {isActive: true, isDeleted: false};
+
+  if (campus_id) {
+    whereClause.campus_id = campus_id;
+  }
+
+  return await getSemesters(whereClause);
 }

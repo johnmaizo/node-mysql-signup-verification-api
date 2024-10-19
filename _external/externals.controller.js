@@ -8,6 +8,8 @@ const externalService = require("./external.service");
 
 router.get("/get-employee-active", getAllEmployeeActive);
 router.get("/get-campus-active", getAllCampusActive);
+router.get("/get-all-semesters", getAllSemester);
+router.get("/get-semester-active", getAllSemesterActive);
 router.get("/get-department-active", getAllDepartmentsActive);
 router.get("/get-programs-active", getAllProgramActive);
 router.get("/get-class-active", getAllClassActive);
@@ -90,5 +92,23 @@ function getAllStructuresActive(req, res, next) {
       floorName
     )
     .then((structures) => res.json(structures))
+    .catch(next);
+}
+
+function getAllSemester(req, res, next) {
+  const campus_id = req.query.campus_id;
+
+  externalService
+    .getAllSemester(campus_id)
+    .then((semesters) => res.json(semesters))
+    .catch(next);
+}
+
+function getAllSemesterActive(req, res, next) {
+  const campus_id = req.query.campus_id;
+
+  externalService
+    .getAllSemesterActive(campus_id)
+    .then((semesters) => res.json(semesters))
     .catch(next);
 }
