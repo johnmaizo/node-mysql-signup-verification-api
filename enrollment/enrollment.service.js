@@ -358,9 +358,9 @@ async function fetchApplicantData(campusName = null, isAborted = false) {
         programs.map((p) => {
           const campus = p.department.campus;
           if (campus) {
-            return [`${campus.campus_id}_${p.programCode}`, p];
+            return [`${campus.campus_id}_${p.program_id}`, p];
           }
-          return [p.programCode, p]; // Fallback if no campus is found
+          return [p.program_id, p]; // Fallback if no campus is found
         })
       );
 
@@ -426,8 +426,8 @@ async function fetchApplicantData(campusName = null, isAborted = false) {
                 campus_id: programRecord.department.campus.campus_id,
                 program_id: programRecord.program_id,
                 birthDate: applicantData.birth_date || null,
-                status: applicantData.status || null,
-                isActive: applicantData.active || null,
+                // status: applicantData.status || null,
+                isActive: applicantData.is_active || null,
                 dateEnrolled: applicantData.created_at || null,
               };
 

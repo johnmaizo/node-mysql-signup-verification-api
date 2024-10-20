@@ -9,7 +9,14 @@ function model(sequelize) {
       primaryKey: true,
       autoIncrement: true,
     },
-    applicant_id_external: {type: DataTypes.INTEGER, allowNull: true},
+
+    enrollmentType: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+    }, // 'online', 'regular'
+
+    applicant_id_external: {type: DataTypes.INTEGER, allowNull: true}, // use for external system like Online Registration
+
     campus_id: {
       type: DataTypes.INTEGER,
       references: {
@@ -26,16 +33,13 @@ function model(sequelize) {
         key: "program_id", // refers to the column name in the programs table
       },
     },
-    enrollmentType: {
-      type: DataTypes.STRING(20),
-      allowNull: false,
-    }, // 'online', 'regular'
 
     status: {
       type: DataTypes.STRING(20),
       allowNull: false,
       defaultValue: "pending",
     }, // 'pending', 'enrolled'
+
     firstName: {type: DataTypes.STRING(35), allowNull: false},
     middleName: {type: DataTypes.STRING(35), allowNull: true},
     lastName: {type: DataTypes.STRING(35), allowNull: false},

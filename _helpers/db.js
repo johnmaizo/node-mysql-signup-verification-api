@@ -104,12 +104,12 @@ async function initialize() {
   db.Employee = require("../models/employee.model")(sequelize);
 
   // ! Enrollment
-  db.EnrollmentProcess = require("../models/enrollment_process.model")(
+  db.EnrollmentProcess = require("../models/student/enrollment_process.model")(
     sequelize
   );
 
   // ! Applicant
-  db.Applicant = require("../models/applicant.model")(sequelize);
+  db.Applicant = require("../models/student/applicant.model")(sequelize);
 
   // ! Simple Official Student Basic
   db.StudentOfficalBasic = require("../models/student_official_basic.model")(

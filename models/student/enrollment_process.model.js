@@ -9,6 +9,7 @@ function model(sequelize) {
       primaryKey: true,
       autoIncrement: true,
     },
+
     applicant_id: {
       type: DataTypes.INTEGER,
       references: {
@@ -18,6 +19,7 @@ function model(sequelize) {
       allowNull: false,
       onDelete: "CASCADE",
     },
+    
     registrar_status: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -27,15 +29,7 @@ function model(sequelize) {
       type: DataTypes.DATE,
       allowNull: true,
     },
-    dean_status: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      defaultValue: "pending",
-    },
-    dean_status_date: {
-      type: DataTypes.DATE,
-      allowNull: true,
-    },
+    
     accounting_status: {
       type: DataTypes.STRING,
       allowNull: false,
