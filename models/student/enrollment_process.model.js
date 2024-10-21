@@ -53,8 +53,8 @@ function model(sequelize) {
 
   const options = {
     timestamps: true,
-    tableName: "enrollmentprocess",
+    tableName: "enrollment_process",
   };
 
-  return sequelize.define("EnrollmentProcess", attributes, options);
+  return sequelize.define("enrollment_process", attributes, options);
 }

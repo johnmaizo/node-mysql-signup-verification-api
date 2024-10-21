@@ -68,12 +68,6 @@ app.use("/programs", require("./program/programs.controller"));
 // ! Course Info
 app.use("/course", require("./course/courses.controller"));
 
-// ! Program Course
-app.use(
-  "/program-courses",
-  require("./program_course/program_courses.controller")
-);
-
 // ! Building Structure
 app.use(
   "/building-structure",

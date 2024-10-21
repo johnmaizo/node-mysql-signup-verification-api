@@ -56,5 +56,5 @@ function model(sequelize) {
         timestamps: true,
     };
 
-    return sequelize.define('studentfamily', attributes, options);
+    return sequelize.define('student_family', attributes, options);
 }

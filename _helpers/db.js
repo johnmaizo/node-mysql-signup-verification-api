@@ -79,8 +79,6 @@ async function initialize() {
   db.Program = require("../models/programs.model")(sequelize);
   // ! Course Info
   db.CourseInfo = require("../models/course_info.model")(sequelize);
-  // ! Program Course
-  db.ProgramCourse = require("../models/program_course.model")(sequelize);
   // ! Building Structure
   db.BuildingStructure = require("../models/building_structure.model")(
     sequelize
@@ -89,23 +87,25 @@ async function initialize() {
   // ! Employee
   db.Employee = require("../models/employee.model")(sequelize);
 
-  // ! Enrollment
-  db.EnrollmentProcess = require("../models/student/enrollment_process.model")(
-    sequelize
-  );
-
   // ! Applicant
   db.Applicant = require("../models/student/applicant.model")(sequelize);
 
-  // ! Simple Official Student Basic
-  db.StudentOfficial = require("../models/student/students_official.model")(sequelize);
-
   // ! Student
+  db.StudentPersonalData = require("../models/student/student_personal_data.model")(sequelize)
   db.StudentAddPersonalData = require("../models/student/student_add_personal_data.model")(sequelize)
   db.StudentFamily = require("../models/student/student_family.model")(sequelize)
   db.StudentAcademicBackground = require("../models/student/student_academic_background.model")(sequelize)
   db.StudentAcademicHistory = require("../models/student/student_academic_history.model")(sequelize)
   db.StudentSubjects = require("../models/student/student_subject.model")(sequelize)
+
+  // ! Enrollment
+  db.EnrollmentProcess = require("../models/student/enrollment_process.model")(
+    sequelize
+  );
+
+  // ! Student Official 
+  db.StudentOfficial = require("../models/student/students_official.model")(sequelize);
+
 
   // ! Class
   db.Class = require("../models/class.model")(sequelize);

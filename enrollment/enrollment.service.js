@@ -9,6 +9,13 @@ const deepEqual = require("deep-equal");
 require("dotenv").config();
 
 module.exports = {
+  submitApplication,
+
+  updateEnrollmentProcess,
+  getAllEnrollmentStatus,
+  getEnrollmentStatusById,
+  getApplicantInfo,
+
   enrollStudent,
   getAllStudentsOfficial,
   getAllStudentsOfficalActive,
@@ -19,10 +26,6 @@ module.exports = {
   updateStudent,
   // deleteStudent,
 
-  updateEnrollmentProcess,
-  getAllEnrollmentStatus,
-  getEnrollmentStatusById,
-
   fetchApplicantData,
   getAllApplicant,
   getAllApplicantCount,
@@ -30,14 +33,131 @@ module.exports = {
 
 const url = process.env.MHAFRIC_API;
 
-/**
- * Enrolls a student based on the applicant ID provided, and updates the status of the applicant in the MH Afric API to "accepted".
- * @param {Object} params - An object containing the applicant ID.
- * @param {number} accountId - The ID of the account performing the action.
- * @returns {Promise<void>}
- * @throws {Error} If the applicant ID is not provided, if the student is already enrolled, or if there is an error with the API requests.
- */
-async function enrollStudent(params, accountId) {
+async function submitApplication(params, accountId) {
+  const {sequelize} = require("_helpers/db");
+
+  const transaction = await sequelize.transaction();
+
+  try {
+    const {
+      applicant, // Applicant information
+      personalData, // Personal data
+      addPersonalData, // Additional personal data
+      familyDetails, // Family information
+      academicBackground, // Academic background
+      academicHistory, // Academic history
+    } = params;
+
+    // Check if email already exists
+    const existingApplicant = await db.Applicant.findOne({
+      where: {email: applicant.email},
+    });
+
+    if (existingApplicant) {
+      throw new Error(
+        `An applicant with the email "${applicant.email}" already exists.`
+      );
+    }
+
+    // 1. Create Applicant
+    const newApplicant = await db.Applicant.create(applicant, {transaction});
+
+    // 2. Create Personal Data (copying relevant data from applicant)
+    await db.StudentPersonalData.create(
+      {
+        applicant_id: newApplicant.applicant_id,
+        firstName: newApplicant.firstName,
+        middleName: newApplicant.middleName,
+        lastName: newApplicant.lastName,
+        gender: newApplicant.gender,
+        email: newApplicant.email,
+        contactNumber: newApplicant.contactNumber,
+        birthDate: newApplicant.birthDate,
+        campus_id: newApplicant.campus_id,
+        ...personalData,
+      },
+      {transaction}
+    );
+
+    // 3. Create Additional Personal Data
+    await db.StudentAddPersonalData.create(
+      {
+        applicant_id: newApplicant.applicant_id,
+        ...addPersonalData,
+      },
+      {transaction}
+    );
+
+    // 4. Create Family Details
+    await db.StudentFamily.create(
+      {
+        applicant_id: newApplicant.applicant_id,
+        ...familyDetails,
+      },
+      {transaction}
+    );
+
+    // 5. Create Academic Background
+    await db.StudentAcademicBackground.create(
+      {
+        applicant_id: newApplicant.applicant_id,
+        program_id: newApplicant.program_id,
+        yearLevel: newApplicant.yearLevel,
+        ...academicBackground,
+      },
+      {transaction}
+    );
+
+    // 6. Create Academic History
+    await db.StudentAcademicHistory.create(
+      {
+        applicant_id: newApplicant.applicant_id,
+        ...academicHistory,
+      },
+      {transaction}
+    );
+
+    // 7. Create Enrollment Process
+    await db.EnrollmentProcess.create(
+      {
+        applicant_id: newApplicant.applicant_id,
+        registrar_status: "accepted",
+        registrar_status_date: new Date(),
+        accounting_status: "upcoming",
+        payment_confirmed: false,
+      },
+      {transaction}
+    );
+
+    // 8. Log the creation action in the history table
+    await db.History.create(
+      {
+        action: "create",
+        entity: "Student",
+        entityId: newApplicant.applicant_id,
+        changes: params,
+        accountId: accountId,
+      },
+      {transaction}
+    );
+
+    // Commit the transaction after all records are successfully created
+    await transaction.commit();
+
+    return {
+      message:
+        "Application submitted successfully and enrollment process started!",
+    };
+  } catch (error) {
+    // Rollback transaction if there is an error
+    await transaction.rollback();
+
+    throw new Error(`${error.message}`);
+  }
+}
+
+// async function enrollStudent(params, accountId) {
+async function enrollStudent(params) {
   const studentparams = {};
   let campus_name = "";
 
@@ -147,18 +267,215 @@ async function enrollStudent(params, accountId) {
   studentparams.status = "accepted";
 
   // Save student details in the database
-  const studentOfficial = new db.StudentOfficalBasic(studentparams);
+  const studentOfficial = new db.StudentOfficial(studentparams);
+  await studentOfficial.save();
+}
+
+async function enrollStudentMockUpOnsite(applicant_id) {
+  const applicant = await db.Applicant.findOne({
+    where: {applicant_id: applicant_id},
+    include: [
+      {model: db.StudentPersonalData, as: "personalData"},
+      {model: db.StudentAddPersonalData, as: "addPersonalData"},
+      {model: db.StudentFamily, as: "familyDetails"},
+      {model: db.StudentAcademicBackground, as: "academicBackground"},
+      {model: db.StudentAcademicHistory, as: "academicHistory"},
+    ],
+  });
+
+  if (!applicant) {
+    throw new Error("Applicant not found");
+  }
+
+  const onlineApplicantSubmission = await axios.post(
+    `${url}/api/stdntbasicinfo/`,
+    {
+      first_name: applicant.firstName,
+      middle_name: applicant.middleName,
+      last_name: applicant.lastName,
+      is_transferee: applicant.isTransferee,
+      contact_number: applicant.contactNumber,
+      year_level: applicant.yearLevel,
+      address: applicant.address,
+      campus: applicant.campus_id,
+      program: applicant.program_id,
+      birth_date: applicant.birthDate,
+      sex: applicant.gender,
+      email: applicant.email,
+    },
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  if (!onlineApplicantSubmission.data) {
+    throw new Error("Bad Request");
+  }
+
+  console.log(
+    "Post response (onlineApplicantSubmission):",
+    onlineApplicantSubmission.data
+  );
+
+  const onlineFullStudentInfoPOST = await axios.post(
+    `${url}/api/full-student-data/`,
+    {
+      personal_data: {
+        basicdata_applicant_id:
+          onlineApplicantSubmission.basicdata_applicant_id,
+        f_name: applicant.firstName,
+        m_name: applicant.middleName,
+        suffix: applicant.suffix,
+        l_name: applicant.lastName,
+        sex: applicant.gender,
+        birth_date: applicant.birthDate,
+        birth_place: applicant.personalData.birthPlace,
+        marital_status: applicant.personalData.civilStatus,
+        religion: applicant.personalData.religion,
+        country: applicant.personalData.country,
+        email: applicant.personalData.email,
+        acr: applicant.personalData.ACR,
+        status: "officially enrolled",
+      },
+      add_personal_data: {
+        city_address: applicant.addPersonalData.cityAddress,
+        province_address: applicant.addPersonalData.provinceAddress,
+        contact_number: applicant.contactNumber,
+        city_contact_number: applicant.addPersonalData.cityTelNumber,
+        province_contact_number: applicant.addPersonalData.provinceTelNumber,
+        citizenship: applicant.personalData.applicant.personalData,
+      },
+      family_background: {
+        father_fname: applicant.familyDetails.fatherFirstName,
+        father_mname: applicant.familyDetails.fatherMiddleName,
+        father_lname: applicant.familyDetails.fatherLastName,
+        father_contact_number: applicant.familyDetails.fatherContactNumber,
+        father_email: applicant.familyDetails.fatherEmail,
+        father_occupation: applicant.familyDetails.fatherOccupation,
+        father_income: applicant.familyDetails.fatherIncome,
+        father_company: applicant.familyDetails.fatherCompanyName,
+
+        mother_fname: applicant.familyDetails.motherFirstName,
+        mother_mname: applicant.familyDetails.motherMiddleName,
+        mother_lname: applicant.familyDetails.motherLastName,
+        mother_contact_number: applicant.familyDetails.motherContactNumber,
+        mother_email: applicant.familyDetails.motherEmail,
+        mother_occupation: applicant.familyDetails.motherOccupation,
+        mother_income: applicant.familyDetails.motherIncome,
+        mother_company: applicant.familyDetails.motherCompanyName,
+        guardian_fname: applicant.familyDetails.guardianFirstName,
+        guardian_mname: applicant.familyDetails.guardianMiddleName,
+        guardian_lname: applicant.familyDetails.guardianLastName,
+        guardian_relation: applicant.familyDetails.guardianRelation,
+        guardian_contact_number: applicant.familyDetails.guardianContactNumber,
+        guardian_email:
+          `${applicant.familyDetails.guardianFirstName}${applicant.familyDetails.guardianLastName}@example.com`
+            .toLowerCase()
+            .trim(),
+      },
+      academic_background: {
+        program: applicant.program_id,
+        major_in: applicant.academicBackground.majorIn,
+        student_type: applicant.academicBackground.studentType,
+        semester_entry: applicant.academicBackground.semester_id,
+        year_level: applicant.academicBackground.yearLevel,
+        year_entry: applicant.academicBackground.yearEntry,
+        year_graduate: applicant.academicBackground.yearGraduate,
+        application_type: applicant.academicBackground.applicationType,
+      },
+      academic_history: {
+        elementary_school: applicant.academicHistory.elementarySchool,
+        elementary_address: applicant.academicHistory.elementaryAddress,
+        elementary_honors: applicant.academicHistory.elementaryHonors,
+        elementary_graduate: applicant.academicHistory.elementaryGraduate,
+        junior_highschool: applicant.academicHistory.secondarySchool,
+        junior_address: applicant.academicHistory.secondaryAddress,
+        junior_honors: applicant.academicHistory.secondaryHonors,
+        junior_graduate: applicant.academicHistory.secondaryGraduate,
+        senior_highschool: applicant.academicHistory.seniorHighSchool,
+        senior_address: applicant.academicHistory.seniorHighAddress,
+        senior_honors: applicant.academicHistory.seniorHighHonors,
+        senior_graduate: applicant.academicHistory.seniorHighSchoolGraduate,
+        ncae_grade: "N/A",
+        ncae_year_taken: "N/A",
+        latest_college: "N/A",
+        college_address: "N/A",
+        college_honors: "N/A",
+        program: "N/A - Gwapo ko",
+      },
+    },
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  if (!onlineFullStudentInfoPOST.data) {
+    throw new Error("Bad Request");
+  }
+
+  console.log(
+    "Post response (onlineFullStudentInfoPOST):",
+    onlineFullStudentInfoPOST.data
+  );
+
+  const campus = await db.Campus.findOne({
+    where: {campus_id: applicant.campus_id},
+  });
+
+  // Check if campus exists
+  if (!campus) {
+    throw new Error("Campus not found");
+  }
+
+  // Generate student ID
+  let student_id = await generateStudentId(campus.campusName);
+
+  // Save student details in the database
+  const studentOfficial = new db.StudentOfficial({
+    student_id: student_id,
+    campus_id: campus.campus_id,
+    applicant_id: applicant.applicant_id,
+  });
   await studentOfficial.save();
 
-  // Log the creation action
-  await db.History.create({
-    action: "create",
-    entity: "Student",
-    entityId: studentOfficial.id,
-    changes: studentparams,
-    accountId: accountId,
-  });
+  // New POST request after generating the student ID
+  const onlineOfficialDataPost = await axios.post(
+    `${url}/api/official-student-data/`,
+    {
+      student_id: student_id,
+      campus: campus.campus_id,
+      password: `gwapoko123`,
+      fulldata_applicant_id: onlineApplicantSubmission.basicdata_applicant_id,
+    },
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  if (!onlineOfficialDataPost.data) {
+    throw new Error("Bad Request");
+  }
+
+  console.log(
+    "Post response (onlineOfficialDataPost):",
+    onlineOfficialDataPost.data
+  );
 }
+
+// ! Log the creation action
+// await db.History.create({
+//   action: "create",
+//   entity: "Student",
+//   entityId: studentOfficial.id,
+//   changes: studentparams,
+//   accountId: accountId,
+// });
 
 async function generateStudentIdWithDepartmentCode(programCode, campusName) {
   if (!campusName) {
@@ -229,7 +546,7 @@ async function generateStudentIdWithDepartmentCode(programCode, campusName) {
   const departmentCode = (departmentIndex + 1).toString().padStart(2, "0");
 
   // Find the last student ID for the campus and the current year
-  const lastStudentOnDepartment = await db.StudentOfficalBasic.findOne({
+  const lastStudentOnDepartment = await db.StudentOfficial.findOne({
     where: {
       student_id: {
         [Op.like]: `${currentYear}-${departmentCode}-%`, // Specific to the campus and department
@@ -239,7 +556,7 @@ async function generateStudentIdWithDepartmentCode(programCode, campusName) {
     order: [["createdAt", "DESC"]],
   });
 
-  const lastStudent = await db.StudentOfficalBasic.findOne({
+  const lastStudent = await db.StudentOfficial.findOne({
     where: {
       student_id: {
         [Op.like]: `${currentYear}%`,
@@ -275,7 +592,7 @@ async function generateStudentId(campusName) {
   const currentYear = new Date().getFullYear().toString();
 
   // Find the last student ID for the campus and the current year
-  const lastStudent = await db.StudentOfficalBasic.findOne({
+  const lastStudent = await db.StudentOfficial.findOne({
     where: {
       student_id: {
         [Op.like]: `${currentYear}-%`,
@@ -288,10 +605,10 @@ async function generateStudentId(campusName) {
   // If a student exists, increment the last student ID,  otherwise start from 00001
   if (lastStudent) {
     const lastId = lastStudent.student_id.split("-")[1]; // Get the numeric part of the ID
-    const newIdNumber = (parseInt(lastId) + 1).toString().padStart(4, "0"); // ! Change to 5 later
+    const newIdNumber = (parseInt(lastId) + 1).toString().padStart(5, "0"); // ! Change to 5 later
     return `${currentYear}-${newIdNumber}`;
   } else {
-    return `${currentYear}-0001`; // ! Change to 5 later
+    return `${currentYear}-00001`; // ! Change to 5 later
   }
 }
 
@@ -616,7 +933,7 @@ async function getAllStudentsOfficial(campusName = null) {
   }
 
   // Retrieve students based on the provided campus or all students if campusName is null
-  const students = await db.StudentOfficalBasic.findAll({
+  const students = await db.StudentOfficial.findAll({
     where: {
       // Only filter by campus_id if a campus is found (i.e., campusName was provided)
       ...(campus ? {campus_id: campus.campus_id} : {}),
@@ -701,7 +1018,7 @@ async function getAllStudentOfficialCount(campusName = null) {
   }
 
   // Count the students based on the provided campus or all students if campusName is null
-  const studentCount = await db.StudentOfficalBasic.count({
+  const studentCount = await db.StudentOfficial.count({
     where: {
       // Only filter by campus_id if a campus is found (i.e., campusName was provided)
       ...(campus ? {campus_id: campus.campus_id} : {}),
@@ -861,7 +1178,7 @@ async function getChartData(campusName = null) {
 // }
 
 async function getAllStudentsOfficalActive() {
-  const students = await db.StudentOfficalBasic.count({
+  const students = await db.StudentOfficial.count({
     where: {
       isActive: true,
     },
@@ -870,7 +1187,7 @@ async function getAllStudentsOfficalActive() {
 }
 
 async function getStudentById(id) {
-  const student = await db.StudentOfficalBasic.findByPk(id);
+  const student = await db.StudentOfficial.findByPk(id);
   if (!student) throw "Student not found";
   return student;
 }
@@ -890,7 +1207,6 @@ async function updateStudent(id, params) {
 
 */
 
-// Updated updateEnrollmentProcess function
 async function updateEnrollmentProcess(params) {
   const {applicant_id, status, payment_confirmed, allRoles, specificRole} =
     params;
@@ -912,7 +1228,6 @@ async function updateEnrollmentProcess(params) {
 
   // Check if the applicant exists in the database
   const applicant = await db.Applicant.findByPk(applicant_id);
-
   if (!applicant) {
     throw new Error(`Applicant with ID ${applicant_id} does not exist.`);
   }
@@ -923,14 +1238,21 @@ async function updateEnrollmentProcess(params) {
   });
 
   if (!enrollmentProcess) {
-    // If no existing process found, create a new record with default "upcoming" statuses
+    // If no existing process found, create a new record with default "in-progress" statuses
     enrollmentProcess = await db.EnrollmentProcess.create({
       applicant_id: applicant_id,
       registrar_status: "in-progress",
-      dean_status: "upcoming",
       accounting_status: "upcoming",
       payment_confirmed: false, // Set payment to false initially
+      final_approval_status: false, // Final approval starts as false
     });
+  }
+
+  // Validation: Prevent any changes if final_approval_status is true
+  if (enrollmentProcess.final_approval_status === true) {
+    throw new Error(
+      "The enrollment process is already final-approved. No further changes are allowed."
+    );
   }
 
   // Get the current date to track when statuses are updated
@@ -939,8 +1261,38 @@ async function updateEnrollmentProcess(params) {
   // Step 1: Handle the specific role update based on the provided specificRole
   switch (specificRole) {
     case Role.Registrar:
-      enrollmentProcess.registrar_status = status;
-      enrollmentProcess.registrar_status_date = currentDate;
+      // Prevent setting `final_approved` if conditions aren't met
+      if (status === "final_approved") {
+        if (
+          enrollmentProcess.registrar_status !== "accepted" ||
+          enrollmentProcess.accounting_status !== "accepted" ||
+          !enrollmentProcess.payment_confirmed
+        ) {
+          throw new Error(
+            "Final approval can only be set when both Registrar and Accounting have accepted and payment is confirmed."
+          );
+        }
+
+        // Proceed with final approval if conditions are met
+        enrollmentProcess.final_approval_status = true;
+        enrollmentProcess.registrar_status_date = currentDate;
+        await enrollmentProcess.save();
+        return {
+          message:
+            "Final approval by registrar complete. Student is now fully enrolled.",
+          readyForEnrollment: true,
+        };
+      }
+
+      // Prevent the Registrar from modifying Accounting status
+      if (status === "accepted" || status === "rejected") {
+        enrollmentProcess.registrar_status = status;
+        enrollmentProcess.registrar_status_date = currentDate;
+      } else {
+        throw new Error(
+          "Invalid status for Registrar. Only 'accepted', 'rejected', or 'final_approved' are allowed."
+        );
+      }
 
       // If Registrar rejects, stop the process
       if (status === "rejected") {
@@ -952,62 +1304,44 @@ async function updateEnrollmentProcess(params) {
         };
       }
 
-      // If Registrar accepts, Dean status moves to "in-progress"
-      if (status === "accepted") {
-        enrollmentProcess.dean_status = "in-progress";
-      }
-      break;
-
-    case Role.Dean:
-      // Ensure the Registrar has accepted before the Dean can proceed
-      if (enrollmentProcess.registrar_status !== "accepted") {
-        throw new Error(
-          "Registrar must accept the application before the Dean can proceed."
-        );
-      }
-
-      enrollmentProcess.dean_status = status;
-      enrollmentProcess.dean_status_date = currentDate;
-
-      // If Dean rejects, stop the process
-      if (status === "rejected") {
-        await enrollmentProcess.save();
-        return {
-          message:
-            "Dean has rejected the application. Enrollment process cannot continue.",
-          readyForEnrollment: false,
-        };
-      }
-
-      // If Dean accepts, Accounting status moves to "in-progress"
+      // If Registrar accepts, Accounting status moves to "in-progress"
       if (status === "accepted") {
         enrollmentProcess.accounting_status = "in-progress";
       }
       break;
 
     case Role.Accounting:
-      // Ensure both Registrar and Dean have accepted before Accounting can proceed
-      if (
-        enrollmentProcess.registrar_status !== "accepted" ||
-        enrollmentProcess.dean_status !== "accepted"
-      ) {
+      // Ensure Registrar has accepted before Accounting can proceed
+      if (enrollmentProcess.registrar_status !== "accepted") {
         throw new Error(
-          "Both Registrar and Dean must accept the application before Accounting can proceed."
+          "Registrar must accept the application before Accounting can proceed."
         );
       }
 
-      enrollmentProcess.accounting_status = status;
-      enrollmentProcess.accounting_status_date = currentDate;
-      enrollmentProcess.payment_confirmed = payment_confirmed || false;
+      // Ensure payment confirmation is valid only for Accounting
+      if (payment_confirmed && status !== "accepted") {
+        throw new Error(
+          "Payment can only be confirmed when status is 'accepted' by Accounting."
+        );
+      }
 
-      // If Accounting rejects, stop the process
-      if (status === "rejected") {
+      // Update the accounting status and payment confirmation
+      if (status === "accepted") {
+        enrollmentProcess.accounting_status = status;
+        enrollmentProcess.accounting_status_date = currentDate;
+        enrollmentProcess.payment_confirmed = payment_confirmed || false;
+      } else if (status === "rejected") {
+        enrollmentProcess.accounting_status = status;
         await enrollmentProcess.save();
         return {
           message:
             "Accounting has rejected the application. Enrollment process cannot continue.",
           readyForEnrollment: false,
         };
+      } else {
+        throw new Error(
+          "Invalid status for Accounting. Only 'accepted' or 'rejected' are allowed."
+        );
       }
       break;
 
@@ -1020,16 +1354,16 @@ async function updateEnrollmentProcess(params) {
   // Step 2: Save the updated enrollment process
   await enrollmentProcess.save();
 
-  // Step 3: Check if all approvals are accepted and ready for enrollment
+  // Step 3: Check if all approvals are accepted and ready for final approval
   if (
     enrollmentProcess.registrar_status === "accepted" &&
-    enrollmentProcess.dean_status === "accepted" &&
     enrollmentProcess.accounting_status === "accepted" &&
     enrollmentProcess.payment_confirmed
   ) {
     return {
-      message: "All approvals accepted. Student is ready for enrollment.",
-      readyForEnrollment: true,
+      message:
+        "Registrar and Accounting have accepted. Awaiting final approval from Registrar.",
+      readyForFinalApproval: true,
     };
   }
 
@@ -1145,4 +1479,50 @@ async function getEnrollmentStatusById(enrollment_id) {
           : "Campus not found",
     },
   };
+}
+
+async function getApplicantInfo(applicant_id) {
+  try {
+    // Fetch applicant information with all related details
+    const applicant = await db.Applicant.findOne({
+      where: {applicant_id: applicant_id},
+      include: [
+        {model: db.StudentPersonalData, as: "personalData"},
+        {model: db.StudentAddPersonalData, as: "addPersonalData"},
+        {model: db.StudentFamily, as: "familyDetails"},
+        {model: db.StudentAcademicBackground, as: "academicBackground"},
+        {model: db.StudentAcademicHistory, as: "academicHistory"},
+      ],
+    });
+
+    console.log(applicant.toJSON());
+
+    if (!applicant) {
+      throw new Error("Applicant not found");
+    }
+
+    // Structure the response as one object with nested objects
+    return {
+      applicant: {
+        applicant_id: applicant.applicant_id,
+        firstName: applicant.firstName,
+        middleName: applicant.middleName,
+        lastName: applicant.lastName,
+        gender: applicant.gender,
+        birthDate: applicant.birthDate,
+        email: applicant.email,
+        contactNumber: applicant.contactNumber,
+        address: applicant.address,
+        campus_id: applicant.campus_id,
+        program_id: applicant.program_id,
+      },
+      personalData: applicant.personalData || {},
+      addPersonalData: applicant.addPersonalData || {},
+      familyDetails: applicant.familyDetails || {},
+      academicBackground: applicant.academicBackground || {},
+      academicHistory: applicant.academicHistory || {},
+    };
+  } catch (error) {
+    throw new Error(`Error fetching applicant info: ${error.message}`);
+  }
 }

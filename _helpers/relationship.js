@@ -1,3 +1,13 @@
+/**
+ * Defines the relationships between the tables in the database.
+ * 
+ * This function is called by the db.js file to setup the relationships
+ * between the tables in the database. It should be called after all the
+ * tables have been created.
+ * 
+ * @param {Object} db - The Sequelize instance to use to define the relationships
+ * @return {undefined}
+ */
 function defineRelationships(db) {
   // define relationships
 
@@ -12,14 +22,6 @@ function defineRelationships(db) {
   // ! Room -> Schedule
   // db.RoomInfo.hasMany(db.Schedule, {foreignKey: "room_id"});
   // db.Schedule.belongsTo(db.RoomInfo, {foreignKey: "room_id"});
-
-  // ! Program -> Program Course
-  db.Program.hasMany(db.ProgramCourse, {foreignKey: "program_id"});
-  db.ProgramCourse.belongsTo(db.Program, {foreignKey: "program_id"});
-
-  // ! Course -> Program Course
-  db.CourseInfo.hasMany(db.ProgramCourse, {foreignKey: "course_id"});
-  db.ProgramCourse.belongsTo(db.CourseInfo, {foreignKey: "course_id"});
 
   // ! Semester -> Schedule
   // db.Semester.hasMany(db.Schedule, {foreignKey: "semester_id"});
@@ -104,8 +106,14 @@ function defineRelationships(db) {
   db.ProspectusSubject.belongsTo(db.Prospectus, {foreignKey: "prospectus_id"});
 
   // ! Course Info -> Prospectus Subject
-  db.CourseInfo.hasMany(db.ProspectusSubject, { foreignKey: "course_id", as: "ProspectusSubjects" });
-  db.ProspectusSubject.belongsTo(db.CourseInfo, { foreignKey: "course_id", as: "CourseInfo" });
+  db.CourseInfo.hasMany(db.ProspectusSubject, {
+    foreignKey: "course_id",
+    as: "ProspectusSubjects",
+  });
+  db.ProspectusSubject.belongsTo(db.CourseInfo, {
+    foreignKey: "course_id",
+    as: "CourseInfo",
+  });
 
   // ! Prospectus Subject -> Pre Requisite
   db.ProspectusSubject.hasMany(db.PreRequisite, {
@@ -122,6 +130,65 @@ function defineRelationships(db) {
   // ! Campus -> StudentOfficalBasic
   db.Campus.hasMany(db.StudentOfficial, {foreignKey: "campus_id"});
   db.StudentOfficial.belongsTo(db.Campus, {foreignKey: "campus_id"});
+
+
+  
+  // ! Applicant -> Enrollment Process
+  db.Applicant.hasMany(db.EnrollmentProcess, {foreignKey: "applicant_id"});
+  db.EnrollmentProcess.belongsTo(db.Applicant, {foreignKey: "applicant_id"});
+
+  // ! Applicant -> Program
+  db.Program.hasMany(db.Applicant, {foreignKey: "program_id"});
+  db.Applicant.belongsTo(db.Program, {foreignKey: "program_id"});
+
+  // ! Applicant -> Campus
+  db.Campus.hasMany(db.Applicant, {foreignKey: "campus_id"});
+  db.Applicant.belongsTo(db.Campus, {foreignKey: "campus_id"});
+
+  // Relationships for the new tables:
+
+  // ! Applicant -> StudentPersonalData (1-to-1)
+  db.Applicant.hasOne(db.StudentPersonalData, {
+    foreignKey: "applicant_id",
+    as: "personalData",
+  });
+  db.StudentPersonalData.belongsTo(db.Applicant, {foreignKey: "applicant_id"});
+
+  // ! Applicant -> StudentAddPersonalData (1-to-1)
+  db.Applicant.hasOne(db.StudentAddPersonalData, {
+    foreignKey: "applicant_id",
+    as: "addPersonalData",
+  });
+  db.StudentAddPersonalData.belongsTo(db.Applicant, {
+    foreignKey: "applicant_id",
+  });
+
+  // ! Applicant -> StudentFamily (1-to-1)
+  db.Applicant.hasOne(db.StudentFamily, {
+    foreignKey: "applicant_id",
+    as: "familyDetails",
+  });
+  db.StudentFamily.belongsTo(db.Applicant, {foreignKey: "applicant_id"});
+
+  // ! Applicant -> StudentAcademicBackground (1-to-1)
+  db.Applicant.hasOne(db.StudentAcademicBackground, {
+    foreignKey: "applicant_id",
+    as: "academicBackground",
+  });
+  db.StudentAcademicBackground.belongsTo(db.Applicant, {
+    foreignKey: "applicant_id",
+  });
+
+  // ! Applicant -> StudentAcademicHistory (1-to-1)
+  db.Applicant.hasOne(db.StudentAcademicHistory, {
+    foreignKey: "applicant_id",
+    as: "academicHistory",
+  });
+  db.StudentAcademicHistory.belongsTo(db.Applicant, {
+    foreignKey: "applicant_id",
+  });
+
+  // Continue with other existing relationships (omitted for brevity)
 }
 
 module.exports = defineRelationships;

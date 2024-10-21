@@ -7,6 +7,11 @@ const Role = require("_helpers/role");
 const enrollmentService = require("./enrollment.service");
 
 router.post(
+  "/submit-application",
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]), submitApplicationSchema,
+  submitApplication
+);
+router.post(
   "/enroll-student",
   authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   enrollStudent
@@ -28,6 +33,7 @@ router.get("/get-all-applicant-count", authorize([Role.SuperAdmin, Role.Admin, R
 
 router.get("/get-enrollment-status/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]), getEnrollmentStatusById);
 router.get("/get-all-enrollment-status", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]), getAllEnrollmentStatus);
+router.get("/get-applicant-info-by-id/:id", getApplicantInfoById);
 
 router.get(
   "/:id",
@@ -47,6 +53,25 @@ router.put(
 );
 
 module.exports = router;
+
+function submitApplication(req, res, next) {
+  enrollmentService
+  .submitApplication(req.body, req.user.id)
+  .then(() =>
+    res.json({
+      message: "Application submitted successfully and enrollment process started",
+    })
+  )
+  .catch((error) => {
+    console.error("Error response:", error.message);
+
+    // Send detailed error message to the client
+    res.status(500).json({
+      message: "Application submitted failed.",
+      reason: error.message, // Detailed reason for the failure
+    });
+  });
+}
 
 function enrollStudent(req, res, next) {
   enrollmentService
@@ -160,13 +185,14 @@ function getStudentById(req, res, next) {
 function updateEnrollmentProcess(req, res, next) {
   enrollmentService
     .updateEnrollmentProcess(req.body)
-    .then(() =>
+    .then((response) =>
       res.json({
-        message: "Enrollment process updated.",
+        message: response.message,  // Use the message returned from the service
       })
     )
     .catch(next);
 }
+
 
 function getAllEnrollmentStatus(req, res, next) {
   const {campus_id} = req.query;
@@ -177,6 +203,14 @@ function getAllEnrollmentStatus(req, res, next) {
     .catch(next);
 }
 
+function getApplicantInfoById(req, res, next) {
+  enrollmentService
+    .getApplicantInfo(req.params.id)
+    .then((applicant) => (applicant ? res.json(applicant) : res.sendStatus(404)))
+    .catch(next);
+}
+
+
 function getEnrollmentStatusById(req, res, next) {
   enrollmentService
     .getEnrollmentStatusById(req.params.id)
@@ -185,24 +219,100 @@ function getEnrollmentStatusById(req, res, next) {
 }
 
 // ! Schemas
-function enrollStudentSchema(req, res, next) {
+function submitApplicationSchema(req, res, next) {
   const schema = Joi.object({
-    firstName: Joi.string().required(),
-    middleName: [Joi.string().optional(), Joi.allow(null)],
-    lastName: Joi.string().required(),
+    applicant: Joi.object({
+      enrollmentType: Joi.string().valid('online', 'on-site').required(),
+      applicant_id_for_online: Joi.number().optional().allow(null),  // Nullable field
+      campus_id: Joi.number().integer().required(),
+      program_id: Joi.number().integer().required(),
+      firstName: Joi.string().required(),
+      middleName: [Joi.string().optional(), Joi.allow(null)],  // Allow null based on the model
+      lastName: Joi.string().required(),
+      suffix: Joi.string().optional().allow(null),  // Allow null based on the model
+      gender: Joi.string().required(),
+      email: Joi.string().email().required(),
+      contactNumber: Joi.string().required(),
+      birthDate: Joi.date().required(),
+      address: Joi.string().required(),  // Added from model
+      yearLevel: Joi.string().valid('First Year', 'Second Year', 'Third Year', 'Fourth Year', 'Fifth Year').required(),
+      isTransferee: Joi.boolean().required(),  // Added from model
+    }).required(),
 
-    email: Joi.string().email().required(),
-    contactNumber: Joi.string().required(),
+    personalData: Joi.object({
+      civilStatus: Joi.string().required(),
+      birthPlace: Joi.string().required(),
+      religion: Joi.string().required(),
+      citizenship: Joi.string().required(),
+      country: Joi.string().required(),
+      ACR: Joi.string().optional().allow(null),  // Nullable field
+    }).required(),
 
-    gender: Joi.string().required(),
-    civilStatus: Joi.string().required(),
-    birthDate: Joi.date().required(),
-    birthPlace: Joi.string().required(),
-    religion: Joi.string().required(),
-    citizenship: Joi.string().required(),
-    country: Joi.string().required(),
-    ACR: [Joi.string().optional(), Joi.allow(null)],
+    addPersonalData: Joi.object({
+      cityAddress: Joi.string().optional().allow(null),  // Nullable field
+      cityTelNumber: Joi.string().optional().allow(null),  // Nullable field
+      provinceAddress: Joi.string().optional().allow(null),  // Nullable field
+      provinceTelNumber: Joi.string().optional().allow(null),  // Nullable field
+    }).optional(),
+
+    familyDetails: Joi.object({
+      fatherFirstName: Joi.string().optional().allow(null),  // Nullable field
+      fatherMiddleName: Joi.string().optional().allow(null),  // Nullable field
+      fatherLastName: Joi.string().optional().allow(null),  // Nullable field
+      fatherAddress: Joi.string().optional().allow(null),  // Nullable field
+      fatherOccupation: Joi.string().optional().allow(null),  // Nullable field
+      fatherContactNumber: Joi.string().optional().allow(null),  // Nullable field
+      fatherCompanyName: Joi.string().optional().allow(null),  // Nullable field
+      fatherCompanyAddress: Joi.string().optional().allow(null),  // Nullable field
+      fatherEmail: Joi.string().optional().allow(null),  // Nullable field
+      fatherIncome: Joi.string().optional().allow(null),  // Nullable field
+
+      motherFirstName: Joi.string().optional().allow(null),  // Nullable field
+      motherMiddleName: Joi.string().optional().allow(null),  // Nullable field
+      motherLastName: Joi.string().optional().allow(null),  // Nullable field
+      motherAddress: Joi.string().optional().allow(null),  // Nullable field
+      motherOccupation: Joi.string().optional().allow(null),  // Nullable field
+      motherContactNumber: Joi.string().optional().allow(null),  // Nullable field
+      motherCompanyName: Joi.string().optional().allow(null),  // Nullable field
+      motherCompanyAddress: Joi.string().optional().allow(null),  // Nullable field
+      motherEmail: Joi.string().optional().allow(null),  // Nullable field
+      motherIncome: Joi.string().optional().allow(null),  // Nullable field
+
+      guardianFirstName: Joi.string().optional().allow(null),  // Nullable field
+      guardianMiddleName: Joi.string().optional().allow(null),  // Nullable field
+      guardianLastName: Joi.string().optional().allow(null),  // Nullable field
+      guardianRelation: Joi.string().optional().allow(null),  // Nullable field
+      guardianContactNumber: Joi.string().optional().allow(null),  // Nullable field
+    }).optional(),
+
+    academicBackground: Joi.object({
+      // program_id: Joi.number().integer().required(),
+      majorIn: Joi.string().optional().allow(null),  // Nullable field
+      studentType: Joi.string().valid('Regular', 'Irregular').required(),  // Based on model
+      applicationType: Joi.string().valid('Freshmen', 'Transferee', 'Cross Enrollee').required(),  // Based on model
+      semester_id: Joi.number().integer().required(),
+      yearEntry: Joi.number().integer().required(),
+      yearGraduate: Joi.number().integer().optional().allow(null),  // Nullable field
+    }).required(),
+
+    academicHistory: Joi.object({
+      elementarySchool: Joi.string().optional().allow(null),  // Nullable field
+      elementaryAddress: Joi.string().optional().allow(null),  // Nullable field
+      elementaryHonors: Joi.string().optional().allow(null),  // Nullable field
+      elementaryGraduate: Joi.date().optional().allow(null),  // Nullable field
+
+      secondarySchool: Joi.string().optional().allow(null),  // Nullable field
+      secondaryAddress: Joi.string().optional().allow(null),  // Nullable field
+      secondaryHonors: Joi.string().optional().allow(null),  // Nullable field
+      secondaryGraduate: Joi.date().optional().allow(null),  // Nullable field
+
+      seniorHighSchool: Joi.string().optional().allow(null),  // Nullable field
+      seniorHighAddress: Joi.string().optional().allow(null),  // Nullable field
+      seniorHighHonors: Joi.string().optional().allow(null),  // Nullable field
+      seniorHighSchoolGraduate: Joi.date().optional().allow(null),  // Nullable field
+    }).optional(),
   });
+
   validateRequest(req, next, schema);
 }
 
@@ -237,7 +347,7 @@ function enrollmentProcessSchema(req, res, next) {
     allRoles: Joi.string().required(),
     specificRole: Joi.string().required(),
     status: Joi.string()
-      .valid("accepted", "in-progress", "upcoming", "rejected")
+      .valid("accepted", "in-progress", "upcoming", "rejected", "final_approved")
       .required(),
     payment_confirmed: Joi.boolean().empty(""),
   });

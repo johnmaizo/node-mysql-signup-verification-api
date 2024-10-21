@@ -33,5 +33,5 @@ function model(sequelize) {
         }        
     };
 
-    return sequelize.define('studentsubject', attributes, options);
+    return sequelize.define('student_subject', attributes, options);
 }

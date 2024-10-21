@@ -49,5 +49,5 @@ function model(sequelize) {
         timestamps: true,
     };
 
-    return sequelize.define('student', attributes, options);
+    return sequelize.define('student_personal_data', attributes, options);
 }
