@@ -4,13 +4,16 @@ module.exports = model;
 
 function model(sequelize) {
     const attributes = {
-        student_id: { 
-            type: DataTypes.STRING,
+        applicant_id: {
+            type: DataTypes.INTEGER,
             references: {
-                model: 'students',
-                key: 'student_id'
-            }
-        },
+              model: "applicants",
+              key: "applicant_id",
+            },
+            allowNull: false,
+            onDelete: "CASCADE",
+          },
+
         program_id: { 
             type: DataTypes.INTEGER,
             references: {
@@ -18,15 +21,8 @@ function model(sequelize) {
                 key: 'program_id'  // refers to the column name in the programs table
             }
         },
-        department_id: { 
-            type: DataTypes.INTEGER,
-            references: {
-                model: 'departments', // refers to the table name
-                key: 'department_id'  // refers to the column name in the departments table
-            }
-        },
 
-        yearLevel: { type: DataTypes.INTEGER(4), allowNull: false },
+        yearLevel: { type: DataTypes.INTEGER(4), allowNull: false }, // 
 
         semester_id: {
             type: DataTypes.INTEGER,
@@ -37,7 +33,6 @@ function model(sequelize) {
             allowNull: false
         },
         
-        // semester: { type: DataTypes.STRING(10), allowNull: false },
         isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
         isDeleted: { type: DataTypes.BOOLEAN, defaultValue: false }        
     };

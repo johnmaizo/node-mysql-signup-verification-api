@@ -4,25 +4,28 @@ module.exports = model;
 
 function model(sequelize) {
     const attributes = {
-        student_id: { 
-            type: DataTypes.STRING,
+        applicant_id: {
+            type: DataTypes.INTEGER,
             references: {
-                model: 'students', 
-                key: 'student_id'
-            }
-        } ,
-        elementarySchool: { type: DataTypes.STRING(50), allowNull: false },
-        elementaryAddress: { type: DataTypes.STRING(95), allowNull: false },
+              model: "applicants",
+              key: "applicant_id",
+            },
+            allowNull: false,
+            onDelete: "CASCADE",
+          },
+          
+        elementarySchool: { type: DataTypes.STRING(50), allowNull: true },
+        elementaryAddress: { type: DataTypes.STRING(95), allowNull: true },
         elementaryHonors: { type: DataTypes.STRING(30), allowNull: true },
-        elementaryGraduate: { type: DataTypes.DATE, allowNull: false }, 
-        secondarySchool: { type: DataTypes.STRING(50), allowNull: false },
-        secondaryAddress: { type: DataTypes.STRING(95), allowNull: false },
+        elementaryGraduate: { type: DataTypes.DATE, allowNull: true }, 
+        secondarySchool: { type: DataTypes.STRING(50), allowNull: true },
+        secondaryAddress: { type: DataTypes.STRING(95), allowNull: true },
         secondaryHonors: { type: DataTypes.STRING(30), allowNull: true },
-        secondaryGraduate: { type: DataTypes.DATE, allowNull: false },
-        seniorHighSchool: { type: DataTypes.STRING(50), allowNull: false },
-        seniorHighAddress: { type: DataTypes.STRING(95), allowNull: false },
+        secondaryGraduate: { type: DataTypes.DATE, allowNull: true },
+        seniorHighSchool: { type: DataTypes.STRING(50), allowNull: true },
+        seniorHighAddress: { type: DataTypes.STRING(95), allowNull: true },
         seniorHighHonors: { type: DataTypes.STRING(30), allowNull: true },
-        seniorHighSchoolGraduate: { type: DataTypes.DATE, allowNull: false },
+        seniorHighSchoolGraduate: { type: DataTypes.DATE, allowNull: true },
         isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
             
         isDeleted: { type: DataTypes.BOOLEAN, defaultValue: false }    

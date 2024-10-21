@@ -13,9 +13,9 @@ function model(sequelize) {
     enrollmentType: {
       type: DataTypes.STRING(20),
       allowNull: false,
-    }, // 'online', 'regular'
+    }, // 'online', 'on-site'
 
-    applicant_id_external: {type: DataTypes.INTEGER, allowNull: true}, // use for external system like Online Registration
+    applicant_id_for_online: {type: DataTypes.INTEGER, allowNull: true}, // use for external system like Online Registration
 
     campus_id: {
       type: DataTypes.INTEGER,

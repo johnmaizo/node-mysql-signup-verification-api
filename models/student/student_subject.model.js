@@ -4,21 +4,21 @@ module.exports = model;
 
 function model(sequelize) {
     const attributes = {
-        student_id: { 
-            type: DataTypes.STRING,
-            references: {
-                model: 'students',
-                key: 'student_id'
-            }
-        },
-
-        programCourse_id: { 
+        student_id: {
             type: DataTypes.INTEGER,
             references: {
-                model: 'programcourses',
-                key: 'programCourse_id'
-            }
-        },
+              model: "student_official",
+              key: "id",
+            },
+          },
+
+        prospectus_subject_id: {
+            type: DataTypes.INTEGER,
+            references: {
+              model: "prospectus_subjects",
+              key: "prospectus_subject_id",
+            },
+          },
 
         isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
             

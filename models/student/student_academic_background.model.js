@@ -24,6 +24,8 @@ function model(sequelize) {
       },
     },
 
+    majorIn: {type: DataTypes.STRING, allowNull: true}, // Major In
+
     studentType: {type: DataTypes.STRING, allowNull: false}, // Regular, Irregular
     applicationType: {type: DataTypes.STRING(15), allowNull: false},
     // Application type have three choices either Freshmen, Transferee, and Cross Enrollee

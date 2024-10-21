@@ -86,20 +86,6 @@ async function initialize() {
     sequelize
   );
 
-  // ! Student
-  // db.Student = require("../models/student.model")(sequelize);
-  // db.StudentContact = require("../models/student_contact.model")(sequelize);
-  // db.StudentFamily = require("../models/student_family.model")(sequelize);
-  // db.StudentCurrentAcademic =
-  //   require("../models/student_current_academic_background.model")(sequelize);
-  // db.AcademicHistory = require("../models/student_academic_history.model")(
-  //   sequelize
-  // );
-  // db.StudentSchoolDetail = require("../models/student_school_detail.model")(
-  //   sequelize
-  // );
-  // db.StudentSubject = require("../models/student_subject.model")(sequelize);
-
   // ! Employee
   db.Employee = require("../models/employee.model")(sequelize);
 
@@ -112,9 +98,14 @@ async function initialize() {
   db.Applicant = require("../models/student/applicant.model")(sequelize);
 
   // ! Simple Official Student Basic
-  db.StudentOfficalBasic = require("../models/student_official_basic.model")(
-    sequelize
-  );
+  db.StudentOfficial = require("../models/student/students_official.model")(sequelize);
+
+  // ! Student
+  db.StudentAddPersonalData = require("../models/student/student_add_personal_data.model")(sequelize)
+  db.StudentFamily = require("../models/student/student_family.model")(sequelize)
+  db.StudentAcademicBackground = require("../models/student/student_academic_background.model")(sequelize)
+  db.StudentAcademicHistory = require("../models/student/student_academic_history.model")(sequelize)
+  db.StudentSubjects = require("../models/student/student_subject.model")(sequelize)
 
   // ! Class
   db.Class = require("../models/class.model")(sequelize);
@@ -138,13 +129,13 @@ async function initialize() {
 
   // Check if the unique constraint already exists before adding it
   const [result] = await connection.query(`
-    SHOW INDEX FROM studentofficalbasic WHERE Key_name = 'unique_student_per_campus';
+    SHOW INDEX FROM student_official WHERE Key_name = 'unique_student_per_campus';
   `);
 
   if (result.length === 0) {
     // If the unique index does not exist, add it
     await connection.query(`
-        ALTER TABLE studentofficalbasic 
+        ALTER TABLE student_official 
         ADD CONSTRAINT unique_student_per_campus UNIQUE (student_id, campus_id);
       `);
   }

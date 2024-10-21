@@ -4,13 +4,15 @@ module.exports = model;
 
 function model(sequelize) {
     const attributes = {
-        student_id: { 
-            type: DataTypes.STRING,
+        applicant_id: {
+            type: DataTypes.INTEGER,
             references: {
-                model: 'students',
-                key: 'student_id'
-            }
-        },
+              model: "applicants",
+              key: "applicant_id",
+            },
+            allowNull: false,
+            onDelete: "CASCADE",
+          },
 
         // Father
         fatherFirstName: { type: DataTypes.STRING(35), allowNull: true },
