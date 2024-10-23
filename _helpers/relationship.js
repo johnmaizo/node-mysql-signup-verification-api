@@ -1,10 +1,10 @@
 /**
  * Defines the relationships between the tables in the database.
- * 
+ *
  * This function is called by the db.js file to setup the relationships
  * between the tables in the database. It should be called after all the
  * tables have been created.
- * 
+ *
  * @param {Object} db - The Sequelize instance to use to define the relationships
  * @return {undefined}
  */
@@ -131,8 +131,6 @@ function defineRelationships(db) {
   db.Campus.hasMany(db.StudentOfficial, {foreignKey: "campus_id"});
   db.StudentOfficial.belongsTo(db.Campus, {foreignKey: "campus_id"});
 
-
-  
   // ! Applicant -> Enrollment Process
   db.Applicant.hasMany(db.EnrollmentProcess, {foreignKey: "applicant_id"});
   db.EnrollmentProcess.belongsTo(db.Applicant, {foreignKey: "applicant_id"});
@@ -187,6 +185,10 @@ function defineRelationships(db) {
   db.StudentAcademicHistory.belongsTo(db.Applicant, {
     foreignKey: "applicant_id",
   });
+
+  // ! Applicant -> StudentOfficial (1-to-1)
+  db.Applicant.hasOne(db.StudentOfficial, {foreignKey: "applicant_id"});
+  db.StudentOfficial.belongsTo(db.Applicant, {foreignKey: "applicant_id"});
 
   // Continue with other existing relationships (omitted for brevity)
 }

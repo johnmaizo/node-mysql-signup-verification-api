@@ -272,200 +272,256 @@ async function enrollStudent(params) {
 }
 
 async function enrollStudentMockUpOnsite(applicant_id) {
-  const applicant = await db.Applicant.findOne({
-    where: {applicant_id: applicant_id},
-    include: [
-      {model: db.StudentPersonalData, as: "personalData"},
-      {model: db.StudentAddPersonalData, as: "addPersonalData"},
-      {model: db.StudentFamily, as: "familyDetails"},
-      {model: db.StudentAcademicBackground, as: "academicBackground"},
-      {model: db.StudentAcademicHistory, as: "academicHistory"},
-    ],
-  });
+  try {
+    const applicant = await db.Applicant.findOne({
+      where: {applicant_id: applicant_id},
+      include: [
+        {model: db.StudentPersonalData, as: "personalData"},
+        {model: db.StudentAddPersonalData, as: "addPersonalData"},
+        {model: db.StudentFamily, as: "familyDetails"},
+        {model: db.StudentAcademicBackground, as: "academicBackground"},
+        {model: db.StudentAcademicHistory, as: "academicHistory"},
+      ],
+    });
 
-  if (!applicant) {
-    throw new Error("Applicant not found");
-  }
-
-  const onlineApplicantSubmission = await axios.post(
-    `${url}/api/stdntbasicinfo/`,
-    {
-      first_name: applicant.firstName,
-      middle_name: applicant.middleName,
-      last_name: applicant.lastName,
-      is_transferee: applicant.isTransferee,
-      contact_number: applicant.contactNumber,
-      year_level: applicant.yearLevel,
-      address: applicant.address,
-      campus: applicant.campus_id,
-      program: applicant.program_id,
-      birth_date: applicant.birthDate,
-      sex: applicant.gender,
-      email: applicant.email,
-    },
-    {
-      headers: {
-        "Content-Type": "application/json",
-      },
+    if (!applicant) {
+      throw new Error("Applicant not found");
     }
-  );
 
-  if (!onlineApplicantSubmission.data) {
-    throw new Error("Bad Request");
-  }
+    console.log("Applicant Data:", applicant.toJSON());
 
-  console.log(
-    "Post response (onlineApplicantSubmission):",
-    onlineApplicantSubmission.data
-  );
-
-  const onlineFullStudentInfoPOST = await axios.post(
-    `${url}/api/full-student-data/`,
-    {
-      personal_data: {
-        basicdata_applicant_id:
-          onlineApplicantSubmission.basicdata_applicant_id,
-        f_name: applicant.firstName,
-        m_name: applicant.middleName,
-        suffix: applicant.suffix,
-        l_name: applicant.lastName,
-        sex: applicant.gender,
-        birth_date: applicant.birthDate,
-        birth_place: applicant.personalData.birthPlace,
-        marital_status: applicant.personalData.civilStatus,
-        religion: applicant.personalData.religion,
-        country: applicant.personalData.country,
-        email: applicant.personalData.email,
-        acr: applicant.personalData.ACR,
-        status: "officially enrolled",
-      },
-      add_personal_data: {
-        city_address: applicant.addPersonalData.cityAddress,
-        province_address: applicant.addPersonalData.provinceAddress,
-        contact_number: applicant.contactNumber,
-        city_contact_number: applicant.addPersonalData.cityTelNumber,
-        province_contact_number: applicant.addPersonalData.provinceTelNumber,
-        citizenship: applicant.personalData.applicant.personalData,
-      },
-      family_background: {
-        father_fname: applicant.familyDetails.fatherFirstName,
-        father_mname: applicant.familyDetails.fatherMiddleName,
-        father_lname: applicant.familyDetails.fatherLastName,
-        father_contact_number: applicant.familyDetails.fatherContactNumber,
-        father_email: applicant.familyDetails.fatherEmail,
-        father_occupation: applicant.familyDetails.fatherOccupation,
-        father_income: applicant.familyDetails.fatherIncome,
-        father_company: applicant.familyDetails.fatherCompanyName,
-
-        mother_fname: applicant.familyDetails.motherFirstName,
-        mother_mname: applicant.familyDetails.motherMiddleName,
-        mother_lname: applicant.familyDetails.motherLastName,
-        mother_contact_number: applicant.familyDetails.motherContactNumber,
-        mother_email: applicant.familyDetails.motherEmail,
-        mother_occupation: applicant.familyDetails.motherOccupation,
-        mother_income: applicant.familyDetails.motherIncome,
-        mother_company: applicant.familyDetails.motherCompanyName,
-        guardian_fname: applicant.familyDetails.guardianFirstName,
-        guardian_mname: applicant.familyDetails.guardianMiddleName,
-        guardian_lname: applicant.familyDetails.guardianLastName,
-        guardian_relation: applicant.familyDetails.guardianRelation,
-        guardian_contact_number: applicant.familyDetails.guardianContactNumber,
-        guardian_email:
-          `${applicant.familyDetails.guardianFirstName}${applicant.familyDetails.guardianLastName}@example.com`
-            .toLowerCase()
-            .trim(),
-      },
-      academic_background: {
+    const onlineApplicantSubmission = await axios.post(
+      `${url}/api/stdntbasicinfo/`,
+      {
+        first_name: applicant.firstName || "",
+        middle_name: applicant.middleName || "",
+        last_name: applicant.lastName || "",
+        is_transferee: applicant.isTransferee || false,
+        contact_number: applicant.contactNumber || "",
+        year_level:
+          applicant.yearLevel.length > 8 ? "4th Year" : applicant.yearLevel,
+        address: applicant.address || "",
+        campus: applicant.campus_id,
         program: applicant.program_id,
-        major_in: applicant.academicBackground.majorIn,
-        student_type: applicant.academicBackground.studentType,
-        semester_entry: applicant.academicBackground.semester_id,
-        year_level: applicant.academicBackground.yearLevel,
-        year_entry: applicant.academicBackground.yearEntry,
-        year_graduate: applicant.academicBackground.yearGraduate,
-        application_type: applicant.academicBackground.applicationType,
+        birth_date: applicant.birthDate || "1900-01-01",
+        sex: applicant.gender || "Unknown",
+        email: applicant.email || "",
       },
-      academic_history: {
-        elementary_school: applicant.academicHistory.elementarySchool,
-        elementary_address: applicant.academicHistory.elementaryAddress,
-        elementary_honors: applicant.academicHistory.elementaryHonors,
-        elementary_graduate: applicant.academicHistory.elementaryGraduate,
-        junior_highschool: applicant.academicHistory.secondarySchool,
-        junior_address: applicant.academicHistory.secondaryAddress,
-        junior_honors: applicant.academicHistory.secondaryHonors,
-        junior_graduate: applicant.academicHistory.secondaryGraduate,
-        senior_highschool: applicant.academicHistory.seniorHighSchool,
-        senior_address: applicant.academicHistory.seniorHighAddress,
-        senior_honors: applicant.academicHistory.seniorHighHonors,
-        senior_graduate: applicant.academicHistory.seniorHighSchoolGraduate,
-        ncae_grade: "N/A",
-        ncae_year_taken: "N/A",
-        latest_college: "N/A",
-        college_address: "N/A",
-        college_honors: "N/A",
-        program: "N/A - Gwapo ko",
-      },
-    },
-    {
-      headers: {
-        "Content-Type": "application/json",
-      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log(
+      "Post response (onlineApplicantSubmission):",
+      onlineApplicantSubmission.data
+    );
+
+    const basicdata_applicant_id =
+      onlineApplicantSubmission.data.basicdata_applicant_id;
+    console.log("Extracted basicdata_applicant_id:", basicdata_applicant_id);
+
+    if (!basicdata_applicant_id) {
+      throw new Error(
+        "basicdata_applicant_id is missing from onlineApplicantSubmission response"
+      );
     }
-  );
 
-  if (!onlineFullStudentInfoPOST.data) {
-    throw new Error("Bad Request");
-  }
+    const onlineFullStudentInfoPOST = await axios.post(
+      `${url}/api/full-student-data/`,
+      {
+        personal_data: {
+          basicdata_applicant_id: basicdata_applicant_id,
+          f_name: applicant.firstName || "",
+          m_name: applicant.middleName || "",
+          suffix: applicant.suffix || "",
+          l_name: applicant.lastName || "",
+          sex: applicant.gender || "Unknown",
+          birth_date: applicant.birthDate || "1900-01-01",
+          birth_place: applicant.personalData?.birthPlace || "Unknown",
+          marital_status: applicant.personalData?.civilStatus || "Single",
+          religion: applicant.personalData?.religion || "Unknown",
+          country: applicant.personalData?.country || "Unknown",
+          email: applicant.personalData?.email || applicant.email || "",
+          acr: applicant.personalData?.ACR || null,
+          status: "officially enrolled",
+        },
+        add_personal_data: {
+          city_address: applicant.addPersonalData?.cityAddress || "Unknown",
+          province_address:
+            applicant.addPersonalData?.provinceAddress || "Unknown",
+          contact_number: applicant.contactNumber || "",
+          city_contact_number: applicant.addPersonalData?.cityTelNumber || null,
+          province_contact_number:
+            applicant.addPersonalData?.provinceTelNumber || null,
+          citizenship: applicant.personalData?.citizenship || "Unknown",
+        },
+        family_background: {
+          father_fname: applicant.familyDetails?.fatherFirstName || "",
+          father_mname: applicant.familyDetails?.fatherMiddleName || "",
+          father_lname: applicant.familyDetails?.fatherLastName || "",
+          father_contact_number:
+            applicant.familyDetails?.fatherContactNumber || "",
+          father_email: applicant.familyDetails?.fatherEmail || "",
+          father_occupation: applicant.familyDetails?.fatherOccupation || "",
+          father_income: applicant.familyDetails?.fatherIncome || 0,
+          father_company: applicant.familyDetails?.fatherCompanyName || "",
+          mother_fname: applicant.familyDetails?.motherFirstName || "",
+          mother_mname: applicant.familyDetails?.motherMiddleName || "",
+          mother_lname: applicant.familyDetails?.motherLastName || "",
+          mother_contact_number:
+            applicant.familyDetails?.motherContactNumber || "",
+          mother_email: applicant.familyDetails?.motherEmail || "",
+          mother_occupation: applicant.familyDetails?.motherOccupation || "",
+          mother_income: applicant.familyDetails?.motherIncome || "",
+          mother_company: applicant.familyDetails?.motherCompanyName || "",
+          guardian_fname: applicant.familyDetails?.guardianFirstName || "",
+          guardian_mname: applicant.familyDetails?.guardianMiddleName || "",
+          guardian_lname: applicant.familyDetails?.guardianLastName || "",
+          guardian_relation: applicant.familyDetails?.guardianRelation || "",
+          guardian_contact_number:
+            applicant.familyDetails?.guardianContactNumber || "",
+          guardian_email:
+            applicant.familyDetails?.guardianFirstName &&
+            applicant.familyDetails?.guardianLastName
+              ? `${applicant.familyDetails?.guardianFirstName}${applicant.familyDetails?.guardianLastName}@example.com`
+                  .toLowerCase()
+                  .trim()
+              : null,
+        },
+        academic_background: {
+          program: applicant.program_id,
+          major_in: applicant.academicBackground?.majorIn || null,
+          student_type: applicant.academicBackground?.studentType || "Regular",
+          // semester_entry: applicant.academicBackground?.semester_id || 0,
+          semester_entry: 2,
+          year_level:
+            applicant.academicBackground?.yearLevel.length > 8
+              ? "4th Year"
+              : applicant.academicBackground?.yearLevel,
+          year_entry: applicant.academicBackground?.yearEntry || 0,
+          year_graduate: applicant.academicBackground?.yearGraduate || 0,
+          application_type:
+            applicant.academicBackground?.applicationType || "Freshmen",
+        },
+        academic_history: {
+          elementary_school:
+            applicant.academicHistory?.elementarySchool || "Not Provided",
+          elementary_address:
+            applicant.academicHistory?.elementaryAddress || "Not Provided",
+          elementary_honors:
+            applicant.academicHistory?.elementaryHonors || "None",
+          elementary_graduate:
+            applicant.academicHistory?.elementaryGraduate || null,
+          junior_highschool:
+            applicant.academicHistory?.secondarySchool || "Not Provided",
+          junior_address:
+            applicant.academicHistory?.secondaryAddress || "Not Provided",
+          junior_honors: applicant.academicHistory?.secondaryHonors || "None",
+          junior_graduate: applicant.academicHistory?.secondaryGraduate || null,
+          senior_highschool:
+            applicant.academicHistory?.seniorHighSchool || "Not Provided",
+          senior_address:
+            applicant.academicHistory?.seniorHighAddress || "Not Provided",
+          senior_honors: applicant.academicHistory?.seniorHighHonors || "None",
+          senior_graduate:
+            applicant.academicHistory?.seniorHighSchoolGraduate || null,
+          ncae_grade: applicant.academicHistory?.ncae_grade || "N/A",
+          ncae_year_taken: applicant.academicHistory?.ncae_year_taken || null,
+          latest_college:
+            applicant.academicHistory?.latest_college || "Not Provided",
+          college_address:
+            applicant.academicHistory?.college_address || "Not Provided",
+          college_honors: applicant.academicHistory?.college_honors || "None",
+          program: applicant.academicHistory?.program || "N/A",
+        },
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
-  console.log(
-    "Post response (onlineFullStudentInfoPOST):",
-    onlineFullStudentInfoPOST.data
-  );
+    // Log the full response from onlineFullStudentInfoPOST for inspection
+    console.log(
+      "Post response (onlineFullStudentInfoPOST):",
+      onlineFullStudentInfoPOST.data
+    );
 
-  const campus = await db.Campus.findOne({
-    where: {campus_id: applicant.campus_id},
-  });
+    // Corrected path to fulldata_applicant_id
+    const fulldata_applicant_id =
+      onlineFullStudentInfoPOST?.data?.data?.personal_data
+        ?.fulldata_applicant_id;
 
-  // Check if campus exists
-  if (!campus) {
-    throw new Error("Campus not found");
-  }
+    if (!fulldata_applicant_id) {
+      console.log(
+        "Full response data for debugging:",
+        onlineFullStudentInfoPOST.data
+      );
+      throw new Error(
+        "fulldata_applicant_id is missing from onlineFullStudentInfoPOST response"
+      );
+    }
 
-  // Generate student ID
-  let student_id = await generateStudentId(campus.campusName);
+    console.log("Extracted fulldata_applicant_id:", fulldata_applicant_id);
 
-  // Save student details in the database
-  const studentOfficial = new db.StudentOfficial({
-    student_id: student_id,
-    campus_id: campus.campus_id,
-    applicant_id: applicant.applicant_id,
-  });
-  await studentOfficial.save();
+    // Generate student ID
+    const campus = await db.Campus.findOne({
+      where: {campus_id: applicant.campus_id},
+    });
 
-  // New POST request after generating the student ID
-  const onlineOfficialDataPost = await axios.post(
-    `${url}/api/official-student-data/`,
-    {
+    if (!campus) {
+      throw new Error("Campus not found");
+    }
+
+    let student_id = await generateStudentId(campus.campusName);
+
+    // Save student details in the database
+    const studentOfficial = new db.StudentOfficial({
       student_id: student_id,
-      campus: campus.campus_id,
-      password: `gwapoko123`,
-      fulldata_applicant_id: onlineApplicantSubmission.basicdata_applicant_id,
-    },
-    {
-      headers: {
-        "Content-Type": "application/json",
+      campus_id: campus.campus_id,
+      applicant_id: applicant.applicant_id,
+    });
+    await studentOfficial.save();
+
+    // New POST request after generating the student ID
+    const onlineOfficialDataPost = await axios.post(
+      `${url}/api/official-student-data/`,
+      {
+        student_id: student_id,
+        campus: campus.campus_id,
+        password: `gwapoko123`,
+        fulldata_applicant_id: fulldata_applicant_id, // Use the extracted fulldata_applicant_id
       },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!onlineOfficialDataPost.data) {
+      throw new Error("Bad Request");
     }
-  );
 
-  if (!onlineOfficialDataPost.data) {
-    throw new Error("Bad Request");
+    console.log(
+      "Post response (onlineOfficialDataPost):",
+      onlineOfficialDataPost.data
+    );
+  } catch (error) {
+    console.error(
+      "Error response:",
+      error.response ? error.response.data : error.message
+    );
+    throw new Error(
+      `Request failed: ${
+        error.response ? JSON.stringify(error.response.data) : error.message
+      }`
+    );
   }
-
-  console.log(
-    "Post response (onlineOfficialDataPost):",
-    onlineOfficialDataPost.data
-  );
 }
 
 // ! Log the creation action
@@ -920,84 +976,98 @@ async function getAllApplicantCount(campus_id = null) {
 async function getAllStudentsOfficial(campusName = null) {
   let campus;
 
-  // If campusName is provided, fetch the campus based on the campus name
   if (campusName) {
     campus = await db.Campus.findOne({
       where: {campusName},
     });
 
-    // Check if the campus exists
     if (!campus) {
       throw new Error("Campus not found");
     }
   }
 
-  // Retrieve students based on the provided campus or all students if campusName is null
   const students = await db.StudentOfficial.findAll({
     where: {
-      // Only filter by campus_id if a campus is found (i.e., campusName was provided)
       ...(campus ? {campus_id: campus.campus_id} : {}),
       student_id: {
-        [Op.like]: `${new Date().getFullYear()}%`, // Adjust this condition as per your filtering needs
+        [Op.like]: `${new Date().getFullYear()}%`,
       },
     },
     include: [
       {
+        model: db.Applicant,
+        include: [
+          {
+            model: db.Program,
+            include: [
+              {
+                model: db.Department,
+                attributes: ["department_id", "departmentName"],
+              },
+            ],
+            attributes: ["program_id", "department_id"],
+          },
+        ],
+        attributes: ["applicant_id", "program_id"],
+      },
+      {
         model: db.Campus,
-        attributes: ["campusName"], // Include only the campus name
+        attributes: ["campusName"],
       },
     ],
   });
 
-  // If no students are found, return an empty array
+  console.log(`Fetched ${students.length} students.`);
+
   if (!students || students.length === 0) {
     return [];
   }
 
-  // Retrieve departments based on the campus or all departments if no campus is specified
-  const departmentsOnCampus = await db.Department.findAll({
-    include: [
-      {
-        model: db.Campus,
-        where: campusName ? {campusName} : undefined, // Filter departments by campus if provided
-      },
-    ],
-  });
+  // Log the first student to inspect the structure
+  console.log("First student record:", JSON.stringify(students[0], null, 2));
 
-  if (!departmentsOnCampus || departmentsOnCampus.length === 0) {
-    throw new Error(
-      campusName
-        ? `No departments found for campus "${campusName}"`
-        : "No departments found"
-    );
-  }
+  const studentsWithDepartment = [];
 
-  // Map the department index in the student_id back to the real department_id
-  const studentsWithDepartment = students.map((student) => {
-    // Split the student ID to extract the department index
-    const studentIdParts = student.student_id.split("-");
-    const departmentIndex = parseInt(studentIdParts[1], 10) - 1; // Convert index to 0-based
-
-    // Ensure the department index is valid
-    if (departmentIndex < 0 || departmentIndex >= departmentsOnCampus.length) {
-      throw new Error(
-        `Invalid department index ${departmentIndex + 1} in student ID ${
-          student.student_id
-        }`
+  students.forEach((student) => {
+    const applicant = student.applicant; // Changed to lowercase
+    if (!applicant) {
+      console.warn(
+        `Warning: Applicant not found for student ID ${student.student_id}. Skipping this student.`
       );
+      return; // Skip this student
     }
 
-    // Find the real department based on the index
-    const department = departmentsOnCampus[departmentIndex];
+    const program = applicant.program; // Changed to lowercase
+    if (!program) {
+      console.warn(
+        `Warning: Program not found for applicant ID ${applicant.applicant_id}. Skipping student ID ${student.student_id}.`
+      );
+      return; // Skip this student
+    }
 
-    // Return the student object with the real department_id
-    return {
-      ...student.toJSON(), // Convert Sequelize object to plain object
+    const department = program.department; // Changed to lowercase
+    if (!department) {
+      console.warn(
+        `Warning: Department not found for program ID ${program.program_id}. Skipping student ID ${student.student_id}.`
+      );
+      return; // Skip this student
+    }
+
+    console.log(
+      `Mapping Student ID ${student.student_id} to Department ${department.departmentName}`
+    );
+
+    studentsWithDepartment.push({
+      ...student.toJSON(),
       department_id: department.department_id,
       departmentName: department.departmentName,
-      campusName: student ? student.campus.campusName : null,
-    };
+      campusName: student.campus ? student.campus.campusName : null, // Changed to lowercase
+    });
   });
+
+  console.log(
+    `Mapped ${studentsWithDepartment.length} students with departments.`
+  );
 
   return studentsWithDepartment;
 }
@@ -1067,28 +1137,29 @@ function generateColor(baseColor) {
 async function getChartData(campusName = null) {
   let campus;
 
-  // If campusName is provided, fetch the campus based on the campus name
   if (campusName) {
     campus = await db.Campus.findOne({
       where: {campusName},
     });
 
-    // Check if the campus exists
     if (!campus) {
       throw new Error(`Campus "${campusName}" not found`);
     }
   }
 
-  // Fetch all departments that belong to the specified campus or all campuses
   const departments = await db.Department.findAll({
+    where: campus ? {campus_id: campus.campus_id} : {},
     include: [
       {
         model: db.Campus,
-        where: campus ? {campusName} : undefined, // Filter departments by campus if provided
+        where: campus ? {campusName} : undefined,
         attributes: ["campusName"],
       },
     ],
+    attributes: ["department_id", "departmentCode", "departmentName"],
   });
+
+  console.log(`Fetched ${departments.length} departments.`);
 
   if (!departments || departments.length === 0) {
     return {
@@ -1106,8 +1177,9 @@ async function getChartData(campusName = null) {
     };
   }
 
-  // Fetch all students filtered by campus or all students if no campusName is provided
   const students = await getAllStudentsOfficial(campusName);
+
+  console.log(`Total students after mapping: ${students.length}`);
 
   if (!students || students.length === 0) {
     return {
@@ -1133,38 +1205,29 @@ async function getChartData(campusName = null) {
     percentages: [],
   };
 
-  let totalStudents = students.length;
+  const totalStudents = students.length;
 
   departments.forEach((department, index) => {
-    // Filter students by department
-    const studentsInDept = students.filter(
-      (student) => student.departmentName === department.departmentName
-    );
+    const studentCount = students.filter(
+      (student) => student.department_id === department.department_id
+    ).length;
 
-    const studentCount = studentsInDept.length;
-    const percentage = ((studentCount / totalStudents) * 100).toFixed(2); // Calculate percentage
+    const percentage = ((studentCount / totalStudents) * 100).toFixed(2);
 
-    // Add data to chart arrays
     chartData.labels.push({
-      departmentCode: department.departmentCode, // Assuming departmentCode exists
+      departmentCode: department.departmentCode,
       departmentName: department.departmentName,
-      departmentCodeWithCampusName: `${department.departmentCode} (${department.campus.campusName})`,
-      departmentNameWithCampusName: `${department.departmentName} (${department.campus.campusName})`,
+      departmentCodeWithCampusName: `${department.departmentCode} (${department.campus.campusName})`, // Changed to lowercase 'campus'
+      departmentNameWithCampusName: `${department.departmentName} (${department.campus.campusName})`, // Changed to lowercase 'campus'
     });
     chartData.series.push(studentCount);
     chartData.percentages.push(percentage);
 
     const newColor = generateColor(baseColors[index % baseColors.length]);
     chartData.colors.push(newColor);
-
-    // ! Generate new color if the index exceeds the baseColors length
-    // if (index < baseColors.length) {
-    //   chartData.colors.push(baseColors[index]);
-    // } else {
-    //   const newColor = generateColor(baseColors[index % baseColors.length]);
-    //   chartData.colors.push(newColor);
-    // }
   });
+
+  console.log("Generated chart data:", chartData);
 
   return chartData;
 }
@@ -1277,10 +1340,13 @@ async function updateEnrollmentProcess(params) {
         enrollmentProcess.final_approval_status = true;
         enrollmentProcess.registrar_status_date = currentDate;
         await enrollmentProcess.save();
+
+        // Call enrollStudentMockUpOnsite instead of returning readyForEnrollment
+        await enrollStudentMockUpOnsite(applicant_id);
+
         return {
           message:
             "Final approval by registrar complete. Student is now fully enrolled.",
-          readyForEnrollment: true,
         };
       }
 
@@ -1300,7 +1366,6 @@ async function updateEnrollmentProcess(params) {
         return {
           message:
             "Registrar has rejected the application. Enrollment process cannot continue.",
-          readyForEnrollment: false,
         };
       }
 
@@ -1336,7 +1401,6 @@ async function updateEnrollmentProcess(params) {
         return {
           message:
             "Accounting has rejected the application. Enrollment process cannot continue.",
-          readyForEnrollment: false,
         };
       } else {
         throw new Error(
@@ -1369,7 +1433,6 @@ async function updateEnrollmentProcess(params) {
 
   return {
     message: "Enrollment process updated.",
-    readyForEnrollment: false,
   };
 }
 
