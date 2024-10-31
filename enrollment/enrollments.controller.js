@@ -221,11 +221,12 @@ function getEnrollmentStatusById(req, res, next) {
 // ! Schemas
 function submitApplicationSchema(req, res, next) {
   const schema = Joi.object({
-    applicant: Joi.object({
+    personalData: Joi.object({
+
       enrollmentType: Joi.string().valid('online', 'on-site').required(),
       applicant_id_for_online: Joi.number().optional().allow(null),  // Nullable field
       campus_id: Joi.number().integer().required(),
-      program_id: Joi.number().integer().required(),
+
       firstName: Joi.string().required(),
       middleName: [Joi.string().optional(), Joi.allow(null)],  // Allow null based on the model
       lastName: Joi.string().required(),
@@ -233,18 +234,14 @@ function submitApplicationSchema(req, res, next) {
       gender: Joi.string().required(),
       email: Joi.string().email().required(),
       contactNumber: Joi.string().required(),
+      address: Joi.string().required(),
       birthDate: Joi.date().required(),
-      address: Joi.string().required(),  // Added from model
-      yearLevel: Joi.string().valid('First Year', 'Second Year', 'Third Year', 'Fourth Year', 'Fifth Year').required(),
-      isTransferee: Joi.boolean().required(),  // Added from model
-    }).required(),
 
-    personalData: Joi.object({
       civilStatus: Joi.string().required(),
-      birthPlace: Joi.string().required(),
-      religion: Joi.string().required(),
       citizenship: Joi.string().required(),
       country: Joi.string().required(),
+      birthPlace: Joi.string().required(),
+      religion: Joi.string().required(),
       ACR: Joi.string().optional().allow(null),  // Nullable field
     }).required(),
 
@@ -286,11 +283,12 @@ function submitApplicationSchema(req, res, next) {
     }).optional(),
 
     academicBackground: Joi.object({
-      // program_id: Joi.number().integer().required(),
+      program_id: Joi.number().integer().required(),
       majorIn: Joi.string().optional().allow(null),  // Nullable field
       studentType: Joi.string().valid('Regular', 'Irregular').required(),  // Based on model
       applicationType: Joi.string().valid('Freshmen', 'Transferee', 'Cross Enrollee').required(),  // Based on model
       semester_id: Joi.number().integer().required(),
+      yearLevel: Joi.string().valid('First Year', 'Second Year', 'Third Year', 'Fourth Year', 'Fifth Year').required(),
       yearEntry: Joi.number().integer().required(),
       yearGraduate: Joi.number().integer().required(),  // Nullable field
     }).required(),
@@ -301,8 +299,8 @@ function submitApplicationSchema(req, res, next) {
       elementaryHonors: Joi.string().optional().allow(null),  // Nullable field
       elementaryGraduate: Joi.date().optional().allow(null),  // Nullable field
 
-      secondarySchool: Joi.string().required(),  // Nullable field
       secondaryAddress: Joi.string().required(),  // Nullable field
+      secondarySchool: Joi.string().required(),  // Nullable field
       secondaryHonors: Joi.string().optional().allow(null),  // Nullable field
       secondaryGraduate: Joi.date().optional().allow(null),  // Nullable field
 
@@ -352,7 +350,7 @@ function updateStudentSchema(req, res, next) {
 
 function enrollmentProcessSchema(req, res, next) {
   const schema = Joi.object({
-    applicant_id: Joi.number().required(),
+    student_personal_id: Joi.number().required(),
     allRoles: Joi.string().required(),
     specificRole: Joi.string().required(),
     status: Joi.string()

@@ -72,17 +72,21 @@ function defineRelationships(db) {
   db.Campus.hasMany(db.Employee, {foreignKey: "campus_id"});
   db.Employee.belongsTo(db.Campus, {foreignKey: "campus_id"});
 
-  // ! Applicant -> Enrollment Process
-  db.Applicant.hasMany(db.EnrollmentProcess, {foreignKey: "applicant_id"});
-  db.EnrollmentProcess.belongsTo(db.Applicant, {foreignKey: "applicant_id"});
+  // ! StudentPersonalData -> Enrollment Process
+  db.StudentPersonalData.hasMany(db.EnrollmentProcess, {
+    foreignKey: "student_personal_id",
+  });
+  db.EnrollmentProcess.belongsTo(db.StudentPersonalData, {
+    foreignKey: "student_personal_id",
+  });
 
   // ! Program -> Applicant
-  db.Program.hasMany(db.Applicant, {foreignKey: "program_id"});
-  db.Applicant.belongsTo(db.Program, {foreignKey: "program_id"});
+  db.Program.hasMany(db.StudentPersonalData, {foreignKey: "program_id"});
+  db.StudentPersonalData.belongsTo(db.Program, {foreignKey: "program_id"});
 
   // ! Campus -> Applicant
-  db.Campus.hasMany(db.Applicant, {foreignKey: "campus_id"});
-  db.Applicant.belongsTo(db.Campus, {foreignKey: "campus_id"});
+  db.Campus.hasMany(db.StudentPersonalData, {foreignKey: "campus_id"});
+  db.StudentPersonalData.belongsTo(db.Campus, {foreignKey: "campus_id"});
 
   // ! For Class below
   // ! Course Info -> Class
@@ -131,68 +135,75 @@ function defineRelationships(db) {
   db.Campus.hasMany(db.StudentOfficial, {foreignKey: "campus_id"});
   db.StudentOfficial.belongsTo(db.Campus, {foreignKey: "campus_id"});
 
-  // ! Applicant -> Enrollment Process
-  db.Applicant.hasMany(db.EnrollmentProcess, {foreignKey: "applicant_id"});
-  db.EnrollmentProcess.belongsTo(db.Applicant, {foreignKey: "applicant_id"});
+  // ! StudentPersonalData -> Enrollment Process
+  db.StudentPersonalData.hasMany(db.EnrollmentProcess, {
+    foreignKey: "student_personal_id",
+  });
+  db.EnrollmentProcess.belongsTo(db.StudentPersonalData, {
+    foreignKey: "student_personal_id",
+  });
 
-  // ! Applicant -> Program
-  db.Program.hasMany(db.Applicant, {foreignKey: "program_id"});
-  db.Applicant.belongsTo(db.Program, {foreignKey: "program_id"});
+  // ! StudentPersonalData -> Program
+  db.Program.hasMany(db.StudentPersonalData, {foreignKey: "program_id"});
+  db.StudentPersonalData.belongsTo(db.Program, {foreignKey: "program_id"});
 
-  // ! Applicant -> Campus
-  db.Campus.hasMany(db.Applicant, {foreignKey: "campus_id"});
-  db.Applicant.belongsTo(db.Campus, {foreignKey: "campus_id"});
+  // ! StudentPersonalData -> Campus
+  db.Campus.hasMany(db.StudentPersonalData, {foreignKey: "campus_id"});
+  db.StudentPersonalData.belongsTo(db.Campus, {foreignKey: "campus_id"});
 
   // Relationships for the new tables:
 
-  // ! Applicant -> StudentPersonalData (1-to-1)
-  db.Applicant.hasOne(db.StudentPersonalData, {
-    foreignKey: "applicant_id",
-    as: "personalData",
-  });
-  db.StudentPersonalData.belongsTo(db.Applicant, {foreignKey: "applicant_id"});
-
-  // ! Applicant -> StudentAddPersonalData (1-to-1)
-  db.Applicant.hasOne(db.StudentAddPersonalData, {
-    foreignKey: "applicant_id",
+  // ! StudentPersonalData -> StudentAddPersonalData (1-to-1)
+  db.StudentPersonalData.hasOne(db.StudentAddPersonalData, {
+    foreignKey: "student_personal_id",
     as: "addPersonalData",
   });
-  db.StudentAddPersonalData.belongsTo(db.Applicant, {
-    foreignKey: "applicant_id",
+  db.StudentAddPersonalData.belongsTo(db.StudentPersonalData, {
+    foreignKey: "student_personal_id",
   });
 
-  // ! Applicant -> StudentFamily (1-to-1)
-  db.Applicant.hasOne(db.StudentFamily, {
-    foreignKey: "applicant_id",
+  // ! StudentPersonalData -> StudentFamily (1-to-1)
+  db.StudentPersonalData.hasOne(db.StudentFamily, {
+    foreignKey: "student_personal_id",
     as: "familyDetails",
   });
-  db.StudentFamily.belongsTo(db.Applicant, {foreignKey: "applicant_id"});
+  db.StudentFamily.belongsTo(db.StudentPersonalData, {
+    foreignKey: "student_personal_id",
+  });
 
-  // ! Applicant -> StudentAcademicBackground (1-to-1)
-  db.Applicant.hasOne(db.StudentAcademicBackground, {
-    foreignKey: "applicant_id",
+  // ! StudentPersonalData -> StudentAcademicBackground (1-to-1)
+  db.StudentPersonalData.hasOne(db.StudentAcademicBackground, {
+    foreignKey: "student_personal_id",
     as: "academicBackground",
   });
-  db.StudentAcademicBackground.belongsTo(db.Applicant, {
-    foreignKey: "applicant_id",
+  db.StudentAcademicBackground.belongsTo(db.StudentPersonalData, {
+    foreignKey: "student_personal_id",
   });
 
-  // ! Applicant -> StudentAcademicHistory (1-to-1)
-  db.Applicant.hasOne(db.StudentAcademicHistory, {
-    foreignKey: "applicant_id",
+  // ! StudentPersonalData -> StudentAcademicHistory (1-to-1)
+  db.StudentPersonalData.hasOne(db.StudentAcademicHistory, {
+    foreignKey: "student_personal_id",
     as: "academicHistory",
   });
-  db.StudentAcademicHistory.belongsTo(db.Applicant, {
-    foreignKey: "applicant_id",
+  db.StudentAcademicHistory.belongsTo(db.StudentPersonalData, {
+    foreignKey: "student_personal_id",
   });
 
-  // ! Applicant -> StudentOfficial (1-to-1)
-  db.Applicant.hasOne(db.StudentOfficial, {foreignKey: "applicant_id"});
-  db.StudentOfficial.belongsTo(db.Applicant, {foreignKey: "applicant_id"});
+  // ! StudentPersonalData -> StudentOfficial (1-to-1)
+  db.StudentPersonalData.hasOne(db.StudentOfficial, {
+    foreignKey: "student_personal_id",
+  });
+  db.StudentOfficial.belongsTo(db.StudentPersonalData, {
+    foreignKey: "student_personal_id",
+  });
 
-  // ! Applicant -> StudetDocuments (1-to-1)
-  db.Applicant.hasOne(db.StudentDocuments, {foreignKey: "applicant_id"});
-  db.StudentDocuments.belongsTo(db.Applicant, {foreignKey: "applicant_id"});
+  // ! StudentPersonalData -> StudetDocuments (1-to-1)
+  db.StudentPersonalData.hasOne(db.StudentDocuments, {
+    foreignKey: "student_personal_id",
+  });
+  db.StudentDocuments.belongsTo(db.StudentPersonalData, {
+    foreignKey: "student_personal_id",
+  });
 
   // Continue with other existing relationships (omitted for brevity)
 }

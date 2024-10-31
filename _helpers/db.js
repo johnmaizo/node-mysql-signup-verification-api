@@ -87,17 +87,14 @@ async function initialize() {
   // ! Employee
   db.Employee = require("../models/employee.model")(sequelize);
 
-  // ! Applicant
-  db.Applicant = require("../models/student/applicant.model")(sequelize);
-
   // ! Student
   db.StudentPersonalData = require("../models/student/student_personal_data.model")(sequelize)
   db.StudentAddPersonalData = require("../models/student/student_add_personal_data.model")(sequelize)
   db.StudentFamily = require("../models/student/student_family.model")(sequelize)
   db.StudentAcademicBackground = require("../models/student/student_academic_background.model")(sequelize)
   db.StudentAcademicHistory = require("../models/student/student_academic_history.model")(sequelize)
-  db.StudentSubjects = require("../models/student/student_subject.model")(sequelize)
   db.StudentDocuments = require("../models/student/student_documents.model")(sequelize)
+  db.StudentSubjects = require("../models/student/student_subject.model")(sequelize)
 
   // ! Enrollment
   db.EnrollmentProcess = require("../models/student/enrollment_process.model")(

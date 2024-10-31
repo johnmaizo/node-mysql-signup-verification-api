@@ -10,16 +10,26 @@ function model(sequelize) {
       autoIncrement: true,
     },
 
-    applicant_id: {
+    // applicant_id: {
+    //   type: DataTypes.INTEGER,
+    //   references: {
+    //     model: "applicants",
+    //     key: "applicant_id",
+    //   },
+    //   allowNull: false,
+    //   onDelete: "CASCADE",
+    // },
+
+    student_personal_id: {
       type: DataTypes.INTEGER,
       references: {
-        model: "applicants",
-        key: "applicant_id",
+        model: "student_personal_data",
+        key: "student_personal_id",
       },
       allowNull: false,
       onDelete: "CASCADE",
     },
-    
+
     registrar_status: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -29,7 +39,7 @@ function model(sequelize) {
       type: DataTypes.DATE,
       allowNull: true,
     },
-    
+
     accounting_status: {
       type: DataTypes.STRING,
       allowNull: false,

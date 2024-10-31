@@ -1,50 +1,58 @@
-const { DataTypes } = require('sequelize');
+const {DataTypes} = require("sequelize");
 
 module.exports = model;
 
 function model(sequelize) {
-    const attributes = {
-        applicant_id: {
-            type: DataTypes.INTEGER,
-            references: {
-              model: "applicants",
-              key: "applicant_id",
-            },
-            allowNull: false,
-            onDelete: "CASCADE",
-          },
+  const attributes = {
+    // applicant_id: {
+    //     type: DataTypes.INTEGER,
+    //     references: {
+    //       model: "applicants",
+    //       key: "applicant_id",
+    //     },
+    //     allowNull: false,
+    //     onDelete: "CASCADE",
+    //   },
 
-        program_id: { 
-            type: DataTypes.INTEGER,
-            references: {
-                model: 'programs', // refers to the table name
-                key: 'program_id'  // refers to the column name in the programs table
-            }
-        },
+    student_personal_id: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: "student_personal_data",
+        key: "student_personal_id",
+      },
+      allowNull: false,
+      onDelete: "CASCADE",
+    },
 
-        yearLevel: { type: DataTypes.INTEGER(4), allowNull: false }, // 
+    program_id: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: "programs", // refers to the table name
+        key: "program_id", // refers to the column name in the programs table
+      },
+    },
 
-        semester_id: {
-            type: DataTypes.INTEGER,
-            references: {
-                model: 'semesters',
-                key: 'semester_id'
-            },
-            allowNull: false
-        },
-        
-        isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
-        isDeleted: { type: DataTypes.BOOLEAN, defaultValue: false }        
-    };
+    yearLevel: {type: DataTypes.INTEGER(4), allowNull: false}, //
 
-    const options = {
-        // disable default timestamp fields (createdAt and updatedAt)
-        timestamps: true, 
-        defaultScope: {
-        },
-        scopes: {
-        }        
-    };
+    semester_id: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: "semesters",
+        key: "semester_id",
+      },
+      allowNull: false,
+    },
 
-    return sequelize.define('studentschooldetail', attributes, options);
+    isActive: {type: DataTypes.BOOLEAN, defaultValue: true},
+    isDeleted: {type: DataTypes.BOOLEAN, defaultValue: false},
+  };
+
+  const options = {
+    // disable default timestamp fields (createdAt and updatedAt)
+    timestamps: true,
+    defaultScope: {},
+    scopes: {},
+  };
+
+  return sequelize.define("studentschooldetail", attributes, options);
 }

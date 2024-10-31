@@ -4,20 +4,18 @@ module.exports = model;
 
 function model(sequelize) {
   const attributes = {
-    applicant_id: {
+    student_personal_id: {
       type: DataTypes.INTEGER,
       references: {
-          model: "applicants",
-          key: "applicant_id",
+        model: "student_personal_data",
+        key: "student_personal_id",
       },
       allowNull: false,
       onDelete: "CASCADE",
     },
 
-    // fulldata_applicant_id
-    
     program_id: {
-        type: DataTypes.INTEGER,
+      type: DataTypes.INTEGER,
       references: {
         model: "programs", // refers to the table name
         key: "program_id", // refers to the column name in the programs table
@@ -25,10 +23,9 @@ function model(sequelize) {
     },
 
     majorIn: {type: DataTypes.STRING, allowNull: true}, // Major In
-    
+
     studentType: {type: DataTypes.STRING, allowNull: false}, // Regular, Irregular
-    applicationType: {type: DataTypes.STRING(15), allowNull: false},
-    // Application type have three choices either Freshmen, Transferee, and Cross Enrollee
+    applicationType: {type: DataTypes.STRING(15), allowNull: false}, // Application type have three choices either Freshmen, Transferee, and Cross Enrollee
 
     semester_id: {
       type: DataTypes.INTEGER,
@@ -38,10 +35,9 @@ function model(sequelize) {
       },
       allowNull: false,
     },
-    
+
     yearLevel: {type: DataTypes.STRING, allowNull: true},
-    // semesterType dapat naay choice either undergrad or grad
-    // semesterEntry: {type: DataTypes.STRING(10), allowNull: false},
+
     yearEntry: {type: DataTypes.INTEGER(4), allowNull: false},
     yearGraduate: {type: DataTypes.INTEGER(4), allowNull: true},
 

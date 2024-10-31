@@ -40,7 +40,6 @@ async function submitApplication(params, accountId) {
 
   try {
     const {
-      applicant, // Applicant information
       personalData, // Personal data
       addPersonalData, // Additional personal data
       familyDetails, // Family information
@@ -50,78 +49,59 @@ async function submitApplication(params, accountId) {
     } = params;
 
     // Check if email already exists
-    const existingApplicant = await db.Applicant.findOne({
-      where: {email: applicant.email},
+    const existingEmail = await db.StudentPersonalData.findOne({
+      where: {email: personalData.email},
     });
 
-    if (existingApplicant) {
-      throw new Error(
-        `An applicant with the email "${applicant.email}" already exists.`
-      );
+    if (existingEmail) {
+      throw new Error(`Email "${personalData.email}" is already exists.`);
     }
 
-    // 1. Create Applicant
-    const newApplicant = await db.Applicant.create(applicant, {transaction});
+    // 1. Create Student Personal Data
+    const newStudentData = await db.StudentPersonalData.create(personalData, {
+      transaction,
+    });
 
-    // 2. Create Personal Data (copying relevant data from applicant)
-    await db.StudentPersonalData.create(
-      {
-        applicant_id: newApplicant.applicant_id,
-        firstName: newApplicant.firstName,
-        middleName: newApplicant.middleName,
-        lastName: newApplicant.lastName,
-        gender: newApplicant.gender,
-        email: newApplicant.email,
-        contactNumber: newApplicant.contactNumber,
-        birthDate: newApplicant.birthDate,
-        campus_id: newApplicant.campus_id,
-        ...personalData,
-      },
-      {transaction}
-    );
-
-    // 3. Create Additional Personal Data
+    // 2. Create Additional Personal Data
     await db.StudentAddPersonalData.create(
       {
-        applicant_id: newApplicant.applicant_id,
+        student_personal_id: newStudentData.student_personal_id,
         ...addPersonalData,
       },
       {transaction}
     );
 
-    // 4. Create Family Details
+    // 3. Create Family Details
     await db.StudentFamily.create(
       {
-        applicant_id: newApplicant.applicant_id,
+        student_personal_id: newStudentData.student_personal_id,
         ...familyDetails,
       },
       {transaction}
     );
 
-    // 5. Create Academic Background
+    // 4. Create Academic Background
     await db.StudentAcademicBackground.create(
       {
-        applicant_id: newApplicant.applicant_id,
-        program_id: newApplicant.program_id,
-        yearLevel: newApplicant.yearLevel,
+        student_personal_id: newStudentData.student_personal_id,
         ...academicBackground,
       },
       {transaction}
     );
 
-    // 6. Create Academic History
+    // 5. Create Academic History
     await db.StudentAcademicHistory.create(
       {
-        applicant_id: newApplicant.applicant_id,
+        student_personal_id: newStudentData.student_personal_id,
         ...academicHistory,
       },
       {transaction}
     );
 
-    // 7. Create Enrollment Process
+    // 6. Create Enrollment Process
     await db.EnrollmentProcess.create(
       {
-        applicant_id: newApplicant.applicant_id,
+        student_personal_id: newStudentData.student_personal_id,
         registrar_status: "accepted",
         registrar_status_date: new Date(),
         accounting_status: "upcoming",
@@ -130,21 +110,21 @@ async function submitApplication(params, accountId) {
       {transaction}
     );
 
-    // 8. Create Documents
+    // 7. Create Documents
     await db.StudentDocuments.create(
       {
-        applicant_id: newApplicant.applicant_id,
+        student_personal_id: newStudentData.student_personal_id,
         ...documents,
       },
       {transaction}
     );
 
-    // 9. Log the creation action in the history table
+    // 8. Log the creation action in the history table
     await db.History.create(
       {
         action: "create",
         entity: "Student",
-        entityId: newApplicant.applicant_id,
+        entityId: newStudentData.student_personal_id,
         changes: params,
         accountId: accountId,
       },
@@ -281,12 +261,11 @@ async function enrollStudent(params) {
   await studentOfficial.save();
 }
 
-async function enrollStudentMockUpOnsite(applicant_id) {
+async function enrollStudentMockUpOnsite(student_personal_id) {
   try {
-    const applicant = await db.Applicant.findOne({
-      where: {applicant_id: applicant_id},
+    const applicant = await db.StudentPersonalData.findOne({
+      where: {student_personal_id: student_personal_id},
       include: [
-        {model: db.StudentPersonalData, as: "personalData"},
         {model: db.StudentAddPersonalData, as: "addPersonalData"},
         {model: db.StudentFamily, as: "familyDetails"},
         {model: db.StudentAcademicBackground, as: "academicBackground"},
@@ -309,10 +288,13 @@ async function enrollStudentMockUpOnsite(applicant_id) {
         is_transferee: applicant.isTransferee || false,
         contact_number: applicant.contactNumber || "",
         year_level:
-          applicant.yearLevel.length > 8 ? "4th Year" : applicant.yearLevel,
+          applicant.academicBackground.yearLevel &&
+          applicant.academicBackground.yearLevel.length > 8
+            ? "4th Year"
+            : applicant.yearLevel,
         address: applicant.address || "",
         campus: applicant.campus_id,
-        program: applicant.program_id,
+        program: applicant.academicBackground.program_id,
         birth_date: applicant.birthDate || "1900-01-01",
         sex: applicant.gender || "Unknown",
         email: applicant.email || "",
@@ -350,13 +332,14 @@ async function enrollStudentMockUpOnsite(applicant_id) {
           l_name: applicant.lastName || "",
           sex: applicant.gender || "Unknown",
           birth_date: applicant.birthDate || "1900-01-01",
-          birth_place: applicant.personalData?.birthPlace || "Unknown",
-          marital_status: applicant.personalData?.civilStatus || "Single",
-          religion: applicant.personalData?.religion || "Unknown",
-          country: applicant.personalData?.country || "Unknown",
-          email: applicant.personalData?.email || applicant.email || "",
-          acr: applicant.personalData?.ACR || null,
+          birth_place: applicant.birthPlace || "Unknown",
+          marital_status: applicant.civilStatus || "Single",
+          religion: applicant.religion || "Unknown",
+          country: applicant.country || "Unknown",
+          email: applicant.email || "",
+          acr: applicant.ACR || null,
           status: "officially enrolled",
+          on_site: true,
         },
         add_personal_data: {
           city_address: applicant.addPersonalData?.cityAddress || "Unknown",
@@ -366,7 +349,7 @@ async function enrollStudentMockUpOnsite(applicant_id) {
           city_contact_number: applicant.addPersonalData?.cityTelNumber || null,
           province_contact_number:
             applicant.addPersonalData?.provinceTelNumber || null,
-          citizenship: applicant.personalData?.citizenship || "Unknown",
+          citizenship: applicant.citizenship || "Unknown",
         },
         family_background: {
           father_fname: applicant.familyDetails?.fatherFirstName || "",
@@ -402,12 +385,12 @@ async function enrollStudentMockUpOnsite(applicant_id) {
               : null,
         },
         academic_background: {
-          program: applicant.program_id,
+          program: applicant.academicBackground.program_id,
           major_in: applicant.academicBackground?.majorIn || null,
           student_type: applicant.academicBackground?.studentType || "Regular",
-          // semester_entry: applicant.academicBackground?.semester_id || 0,
-          semester_entry: 2,
+          semester_entry: 2, // Adjust as needed
           year_level:
+            applicant.academicBackground?.yearLevel &&
             applicant.academicBackground?.yearLevel.length > 8
               ? "4th Year"
               : applicant.academicBackground?.yearLevel,
@@ -493,7 +476,7 @@ async function enrollStudentMockUpOnsite(applicant_id) {
     const studentOfficial = new db.StudentOfficial({
       student_id: student_id,
       campus_id: campus.campus_id,
-      applicant_id: applicant.applicant_id,
+      student_personal_id: applicant.student_personal_id,
     });
     await studentOfficial.save();
 
@@ -814,7 +797,7 @@ async function fetchApplicantData(campusName = null, isAborted = false) {
                 dateEnrolled: applicantData.created_at || null,
               };
 
-              const existingApplicant = await db.Applicant.findOne({
+              const existingApplicant = await db.StudentPersonalData.findOne({
                 where: {
                   firstName: newApplicant.firstName,
                   lastName: newApplicant.lastName,
@@ -889,7 +872,7 @@ async function fetchApplicantData(campusName = null, isAborted = false) {
                 );
 
                 if (isDifferent) {
-                  await db.Applicant.update(newApplicant, {
+                  await db.StudentPersonalData.update(newApplicant, {
                     where: {applicant_id: existingApplicant.applicant_id},
                     transaction,
                   });
@@ -900,7 +883,9 @@ async function fetchApplicantData(campusName = null, isAborted = false) {
                 }
               } else {
                 // Create new applicant record
-                await db.Applicant.create(newApplicant, {transaction});
+                await db.StudentPersonalData.create(newApplicant, {
+                  transaction,
+                });
                 isUpToDate = false; // New data was inserted
               }
             } catch (err) {
@@ -924,7 +909,7 @@ async function fetchApplicantData(campusName = null, isAborted = false) {
 }
 
 async function getApplicants(whereClause, campus_id = null) {
-  const applicants = await db.Applicant.findAll({
+  const applicants = await db.StudentPersonalData.findAll({
     where: {
       ...whereClause,
       ...(campus_id ? {campus_id} : undefined),
@@ -973,7 +958,7 @@ async function getAllApplicant(campus_id = null) {
 async function getAllApplicantCount(campus_id = null) {
   const whereClause = {isActive: true, isDeleted: false};
 
-  return await db.Applicant.count({
+  return await db.StudentPersonalData.count({
     where: {
       ...whereClause,
       ...(campus_id ? {campus_id} : {}),
@@ -1005,7 +990,7 @@ async function getAllStudentsOfficial(campusName = null) {
     },
     include: [
       {
-        model: db.Applicant,
+        model: db.StudentPersonalData,
         include: [
           {
             model: db.Program,
@@ -1018,7 +1003,7 @@ async function getAllStudentsOfficial(campusName = null) {
             attributes: ["program_id", "department_id"],
           },
         ],
-        attributes: ["applicant_id", "program_id"],
+        attributes: ["student_personal_id", "program_id"],
       },
       {
         model: db.Campus,
@@ -1039,23 +1024,23 @@ async function getAllStudentsOfficial(campusName = null) {
   const studentsWithDepartment = [];
 
   students.forEach((student) => {
-    const applicant = student.applicant; // Changed to lowercase
-    if (!applicant) {
+    const studentPersonalData = student.studentPersonalDatum;
+    if (!studentPersonalData) {
       console.warn(
-        `Warning: Applicant not found for student ID ${student.student_id}. Skipping this student.`
+        `Warning: StudentPersonalData not found for student ID ${student.student_id}. Skipping this student.`
       );
       return; // Skip this student
     }
 
-    const program = applicant.program; // Changed to lowercase
+    const program = studentPersonalData.program;
     if (!program) {
       console.warn(
-        `Warning: Program not found for applicant ID ${applicant.applicant_id}. Skipping student ID ${student.student_id}.`
+        `Warning: Program not found for studentPersonalData ID ${studentPersonalData.student_personal_id}. Skipping student ID ${student.student_id}.`
       );
       return; // Skip this student
     }
 
-    const department = program.department; // Changed to lowercase
+    const department = program.department;
     if (!department) {
       console.warn(
         `Warning: Department not found for program ID ${program.program_id}. Skipping student ID ${student.student_id}.`
@@ -1071,7 +1056,7 @@ async function getAllStudentsOfficial(campusName = null) {
       ...student.toJSON(),
       department_id: department.department_id,
       departmentName: department.departmentName,
-      campusName: student.campus ? student.campus.campusName : null, // Changed to lowercase
+      campusName: student.campus ? student.campus.campusName : null,
     });
   });
 
@@ -1281,11 +1266,16 @@ async function updateStudent(id, params) {
 */
 
 async function updateEnrollmentProcess(params) {
-  const {applicant_id, status, payment_confirmed, allRoles, specificRole} =
-    params;
+  const {
+    student_personal_id,
+    status,
+    payment_confirmed,
+    allRoles,
+    specificRole,
+  } = params;
 
   // Ensure the required parameters are present
-  if (!applicant_id || !status || !specificRole || !allRoles) {
+  if (!student_personal_id || !status || !specificRole || !allRoles) {
     throw new Error(
       "Applicant ID, status, specific role, and all roles are required."
     );
@@ -1300,20 +1290,20 @@ async function updateEnrollmentProcess(params) {
   }
 
   // Check if the applicant exists in the database
-  const applicant = await db.Applicant.findByPk(applicant_id);
+  const applicant = await db.StudentPersonalData.findByPk(student_personal_id);
   if (!applicant) {
-    throw new Error(`Applicant with ID ${applicant_id} does not exist.`);
+    throw new Error(`Applicant with ID ${student_personal_id} does not exist.`);
   }
 
   // Fetch the current enrollment process for the applicant
   let enrollmentProcess = await db.EnrollmentProcess.findOne({
-    where: {applicant_id: applicant_id},
+    where: {student_personal_id: student_personal_id},
   });
 
   if (!enrollmentProcess) {
     // If no existing process found, create a new record with default "in-progress" statuses
     enrollmentProcess = await db.EnrollmentProcess.create({
-      applicant_id: applicant_id,
+      student_personal_id: student_personal_id,
       registrar_status: "in-progress",
       accounting_status: "upcoming",
       payment_confirmed: false, // Set payment to false initially
@@ -1352,7 +1342,7 @@ async function updateEnrollmentProcess(params) {
         await enrollmentProcess.save();
 
         // Call enrollStudentMockUpOnsite instead of returning readyForEnrollment
-        await enrollStudentMockUpOnsite(applicant_id);
+        await enrollStudentMockUpOnsite(student_personal_id);
 
         return {
           message:
@@ -1451,7 +1441,7 @@ async function getAllEnrollmentStatus(campus_id = null) {
   const enrollmentStatuses = await db.EnrollmentProcess.findAll({
     include: [
       {
-        model: db.Applicant,
+        model: db.StudentPersonalData,
         attributes: ["firstName", "lastName", "email", "campus_id"],
         where: {
           ...(campus_id ? {campus_id} : undefined),
@@ -1505,7 +1495,7 @@ async function getEnrollmentStatusById(enrollment_id) {
     where: {enrollment_id},
     include: [
       {
-        model: db.Applicant,
+        model: db.StudentPersonalData,
         attributes: ["firstName", "lastName", "email"],
         include: [
           {
@@ -1557,7 +1547,7 @@ async function getEnrollmentStatusById(enrollment_id) {
 async function getApplicantInfo(applicant_id) {
   try {
     // Fetch applicant information with all related details
-    const applicant = await db.Applicant.findOne({
+    const applicant = await db.StudentPersonalData.findOne({
       where: {applicant_id: applicant_id},
       include: [
         {model: db.StudentPersonalData, as: "personalData"},
