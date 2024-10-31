@@ -249,7 +249,7 @@ function submitApplicationSchema(req, res, next) {
     }).required(),
 
     addPersonalData: Joi.object({
-      cityAddress: Joi.string().optional().allow(null),  // Nullable field
+      cityAddress: Joi.string().required(),  // Nullable field
       cityTelNumber: Joi.string().optional().allow(null),  // Nullable field
       provinceAddress: Joi.string().optional().allow(null),  // Nullable field
       provinceTelNumber: Joi.string().optional().allow(null),  // Nullable field
@@ -292,17 +292,17 @@ function submitApplicationSchema(req, res, next) {
       applicationType: Joi.string().valid('Freshmen', 'Transferee', 'Cross Enrollee').required(),  // Based on model
       semester_id: Joi.number().integer().required(),
       yearEntry: Joi.number().integer().required(),
-      yearGraduate: Joi.number().integer().optional().allow(null),  // Nullable field
+      yearGraduate: Joi.number().integer().required(),  // Nullable field
     }).required(),
 
     academicHistory: Joi.object({
-      elementarySchool: Joi.string().optional().allow(null),  // Nullable field
-      elementaryAddress: Joi.string().optional().allow(null),  // Nullable field
+      elementarySchool: Joi.string().required(),  // Nullable field
+      elementaryAddress: Joi.string().required(),  // Nullable field
       elementaryHonors: Joi.string().optional().allow(null),  // Nullable field
       elementaryGraduate: Joi.date().optional().allow(null),  // Nullable field
 
-      secondarySchool: Joi.string().optional().allow(null),  // Nullable field
-      secondaryAddress: Joi.string().optional().allow(null),  // Nullable field
+      secondarySchool: Joi.string().required(),  // Nullable field
+      secondaryAddress: Joi.string().required(),  // Nullable field
       secondaryHonors: Joi.string().optional().allow(null),  // Nullable field
       secondaryGraduate: Joi.date().optional().allow(null),  // Nullable field
 
@@ -310,6 +310,15 @@ function submitApplicationSchema(req, res, next) {
       seniorHighAddress: Joi.string().optional().allow(null),  // Nullable field
       seniorHighHonors: Joi.string().optional().allow(null),  // Nullable field
       seniorHighSchoolGraduate: Joi.date().optional().allow(null),  // Nullable field
+    }).optional(),
+
+    documents: Joi.object({
+      form_167: Joi.boolean().required(),  // Nullable field
+      certificate_of_good_moral: Joi.boolean().required(),  // Nullable field
+      transcript_of_records: Joi.boolean().required(),  // Nullable field
+      nso_birth_certificate: Joi.boolean().required(),  // Nullable field
+      two_by_two_id_photo: Joi.boolean().required(),  // Nullable field
+      certificate_of_transfer_credential: Joi.boolean().required(),  // Nullable field
     }).optional(),
   });
 

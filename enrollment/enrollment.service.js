@@ -46,6 +46,7 @@ async function submitApplication(params, accountId) {
       familyDetails, // Family information
       academicBackground, // Academic background
       academicHistory, // Academic history
+      documents, // Documents
     } = params;
 
     // Check if email already exists
@@ -129,7 +130,16 @@ async function submitApplication(params, accountId) {
       {transaction}
     );
 
-    // 8. Log the creation action in the history table
+    // 8. Create Documents
+    await db.StudentDocuments.create(
+      {
+        applicant_id: newApplicant.applicant_id,
+        ...documents,
+      },
+      {transaction}
+    );
+
+    // 9. Log the creation action in the history table
     await db.History.create(
       {
         action: "create",

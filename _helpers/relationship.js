@@ -190,6 +190,10 @@ function defineRelationships(db) {
   db.Applicant.hasOne(db.StudentOfficial, {foreignKey: "applicant_id"});
   db.StudentOfficial.belongsTo(db.Applicant, {foreignKey: "applicant_id"});
 
+  // ! Applicant -> StudetDocuments (1-to-1)
+  db.Applicant.hasOne(db.StudentDocuments, {foreignKey: "applicant_id"});
+  db.StudentDocuments.belongsTo(db.Applicant, {foreignKey: "applicant_id"});
+
   // Continue with other existing relationships (omitted for brevity)
 }
 
