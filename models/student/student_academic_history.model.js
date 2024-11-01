@@ -26,6 +26,15 @@ function model(sequelize) {
     seniorHighAddress: {type: DataTypes.STRING(95), allowNull: true},
     seniorHighHonors: {type: DataTypes.STRING(30), allowNull: true},
     seniorHighSchoolGraduate: {type: DataTypes.DATE, allowNull: true},
+    
+    ncae_grade: {type: DataTypes.STRING(30), allowNull: true},
+    ncae_year_taken: {type: DataTypes.STRING(30), allowNull: true},
+    latest_college: {type: DataTypes.STRING(30), allowNull: true},
+    college_address: {type: DataTypes.STRING(30), allowNull: true},
+    college_honors: {type: DataTypes.STRING(30), allowNull: true},
+    program: {type: DataTypes.STRING(30), allowNull: true},
+    
+
     isActive: {type: DataTypes.BOOLEAN, defaultValue: true},
 
     isDeleted: {type: DataTypes.BOOLEAN, defaultValue: false},

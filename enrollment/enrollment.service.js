@@ -268,7 +268,7 @@ async function enrollStudentMockUpOnsite(student_personal_id) {
       include: [
         {model: db.StudentAddPersonalData, as: "addPersonalData"},
         {model: db.StudentFamily, as: "familyDetails"},
-        {model: db.StudentAcademicBackground, as: "academicBackground"},
+        {model: db.StudentAcademicBackground},
         {model: db.StudentAcademicHistory, as: "academicHistory"},
       ],
     });
@@ -279,53 +279,33 @@ async function enrollStudentMockUpOnsite(student_personal_id) {
 
     console.log("Applicant Data:", applicant.toJSON());
 
-    const onlineApplicantSubmission = await axios.post(
-      `${url}/api/stdntbasicinfo/`,
-      {
-        first_name: applicant.firstName || "",
-        middle_name: applicant.middleName || "",
-        last_name: applicant.lastName || "",
-        is_transferee: applicant.isTransferee || false,
-        contact_number: applicant.contactNumber || "",
-        year_level:
-          applicant.academicBackground.yearLevel &&
-          applicant.academicBackground.yearLevel.length > 8
-            ? "4th Year"
-            : applicant.yearLevel,
-        address: applicant.address || "",
-        campus: applicant.campus_id,
-        program: applicant.academicBackground.program_id,
-        birth_date: applicant.birthDate || "1900-01-01",
-        sex: applicant.gender || "Unknown",
-        email: applicant.email || "",
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    // Generate student ID
+    const campus = await db.Campus.findOne({
+      where: {campus_id: applicant.campus_id},
+    });
 
-    console.log(
-      "Post response (onlineApplicantSubmission):",
-      onlineApplicantSubmission.data
-    );
-
-    const basicdata_applicant_id =
-      onlineApplicantSubmission.data.basicdata_applicant_id;
-    console.log("Extracted basicdata_applicant_id:", basicdata_applicant_id);
-
-    if (!basicdata_applicant_id) {
-      throw new Error(
-        "basicdata_applicant_id is missing from onlineApplicantSubmission response"
-      );
+    if (!campus) {
+      throw new Error("Campus not found");
     }
 
+    let student_id = await generateStudentId(campus.campusName);
+
+    // Save student details in the database
+    const studentOfficial = new db.StudentOfficial({
+      student_id: student_id,
+      campus_id: campus.campus_id,
+      student_personal_id: applicant.student_personal_id,
+    });
+    await studentOfficial.save();
+
+    // const onlineFullStudentInfoPOST = await axios.post(
+    //   `${url}/api/full-student-data/`,
     const onlineFullStudentInfoPOST = await axios.post(
-      `${url}/api/full-student-data/`,
+      `${url}/api/onsite-full-student-data/`,
       {
+        student_id: student_id,
+        campus: campus.campus_id,
         personal_data: {
-          basicdata_applicant_id: basicdata_applicant_id,
           f_name: applicant.firstName || "",
           m_name: applicant.middleName || "",
           suffix: applicant.suffix || "",
@@ -385,19 +365,27 @@ async function enrollStudentMockUpOnsite(student_personal_id) {
               : null,
         },
         academic_background: {
-          program: applicant.academicBackground.program_id,
-          major_in: applicant.academicBackground?.majorIn || null,
-          student_type: applicant.academicBackground?.studentType || "Regular",
-          semester_entry: 2, // Adjust as needed
+          program: applicant.student_current_academicbackground.program_id,
+          major_in:
+            applicant.student_current_academicbackground?.majorIn || null,
+          student_type:
+            applicant.student_current_academicbackground?.studentType ||
+            "Regular",
+          semester_entry:
+            applicant.student_current_academicbackground?.semester_id, // Adjust as needed
           year_level:
-            applicant.academicBackground?.yearLevel &&
-            applicant.academicBackground?.yearLevel.length > 8
-              ? "4th Year"
-              : applicant.academicBackground?.yearLevel,
-          year_entry: applicant.academicBackground?.yearEntry || 0,
-          year_graduate: applicant.academicBackground?.yearGraduate || 0,
+            // applicant.student_current_academicbackground?.yearLevel &&
+            // applicant.student_current_academicbackground?.yearLevel.length > 8
+            //   ? "4th Year"
+            //   : applicant.student_current_academicbackground?.yearLevel,
+            applicant.student_current_academicbackground?.yearLevel,
+          year_entry:
+            applicant.student_current_academicbackground?.yearEntry || 0,
+          year_graduate:
+            applicant.student_current_academicbackground?.yearGraduate || 0,
           application_type:
-            applicant.academicBackground?.applicationType || "Freshmen",
+            applicant.student_current_academicbackground?.applicationType ||
+            "Freshmen",
         },
         academic_history: {
           elementary_school:
@@ -444,66 +432,21 @@ async function enrollStudentMockUpOnsite(student_personal_id) {
       onlineFullStudentInfoPOST.data
     );
 
-    // Corrected path to fulldata_applicant_id
-    const fulldata_applicant_id =
-      onlineFullStudentInfoPOST?.data?.data?.personal_data
-        ?.fulldata_applicant_id;
-
-    if (!fulldata_applicant_id) {
-      console.log(
-        "Full response data for debugging:",
-        onlineFullStudentInfoPOST.data
-      );
-      throw new Error(
-        "fulldata_applicant_id is missing from onlineFullStudentInfoPOST response"
-      );
-    }
-
-    console.log("Extracted fulldata_applicant_id:", fulldata_applicant_id);
-
-    // Generate student ID
-    const campus = await db.Campus.findOne({
-      where: {campus_id: applicant.campus_id},
-    });
-
-    if (!campus) {
-      throw new Error("Campus not found");
-    }
-
-    let student_id = await generateStudentId(campus.campusName);
-
-    // Save student details in the database
-    const studentOfficial = new db.StudentOfficial({
-      student_id: student_id,
-      campus_id: campus.campus_id,
-      student_personal_id: applicant.student_personal_id,
-    });
-    await studentOfficial.save();
-
     // New POST request after generating the student ID
-    const onlineOfficialDataPost = await axios.post(
-      `${url}/api/official-student-data/`,
-      {
-        student_id: student_id,
-        campus: campus.campus_id,
-        password: `gwapoko123`,
-        fulldata_applicant_id: fulldata_applicant_id, // Use the extracted fulldata_applicant_id
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (!onlineOfficialDataPost.data) {
-      throw new Error("Bad Request");
-    }
-
-    console.log(
-      "Post response (onlineOfficialDataPost):",
-      onlineOfficialDataPost.data
-    );
+    // const onlineOfficialDataPost = await axios.post(
+    //   `${url}/api/official-student-data/`,
+    //   {
+    //     student_id: student_id,
+    //     campus: campus.campus_id,
+    //     password: `gwapoko123`,
+    //     fulldata_applicant_id: fulldata_applicant_id, // Use the extracted fulldata_applicant_id
+    //   },
+    //   {
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //     },
+    //   }
+    // );
   } catch (error) {
     console.error(
       "Error response:",
@@ -1576,7 +1519,7 @@ async function getEnrollmentStatusById(enrollment_id) {
   const studentPersonalData = enrollmentStatus.student_personal_datum;
   console.log("\n\nstudentPersonalData:", studentPersonalData.toJSON());
   const academicBackground =
-  studentPersonalData.student_current_academicbackground;
+    studentPersonalData.student_current_academicbackground;
   console.log("\n\nacademicBackground:", academicBackground.toJSON());
   const program = academicBackground?.program;
   const department = program?.department;

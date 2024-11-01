@@ -4,24 +4,12 @@ module.exports = model;
 
 function model(sequelize) {
   const attributes = {
-    // applicant_id: {
-    //     type: DataTypes.INTEGER,
-    //     references: {
-    //       model: "applicants",
-    //       key: "applicant_id",
-    //     },
-    //     allowNull: false,
-    //     onDelete: "CASCADE",
-    //   },
-
-    student_personal_id: {
+    student_id: {
       type: DataTypes.INTEGER,
       references: {
-        model: "student_personal_data",
-        key: "student_personal_id",
+        model: "student_official",
+        key: "id",
       },
-      allowNull: false,
-      onDelete: "CASCADE",
     },
 
     program_id: {
@@ -32,7 +20,7 @@ function model(sequelize) {
       },
     },
 
-    yearLevel: {type: DataTypes.INTEGER(4), allowNull: false}, //
+    yearLevel: {type: DataTypes.INTEGER(4), allowNull: false},
 
     semester_id: {
       type: DataTypes.INTEGER,

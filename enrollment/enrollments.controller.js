@@ -299,8 +299,8 @@ function submitApplicationSchema(req, res, next) {
       elementaryHonors: Joi.string().optional().allow(null),  // Nullable field
       elementaryGraduate: Joi.date().optional().allow(null),  // Nullable field
 
-      secondaryAddress: Joi.string().required(),  // Nullable field
       secondarySchool: Joi.string().required(),  // Nullable field
+      secondaryAddress: Joi.string().required(),  // Nullable field
       secondaryHonors: Joi.string().optional().allow(null),  // Nullable field
       secondaryGraduate: Joi.date().optional().allow(null),  // Nullable field
 
@@ -308,6 +308,13 @@ function submitApplicationSchema(req, res, next) {
       seniorHighAddress: Joi.string().optional().allow(null),  // Nullable field
       seniorHighHonors: Joi.string().optional().allow(null),  // Nullable field
       seniorHighSchoolGraduate: Joi.date().optional().allow(null),  // Nullable field
+      
+      ncae_grade: Joi.string().optional().allow(null),  // Nullable field
+      ncae_year_taken: Joi.string().optional().allow(null),  // Nullable field
+      latest_college: Joi.string().optional().allow(null),  // Nullable field
+      college_address: Joi.string().optional().allow(null),  // Nullable field
+      college_honors: Joi.string().optional().allow(null),  // Nullable field
+      program: Joi.string().optional().allow(null),  // Nullable field
     }).optional(),
 
     documents: Joi.object({
