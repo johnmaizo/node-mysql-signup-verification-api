@@ -72,14 +72,6 @@ function defineRelationships(db) {
   db.Campus.hasMany(db.Employee, {foreignKey: "campus_id"});
   db.Employee.belongsTo(db.Campus, {foreignKey: "campus_id"});
 
-  // ! StudentPersonalData -> Enrollment Process
-  db.StudentPersonalData.hasMany(db.EnrollmentProcess, {
-    foreignKey: "student_personal_id",
-  });
-  db.EnrollmentProcess.belongsTo(db.StudentPersonalData, {
-    foreignKey: "student_personal_id",
-  });
-
   // ! Program -> Applicant
   db.Program.hasMany(db.StudentPersonalData, {foreignKey: "program_id"});
   db.StudentPersonalData.belongsTo(db.Program, {foreignKey: "program_id"});
@@ -174,7 +166,6 @@ function defineRelationships(db) {
   // ! StudentPersonalData -> StudentAcademicBackground (1-to-1)
   db.StudentPersonalData.hasOne(db.StudentAcademicBackground, {
     foreignKey: "student_personal_id",
-    as: "academicBackground",
   });
   db.StudentAcademicBackground.belongsTo(db.StudentPersonalData, {
     foreignKey: "student_personal_id",
@@ -203,6 +194,14 @@ function defineRelationships(db) {
   });
   db.StudentDocuments.belongsTo(db.StudentPersonalData, {
     foreignKey: "student_personal_id",
+  });
+
+  // ! StudentAcademicBackground belongsTo Program
+  db.StudentAcademicBackground.belongsTo(db.Program, {
+    foreignKey: "program_id",
+  });
+  db.Program.hasMany(db.StudentAcademicBackground, {
+    foreignKey: "program_id",
   });
 
   // Continue with other existing relationships (omitted for brevity)

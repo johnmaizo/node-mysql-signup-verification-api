@@ -968,6 +968,7 @@ async function getAllApplicantCount(campus_id = null) {
 
 // ! For Student
 
+// Helper function to get all students officially enrolled, optionally filtered by campusName
 async function getAllStudentsOfficial(campusName = null) {
   let campus;
 
@@ -977,39 +978,58 @@ async function getAllStudentsOfficial(campusName = null) {
     });
 
     if (!campus) {
-      throw new Error("Campus not found");
+      throw new Error(`Campus "${campusName}" not found`);
     }
   }
 
+  // Fetch StudentOfficial records with necessary associations
   const students = await db.StudentOfficial.findAll({
     where: {
       ...(campus ? {campus_id: campus.campus_id} : {}),
       student_id: {
-        [Op.like]: `${new Date().getFullYear()}%`,
+        [Op.like]: `${new Date().getFullYear()}%`, // Assuming student_id starts with the year
       },
     },
     include: [
       {
         model: db.StudentPersonalData,
+        // No alias used here
         include: [
           {
-            model: db.Program,
+            model: db.StudentAcademicBackground,
+            // No alias used here
             include: [
               {
-                model: db.Department,
-                attributes: ["department_id", "departmentName"],
+                model: db.Program,
+                // No alias used here
+                include: [
+                  {
+                    model: db.Department,
+                    // No alias used here
+                    attributes: ["department_id", "departmentName"],
+                  },
+                ],
+                attributes: ["program_id", "department_id"],
               },
             ],
-            attributes: ["program_id", "department_id"],
+            attributes: [
+              "majorIn",
+              "studentType",
+              "applicationType",
+              "yearEntry",
+              "yearGraduate",
+            ],
           },
         ],
-        attributes: ["student_personal_id", "program_id"],
+        attributes: ["student_personal_id"],
       },
       {
         model: db.Campus,
+        // No alias used here
         attributes: ["campusName"],
       },
     ],
+    attributes: ["student_id"], // Include other attributes as needed
   });
 
   console.log(`Fetched ${students.length} students.`);
@@ -1024,7 +1044,9 @@ async function getAllStudentsOfficial(campusName = null) {
   const studentsWithDepartment = [];
 
   students.forEach((student) => {
-    const studentPersonalData = student.studentPersonalDatum;
+    // Access the associated StudentPersonalData
+    const studentPersonalData = student.student_personal_datum; // Assuming underscored
+
     if (!studentPersonalData) {
       console.warn(
         `Warning: StudentPersonalData not found for student ID ${student.student_id}. Skipping this student.`
@@ -1032,15 +1054,30 @@ async function getAllStudentsOfficial(campusName = null) {
       return; // Skip this student
     }
 
-    const program = studentPersonalData.program;
-    if (!program) {
+    // Access the associated StudentAcademicBackground
+    const academicBackground =
+      studentPersonalData.student_current_academicbackground; // Assuming model name is 'student_current_academicbackground'
+
+    if (!academicBackground) {
       console.warn(
-        `Warning: Program not found for studentPersonalData ID ${studentPersonalData.student_personal_id}. Skipping student ID ${student.student_id}.`
+        `Warning: AcademicBackground not found for studentPersonalData ID ${studentPersonalData.student_personal_id}. Skipping student ID ${student.student_id}.`
       );
       return; // Skip this student
     }
 
-    const department = program.department;
+    // Access the associated Program
+    const program = academicBackground.program; // Assuming 'program' association without alias
+
+    if (!program) {
+      console.warn(
+        `Warning: Program not found for academicBackground ID associated with studentPersonalData ID ${studentPersonalData.student_personal_id}. Skipping student ID ${student.student_id}.`
+      );
+      return; // Skip this student
+    }
+
+    // Access the associated Department
+    const department = program.department; // Assuming 'department' association without alias
+
     if (!department) {
       console.warn(
         `Warning: Department not found for program ID ${program.program_id}. Skipping student ID ${student.student_id}.`
@@ -1056,7 +1093,7 @@ async function getAllStudentsOfficial(campusName = null) {
       ...student.toJSON(),
       department_id: department.department_id,
       departmentName: department.departmentName,
-      campusName: student.campus ? student.campus.campusName : null,
+      campusName: student.Campus ? student.Campus.campusName : null, // Access without alias
     });
   });
 
@@ -1066,7 +1103,6 @@ async function getAllStudentsOfficial(campusName = null) {
 
   return studentsWithDepartment;
 }
-
 async function getAllStudentOfficialCount(campusName = null) {
   let campus;
 
@@ -1142,13 +1178,15 @@ async function getChartData(campusName = null) {
     }
   }
 
+  // Fetch departments, optionally filtered by campus_id
   const departments = await db.Department.findAll({
     where: campus ? {campus_id: campus.campus_id} : {},
     include: [
       {
         model: db.Campus,
-        where: campus ? {campusName} : undefined,
+        // No alias used here
         attributes: ["campusName"],
+        required: true, // Ensures only departments with campuses are fetched
       },
     ],
     attributes: ["department_id", "departmentCode", "departmentName"],
@@ -1172,6 +1210,7 @@ async function getChartData(campusName = null) {
     };
   }
 
+  // Fetch students with departments using the updated helper function
   const students = await getAllStudentsOfficial(campusName);
 
   console.log(`Total students after mapping: ${students.length}`);
@@ -1212,8 +1251,12 @@ async function getChartData(campusName = null) {
     chartData.labels.push({
       departmentCode: department.departmentCode,
       departmentName: department.departmentName,
-      departmentCodeWithCampusName: `${department.departmentCode} (${department.campus.campusName})`, // Changed to lowercase 'campus'
-      departmentNameWithCampusName: `${department.departmentName} (${department.campus.campusName})`, // Changed to lowercase 'campus'
+      departmentCodeWithCampusName: campusName
+        ? `${department.departmentCode} (${department.campus.campusName})`
+        : department.departmentCode,
+      departmentNameWithCampusName: campusName
+        ? `${department.departmentName} (${department.campus.campusName})`
+        : department.departmentName,
     });
     chartData.series.push(studentCount);
     chartData.percentages.push(percentage);
@@ -1499,16 +1542,21 @@ async function getEnrollmentStatusById(enrollment_id) {
         attributes: ["firstName", "lastName", "email"],
         include: [
           {
-            model: db.Program,
-            attributes: ["programCode", "programDescription"],
+            model: db.StudentAcademicBackground,
             include: [
               {
-                model: db.Department,
-                attributes: ["departmentCode", "departmentName"],
+                model: db.Program,
+                attributes: ["programCode", "programDescription"],
                 include: [
                   {
-                    model: db.Campus,
-                    attributes: ["campusName"],
+                    model: db.Department,
+                    attributes: ["departmentCode", "departmentName"],
+                    include: [
+                      {
+                        model: db.Campus,
+                        attributes: ["campusName"],
+                      },
+                    ],
                   },
                 ],
               },
@@ -1519,27 +1567,30 @@ async function getEnrollmentStatusById(enrollment_id) {
     ],
   });
 
+  console.log("Enrollment Status: ", enrollmentStatus.toJSON());
+
   if (!enrollmentStatus) {
     throw new Error(`Enrollment status not found for ID ${enrollment_id}`);
   }
 
+  const studentPersonalData = enrollmentStatus.student_personal_datum;
+  console.log("\n\nstudentPersonalData:", studentPersonalData.toJSON());
+  const academicBackground =
+  studentPersonalData.student_current_academicbackground;
+  console.log("\n\nacademicBackground:", academicBackground.toJSON());
+  const program = academicBackground?.program;
+  const department = program?.department;
+  const campus = department?.campus;
+
   return {
     ...enrollmentStatus.toJSON(),
     applicant: {
-      firstName: enrollmentStatus.applicant.firstName,
-      lastName: enrollmentStatus.applicant.lastName,
-      email: enrollmentStatus.applicant.email,
-      programCode:
-        enrollmentStatus.applicant.program.programCode ||
-        "programCode not found",
-      departmentName: enrollmentStatus.applicant.program.department
-        ? enrollmentStatus.applicant.program.department.departmentName
-        : "Department not found",
-      campusName:
-        enrollmentStatus.applicant.program.department &&
-        enrollmentStatus.applicant.program.department.campus
-          ? enrollmentStatus.applicant.program.department.campus.campusName
-          : "Campus not found",
+      firstName: studentPersonalData.firstName,
+      lastName: studentPersonalData.lastName,
+      email: studentPersonalData.email,
+      programCode: program?.programCode || "Program code not found",
+      departmentName: department?.departmentName || "Department not found",
+      campusName: campus?.campusName || "Campus not found",
     },
   };
 }
