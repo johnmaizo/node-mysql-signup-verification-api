@@ -135,14 +135,6 @@ function defineRelationships(db) {
     foreignKey: "student_personal_id",
   });
 
-  // ! StudentPersonalData -> Program
-  db.Program.hasMany(db.StudentPersonalData, {foreignKey: "program_id"});
-  db.StudentPersonalData.belongsTo(db.Program, {foreignKey: "program_id"});
-
-  // ! StudentPersonalData -> Campus
-  db.Campus.hasMany(db.StudentPersonalData, {foreignKey: "campus_id"});
-  db.StudentPersonalData.belongsTo(db.Campus, {foreignKey: "campus_id"});
-
   // Relationships for the new tables:
 
   // ! StudentPersonalData -> StudentAddPersonalData (1-to-1)
