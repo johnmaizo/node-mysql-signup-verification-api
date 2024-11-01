@@ -431,22 +431,6 @@ async function enrollStudentMockUpOnsite(student_personal_id) {
       "Post response (onlineFullStudentInfoPOST):",
       onlineFullStudentInfoPOST.data
     );
-
-    // New POST request after generating the student ID
-    // const onlineOfficialDataPost = await axios.post(
-    //   `${url}/api/official-student-data/`,
-    //   {
-    //     student_id: student_id,
-    //     campus: campus.campus_id,
-    //     password: `gwapoko123`,
-    //     fulldata_applicant_id: fulldata_applicant_id, // Use the extracted fulldata_applicant_id
-    //   },
-    //   {
-    //     headers: {
-    //       "Content-Type": "application/json",
-    //     },
-    //   }
-    // );
   } catch (error) {
     console.error(
       "Error response:",
