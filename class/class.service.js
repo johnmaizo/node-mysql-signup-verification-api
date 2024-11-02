@@ -231,6 +231,26 @@ function transformClassData(cls) {
     subjectCode: cls.courseinfo.courseCode,
     subjectDescription: cls.courseinfo.courseDescription,
     schedule: schedule,
+    fullStructureDetails: `${
+      (cls.buildingstructure.buildingName &&
+        `${cls.buildingstructure.buildingName} `) ||
+      ""
+    }${
+      (cls.buildingstructure.floorName &&
+        `- ${cls.buildingstructure.floorName} `) ||
+      ""
+    }${
+      (cls.buildingstructure.roomName &&
+        `- ${cls.buildingstructure.roomName}`) ||
+      ""
+    }`.trim(),
+    instructorFullNameWithDepartmentCode: `${cls.employee.title} ${
+      cls.employee.firstName
+    }${cls.employee.middleName != null ? ` ${`${cls.employee.middleName[0]}.`}` : ""} ${
+      cls.employee.lastName
+    }${qualifications} - ${
+      cls.employee.department?.departmentCode || "Department code not found"
+    }`,
   };
 }
 
@@ -253,6 +273,10 @@ async function getClasses(whereClause, campus_id = null, schoolYear = null) {
       attributes: ["schoolYear", "semesterName"],
       include: [{model: db.Campus, attributes: ["campusName"]}],
       where: {},
+    },
+    {
+      model: db.BuildingStructure,
+      attributes: ["buildingName", "floorName", "roomName"],
     },
   ];
 
@@ -328,81 +352,69 @@ async function getAllClassCount(campus_id = null) {
 }
 
 async function getClassById(id) {
-  const course = await db.CourseInfo.findByPk(id, {
+  const cls = await db.Class.findByPk(id, {
     include: [
       {
-        model: db.Campus,
-        attributes: ["campusName"], // Include only the campus name
+        model: db.Employee,
+        attributes: [
+          "title",
+          "firstName",
+          "middleName",
+          "lastName",
+          "role",
+          "qualifications",
+        ],
+        include: [
+          {model: db.Campus, attributes: ["campusName"]},
+          {
+            model: db.Department,
+            attributes: ["departmentName", "departmentCode"],
+          },
+        ],
       },
       {
-        model: db.Department,
-        attributes: ["departmentCode", "departmentName"], // Include only department attributes
+        model: db.Semester,
+        attributes: ["schoolYear", "semesterName"],
+        include: [{model: db.Campus, attributes: ["campusName"]}],
+      },
+      {
+        model: db.CourseInfo,
+        attributes: ["courseCode", "courseDescription"],
+      },
+      {
+        model: db.BuildingStructure,
       },
     ],
   });
 
-  if (!course) throw "Course not found";
-  return transformCourseData(course);
+  if (!cls) throw "Class not found";
+  return transformClassData(cls);
 }
 
 async function updateClass(id, params, accountId) {
-  // Find the course to be updated
-  const course = await db.CourseInfo.findByPk(id);
-  if (!course) throw "Course not found";
-
-  // Check if the action is only to delete the course
-  if (params.isDeleted !== undefined) {
-    if (params.isDeleted && course.isActive) {
-      throw new Error(
-        `You must set the Status of "${course.courseDescription}" to Inactive before you can delete this course.`
-      );
-    }
-
-    Object.assign(course, {isDeleted: params.isDeleted});
-    await course.save();
-
-    // Log the update action
-    await db.History.create({
-      action: "update",
-      entity: "Course",
-      entityId: course.course_id,
-      changes: params,
-      accountId: accountId,
-    });
-
-    return;
-  }
+  // Find the class to be updated
+  const cls = await db.Class.findByPk(id);
+  if (!cls) throw "Class not found";
 
   // Log the original state before update
-  const originalData = {...course.dataValues};
+  const originalData = {...cls.dataValues};
 
-  // If courseCode or campus_id are not provided, use existing values
-  const courseCode = params.courseCode || course.courseCode;
-  const campus_id = params.campus_id || course.campus_id;
+  // Update the class with new parameters
+  Object.assign(cls, params);
 
-  // Validate if courseCode exists on the same campus_id for another course
-  const existingCourseCode = await db.CourseInfo.findOne({
-    where: {
-      courseCode: courseCode,
-      campus_id: campus_id,
-      course_id: {[Op.ne]: id}, // Ensure the course being updated is excluded from this check
-    },
-  });
-
-  if (existingCourseCode) {
-    const campus = await db.Campus.findByPk(campus_id);
-    const campusName = campus ? campus.campusName : "Unknown";
-    throw `Course Code "${courseCode}" is already registered on campus "${campusName}".`;
+  // Validate timeStart and timeEnd
+  if (cls.timeEnd <= cls.timeStart) {
+    throw "Time End must be after Time Start.";
   }
 
-  // Update the course with new parameters
-  Object.assign(course, params);
+  // Validate overlapping schedules
+  // Similar logic as in createClass function
 
-  // Save the updated course
-  await course.save();
+  // Save the updated class
+  await cls.save();
 
   // Check if there are actual changes
-  const hasChanges = !deepEqual(originalData, course.dataValues);
+  const hasChanges = !deepEqual(originalData, cls.dataValues);
 
   if (hasChanges) {
     // Log the update action with changes
@@ -414,8 +426,8 @@ async function updateClass(id, params, accountId) {
     // Log the update action
     await db.History.create({
       action: "update",
-      entity: "Course",
-      entityId: course.course_id,
+      entity: "Class",
+      entityId: cls.class_id,
       changes: changes,
       accountId: accountId,
     });

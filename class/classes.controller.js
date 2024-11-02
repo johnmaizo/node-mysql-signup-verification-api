@@ -93,7 +93,7 @@ function getAllClassCount(req, res, next) {
 function getClassById(req, res, next) {
   classService
     .getClassById(req.params.id)
-    .then((course) => (course ? res.json(course) : res.sendStatus(404)))
+    .then((cls) => (cls ? res.json(cls) : res.sendStatus(404)))
     .catch(next);
 }
 
@@ -148,12 +148,38 @@ function addClassSchema(req, res, next) {
 function updateClassSchema(req, res, next) {
   const schema = Joi.object({
     className: Joi.string().empty(""),
-
     course_id: Joi.number().empty(""),
     semester_id: Joi.number().empty(""),
     employee_id: Joi.number().empty(""),
-
-    schedule: Joi.string().empty(""),
+    structure_id: Joi.number().empty(""),
+    timeStart: Joi.string()
+      .regex(/^([0-1]\d|2[0-3]):([0-5]\d)$/)
+      .empty("")
+      .label("Time Start")
+      .messages({
+        "string.pattern.base": `"Time Start" must be in HH:MM format`,
+      }),
+    timeEnd: Joi.string()
+      .regex(/^([0-1]\d|2[0-3]):([0-5]\d)$/)
+      .empty("")
+      .label("Time End")
+      .messages({
+        "string.pattern.base": `"Time End" must be in HH:MM format`,
+      }),
+    days: Joi.array()
+      .items(
+        Joi.string().valid(
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday"
+        )
+      )
+      .empty(""),
+    isActive: Joi.boolean(),
   });
   validateRequest(req, next, schema);
 }
