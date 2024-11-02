@@ -13,7 +13,10 @@ router.post(
   addClass
 );
 
-router.get("/", getAllClass);
+router.get("/", 
+  // authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  getAllClass
+);
 router.get(
   "/count",
   authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
@@ -52,11 +55,11 @@ function addClass(req, res, next) {
 }
 
 function getAllClass(req, res, next) {
-  const {campus_id} = req.query;
+  const { campus_id, schoolYear, semester_id } = req.query;
 
   classService
-    .getAllClass(campus_id)
-    .then((courses) => res.json(courses))
+    .getAllClass(campus_id, schoolYear, semester_id)
+    .then((classes) => res.json(classes))
     .catch(next);
 }
 
@@ -124,7 +127,20 @@ function addClassSchema(req, res, next) {
       .messages({
         "string.pattern.base": `"Time End" must be in HH:MM format`,
       }),
-    days: Joi.string().required(),
+    days: Joi.array()
+      .items(
+        Joi.string().valid(
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday"
+        )
+      )
+      .min(1)
+      .required(),
   });
   validateRequest(req, next, schema);
 }

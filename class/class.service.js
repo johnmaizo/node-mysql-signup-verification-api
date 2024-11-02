@@ -58,6 +58,54 @@ async function createClass(params, accountId) {
     throw "Time End must be after Time Start.";
   }
 
+  // Validate timeStart and timeEnd
+  if (params.timeEnd <= params.timeStart) {
+    throw "Time End must be after Time Start.";
+  }
+
+  const potentialConflicts = await db.Class.findAll({
+    where: {
+      structure_id: params.structure_id,
+      isDeleted: false,
+      timeStart: {
+        [Op.lt]: params.timeEnd,
+      },
+      timeEnd: {
+        [Op.gt]: params.timeStart,
+      },
+    },
+  });
+
+  const isOverlap = potentialConflicts.some((cls) => {
+    const classDays = cls.days || [];
+    return classDays.some((day) => params.days.includes(day));
+  });
+
+  if (isOverlap) {
+    throw `The room is already booked at the specified time and days.`;
+  }
+
+  // Check for overlapping classes for the same instructor
+  const overlappingInstructorClasses = await db.Class.findOne({
+    where: {
+      employee_id: params.employee_id,
+      isDeleted: false,
+      days: {
+        [Op.overlap]: params.days,
+      },
+      timeStart: {
+        [Op.lt]: params.timeEnd,
+      },
+      timeEnd: {
+        [Op.gt]: params.timeStart,
+      },
+    },
+  });
+
+  if (overlappingInstructorClasses) {
+    throw `Instructor is already assigned to another class at the specified time and days.`;
+  }
+
   // Create the new class if all validations pass
   const newClass = await db.Class.create(params);
 
@@ -111,6 +159,23 @@ function transformClassData(cls) {
       ? `, (${qualificationsArray.map((q) => q.abbreviation).join(", ")})`
       : "";
 
+  // Convert timeStart and timeEnd to readable format
+  const formatTime = (time) => {
+    if (!time) return "";
+    const [hour, minute] = time.split(":");
+    let hourNum = parseInt(hour);
+    const ampm = hourNum >= 12 ? "PM" : "AM";
+    hourNum = hourNum % 12 || 12;
+    return `${hourNum}:${minute} ${ampm}`;
+  };
+
+  const timeStartFormatted = formatTime(cls.timeStart);
+  const timeEndFormatted = formatTime(cls.timeEnd);
+
+  const schedule = `${cls.days.join(
+    ", "
+  )} - ${timeStartFormatted} to ${timeEndFormatted}`;
+
   return {
     ...cls.toJSON(),
     instructureFullName:
@@ -133,17 +198,18 @@ function transformClassData(cls) {
           ? ` ${`${cls.employee.middleName[0]}.`}`
           : ""
       } ${cls.employee.lastName}` || null,
+    semester_id: cls.semester_id,
     schoolYear: cls.semester.schoolYear,
     semesterName: cls.semester.semesterName,
     campusName: cls.semester.campus.campusName,
     subjectCode: cls.courseinfo.courseCode,
     subjectDescription: cls.courseinfo.courseDescription,
-    schedule: cls.schedule,
+    schedule: schedule,
   };
 }
 
 // Common function to get classes based on filter conditions
-async function getClasses(whereClause, campus_id = null) {
+async function getClasses(whereClause, campus_id = null, schoolYear = null) {
   const includeConditions = [
     {
       model: db.Employee,
@@ -160,19 +226,24 @@ async function getClasses(whereClause, campus_id = null) {
       model: db.Semester,
       attributes: ["schoolYear", "semesterName"],
       include: [{model: db.Campus, attributes: ["campusName"]}],
+      where: {},
     },
   ];
+
+  if (schoolYear) {
+    includeConditions[1].where.schoolYear = schoolYear;
+  }
 
   if (campus_id) {
     includeConditions.push({
       model: db.CourseInfo,
       where: {campus_id: campus_id},
-      attributes: ["courseCode", "courseDescription"], // Include course details
+      attributes: ["courseCode", "courseDescription"],
     });
   } else {
     includeConditions.push({
       model: db.CourseInfo,
-      attributes: ["courseCode", "courseDescription"], // Include course details
+      attributes: ["courseCode", "courseDescription"],
     });
   }
 
@@ -184,9 +255,18 @@ async function getClasses(whereClause, campus_id = null) {
   return classes.map(transformClassData);
 }
 
-async function getAllClass(campus_id = null) {
+async function getAllClass(
+  campus_id = null,
+  schoolYear = null,
+  semester_id = null
+) {
   const whereClause = {isDeleted: false};
-  return await getClasses(whereClause, campus_id);
+
+  if (semester_id) {
+    whereClause.semester_id = semester_id;
+  }
+
+  return await getClasses(whereClause, campus_id, schoolYear);
 }
 
 async function getAllClassActive(campus_id = null, program_id = null) {

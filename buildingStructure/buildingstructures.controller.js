@@ -24,7 +24,7 @@ router.get(
 );
 router.get(
   "/active",
-  // authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getAllStructuresActive
 );
 router.get(

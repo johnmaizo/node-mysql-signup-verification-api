@@ -65,7 +65,8 @@ function model(sequelize) {
     },
 
     days: {
-      type: DataTypes.STRING, // Comma-separated string of days
+      // type: DataTypes.ARRAY(DataTypes.STRING),
+      type: DataTypes.JSON,
       allowNull: false,
     },
 
