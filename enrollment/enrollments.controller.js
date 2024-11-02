@@ -32,8 +32,7 @@ router.get("/get-all-applicant", authorize([Role.SuperAdmin, Role.Admin, Role.Re
 router.get("/get-all-applicant-count", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]), getAllApplicantCount);
 
 router.get("/get-enrollment-status/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]), getEnrollmentStatusById);
-router.get("/get-all-enrollment-status", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]), getAllEnrollmentStatus);
-router.get("/get-applicant-info-by-id/:id", getApplicantInfoById);
+router.get("/get-all-enrollment-status", getAllEnrollmentStatus);
 
 router.get(
   "/:id",
@@ -195,18 +194,12 @@ function updateEnrollmentProcess(req, res, next) {
 
 
 function getAllEnrollmentStatus(req, res, next) {
-  const {campus_id} = req.query;
+  const { campus_id, registrar_status, accounting_status, final_approval_status } = req.query;
 
+  // Pass all filters to the service layer
   enrollmentService
-    .getAllEnrollmentStatus(campus_id)
-    .then((count) => res.json(count))
-    .catch(next);
-}
-
-function getApplicantInfoById(req, res, next) {
-  enrollmentService
-    .getApplicantInfo(req.params.id)
-    .then((applicant) => (applicant ? res.json(applicant) : res.sendStatus(404)))
+    .getAllEnrollmentStatus(campus_id, registrar_status, accounting_status, final_approval_status)
+    .then((data) => res.json(data))
     .catch(next);
 }
 

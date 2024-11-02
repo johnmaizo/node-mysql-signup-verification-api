@@ -14,7 +14,6 @@ module.exports = {
   updateEnrollmentProcess,
   getAllEnrollmentStatus,
   getEnrollmentStatusById,
-  getApplicantInfo,
 
   enrollStudent,
   getAllStudentsOfficial,
@@ -1406,57 +1405,116 @@ async function updateEnrollmentProcess(params) {
   };
 }
 
-// Get all enrollment statuses
-async function getAllEnrollmentStatus(campus_id = null) {
-  const enrollmentStatuses = await db.EnrollmentProcess.findAll({
-    include: [
-      {
-        model: db.StudentPersonalData,
-        attributes: ["firstName", "lastName", "email", "campus_id"],
-        where: {
-          ...(campus_id ? {campus_id} : undefined),
-        },
-        include: [
-          {
-            model: db.Program,
-            attributes: ["programCode", "programDescription"],
-            include: [
-              {
-                model: db.Department,
-                attributes: ["departmentCode", "departmentName"],
-                include: [
-                  {
-                    model: db.Campus,
-                    attributes: ["campusName"],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    ],
-    order: [["enrollment_id", "ASC"]], // Order by enrollment ID or as needed
-  });
+/**
+ * Retrieves all enrollment statuses with optional filters.
+ *
+ * @param {number|null} campus_id - Optional campus ID to filter by.
+ * @param {string|null} registrar_status - Optional registrar status value to filter by.
+ * @param {string|null} accounting_status - Optional accounting status value to filter by.
+ * @param {boolean|string|null} final_approval_status - Optional final approval status value to filter by.
+ * @returns {Promise<Array>} - Array of enrollment status objects.
+ */
+async function getAllEnrollmentStatus(
+  campus_id = null,
+  registrar_status = null,
+  accounting_status = null,
+  final_approval_status = null
+) {
+  try {
+    // Build the where clause for EnrollmentProcess based on status filters
+    const enrollmentWhere = {};
 
-  return enrollmentStatuses.map((status) => ({
-    ...status.toJSON(),
-    applicant: {
-      firstName: status.applicant.firstName,
-      lastName: status.applicant.lastName,
-      email: status.applicant.email,
-      programCode:
-        status.applicant.program.programCode || "programCode not found",
-      departmentName: status.applicant.program.department
-        ? status.applicant.program.department.departmentName
-        : "Department not found",
-      campusName:
-        status.applicant.program.department &&
-        status.applicant.program.department.campus
-          ? status.applicant.program.department.campus.campusName
-          : "Campus not found",
-    },
-  }));
+    if (registrar_status) {
+      enrollmentWhere.registrar_status = {
+        [Op.eq]: registrar_status,
+      };
+    }
+
+    if (accounting_status) {
+      enrollmentWhere.accounting_status = {
+        [Op.eq]: accounting_status,
+      };
+    }
+
+    if (final_approval_status !== null && final_approval_status !== undefined) {
+      // Convert string to boolean if necessary
+      let finalApprovalBool;
+      if (typeof final_approval_status === "boolean") {
+        finalApprovalBool = final_approval_status;
+      } else if (typeof final_approval_status === "string") {
+        if (final_approval_status.toLowerCase() === "true") {
+          finalApprovalBool = true;
+        } else if (final_approval_status.toLowerCase() === "false") {
+          finalApprovalBool = false;
+        }
+      }
+
+      if (typeof finalApprovalBool === "boolean") {
+        enrollmentWhere.final_approval_status = {
+          [Op.eq]: finalApprovalBool,
+        };
+      }
+    }
+
+    // Build the where clause for StudentPersonalData based on campus_id
+    const studentWhere = {};
+
+    if (campus_id) {
+      studentWhere.campus_id = {
+        [Op.eq]: campus_id,
+      };
+    }
+
+    const enrollmentStatuses = await db.EnrollmentProcess.findAll({
+      where: enrollmentWhere, // Apply EnrollmentProcess status filters
+      include: [
+        {
+          model: db.StudentPersonalData,
+          attributes: ["firstName", "lastName", "email", "campus_id"],
+          where: studentWhere, // Apply campus_id filter
+          include: [
+            {
+              model: db.StudentAcademicBackground,
+              attributes: [
+                "id",
+                "program_id",
+                "studentType",
+                "applicationType",
+                "semester_id",
+                "yearLevel",
+              ],
+              include: [
+                {
+                  model: db.Program,
+                  attributes: ["programCode", "programDescription"],
+                  include: [
+                    {
+                      model: db.Department,
+                      attributes: ["departmentCode", "departmentName"],
+                      include: [
+                        {
+                          model: db.Campus,
+                          attributes: ["campusName"],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      order: [["enrollment_id", "ASC"]], // Order by enrollment ID or as needed
+    });
+
+    return enrollmentStatuses.map((status) => ({
+      ...status.toJSON(),
+    }));
+  } catch (error) {
+    console.error("Error in getAllEnrollmentStatus:", error.message);
+    throw error; // Re-throw the error after logging
+  }
 }
 
 // Get enrollment status by applicant ID
@@ -1520,50 +1578,4 @@ async function getEnrollmentStatusById(enrollment_id) {
       campusName: campus?.campusName || "Campus not found",
     },
   };
-}
-
-async function getApplicantInfo(applicant_id) {
-  try {
-    // Fetch applicant information with all related details
-    const applicant = await db.StudentPersonalData.findOne({
-      where: {applicant_id: applicant_id},
-      include: [
-        {model: db.StudentPersonalData, as: "personalData"},
-        {model: db.StudentAddPersonalData, as: "addPersonalData"},
-        {model: db.StudentFamily, as: "familyDetails"},
-        {model: db.StudentAcademicBackground, as: "academicBackground"},
-        {model: db.StudentAcademicHistory, as: "academicHistory"},
-      ],
-    });
-
-    console.log(applicant.toJSON());
-
-    if (!applicant) {
-      throw new Error("Applicant not found");
-    }
-
-    // Structure the response as one object with nested objects
-    return {
-      applicant: {
-        applicant_id: applicant.applicant_id,
-        firstName: applicant.firstName,
-        middleName: applicant.middleName,
-        lastName: applicant.lastName,
-        gender: applicant.gender,
-        birthDate: applicant.birthDate,
-        email: applicant.email,
-        contactNumber: applicant.contactNumber,
-        address: applicant.address,
-        campus_id: applicant.campus_id,
-        program_id: applicant.program_id,
-      },
-      personalData: applicant.personalData || {},
-      addPersonalData: applicant.addPersonalData || {},
-      familyDetails: applicant.familyDetails || {},
-      academicBackground: applicant.academicBackground || {},
-      academicHistory: applicant.academicHistory || {},
-    };
-  } catch (error) {
-    throw new Error(`Error fetching applicant info: ${error.message}`);
-  }
 }
