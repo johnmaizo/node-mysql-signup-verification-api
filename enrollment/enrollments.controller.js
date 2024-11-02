@@ -40,7 +40,7 @@ router.get(
   getStudentById
 );
 router.put(
-  "/enrollmentprocess", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  "/enrollmentprocess", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS, Role.Accounting]),
   enrollmentProcessSchema,
   updateEnrollmentProcess
 );

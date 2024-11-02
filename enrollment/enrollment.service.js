@@ -1253,10 +1253,16 @@ async function updateEnrollmentProcess(params) {
   // Convert the comma-separated roles string into an array
   const userRoles = allRoles.split(",").map((r) => r.trim());
 
-  // Check if the specific role is valid and present in the user's roles
-  if (!userRoles.includes(specificRole)) {
+  // Check if the user has the Admin role
+  const isAdmin = userRoles.includes(Role.Admin);
+
+  // If the user is not an Admin, verify they have the specific role
+  if (!isAdmin && !userRoles.includes(specificRole)) {
     throw new Error(`User does not have the role: ${specificRole}`);
   }
+
+  // Proceed with the rest of the function as Admin can perform any role's actions
+  // while non-Admins must have the specific role.
 
   // Check if the applicant exists in the database
   const applicant = await db.StudentPersonalData.findByPk(student_personal_id);
@@ -1510,6 +1516,14 @@ async function getAllEnrollmentStatus(
 
     return enrollmentStatuses.map((status) => ({
       ...status.toJSON(),
+      fullName: `${status.student_personal_datum.firstName} ${
+        status.student_personal_datum.middleName
+          ? status.student_personal_datum.middleName[0]
+          : ""
+      }${status.student_personal_datum.lastName}`,
+      campusName:
+        status.student_personal_datum.student_current_academicbackground.program
+          .department.campus.campusName,
     }));
   } catch (error) {
     console.error("Error in getAllEnrollmentStatus:", error.message);
