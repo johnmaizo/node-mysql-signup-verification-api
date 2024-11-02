@@ -172,9 +172,35 @@ function transformClassData(cls) {
   const timeStartFormatted = formatTime(cls.timeStart);
   const timeEndFormatted = formatTime(cls.timeEnd);
 
-  const schedule = `${cls.days.join(
-    ", "
-  )} - ${timeStartFormatted} to ${timeEndFormatted}`;
+  // const schedule = `${cls.days.join(
+  //   ", "
+  // )} - ${timeStartFormatted} to ${timeEndFormatted}`;
+
+  // Handle the 'days' field: ensure it's an array
+  let daysArray = cls.days;
+
+  if (typeof cls.days === "string") {
+    try {
+      daysArray = JSON.parse(cls.days);
+
+      if (!Array.isArray(daysArray)) {
+        console.error("Error: Parsed 'days' is not an array:", daysArray);
+        daysArray = []; // Default to empty array if parsing doesn't return an array
+      }
+    } catch (error) {
+      console.error("Error parsing 'days' field:", error);
+      daysArray = []; // Default to empty array on parse failure
+    }
+  } else if (!Array.isArray(cls.days)) {
+    console.error("Error: 'days' is neither a string nor an array:", cls.days);
+    daysArray = []; // Default to empty array if 'days' is neither string nor array
+  }
+
+  // Now, safely use the join method
+  const schedule =
+    daysArray.length > 0
+      ? `${daysArray.join(", ")} - ${timeStartFormatted} to ${timeEndFormatted}`
+      : `No schedule information available`;
 
   return {
     ...cls.toJSON(),

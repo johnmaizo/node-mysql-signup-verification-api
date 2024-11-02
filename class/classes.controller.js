@@ -14,7 +14,7 @@ router.post(
 );
 
 router.get("/", 
-  // authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getAllClass
 );
 router.get(
