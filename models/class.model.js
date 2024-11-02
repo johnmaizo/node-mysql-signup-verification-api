@@ -45,18 +45,27 @@ function model(sequelize) {
     },
 
     // Room
-    // structure_id: {
-    //   type: DataTypes.INTEGER,
-    //   allowNull: false,
-    //   references: {
-    //     model: "buildingstructures",
-    //     key: "structure_id",
-    //   },
-    // },
-    // ! MOCK UP RANG SCHEDULE ( PERO DAPAT NAA NIY BUILDING STRUCTURES)
+    structure_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "buildingstructures",
+        key: "structure_id",
+      },
+    },
 
-    schedule: {
-      type: DataTypes.TEXT,
+    timeStart: {
+      type: DataTypes.TIME,
+      allowNull: false,
+    },
+
+    timeEnd: {
+      type: DataTypes.TIME,
+      allowNull: false,
+    },
+
+    days: {
+      type: DataTypes.STRING, // Comma-separated string of days
       allowNull: false,
     },
 

@@ -25,7 +25,7 @@ async function createClass(params, accountId) {
     throw `Class with the name "${params.className}" already exists.`;
   }
 
-  // Fetch course, semester, and employee data
+  // Fetch course, semester, employee, and room data
   const course = await db.CourseInfo.findByPk(params.course_id);
   if (!course) {
     throw `Course with ID "${params.course_id}" not found.`;
@@ -46,77 +46,20 @@ async function createClass(params, accountId) {
     throw `Employee with ID "${params.employee_id}" not found.`;
   }
 
-  // Validate campus consistency
-  if (course.campus_id !== semester.campus_id) {
-    throw `Course with ID "${params.course_id}" is not offered in the same campus as the semester with ID "${params.semester_id}".`;
+  const room = await db.BuildingStructure.findByPk(params.structure_id);
+  if (!room) {
+    throw `Room with ID "${params.structure_id}" not found.`;
   }
 
-  if (employee.campus_id && employee.campus_id !== course.campus_id) {
-    throw `Employee with ID "${params.employee_id}" is not assigned to the same campus as the course with ID "${params.course_id}".`;
-  }
+  // Additional validations as needed...
 
-  // Ensure that the employee's role is valid for creating a class (not a SuperAdmin or other restricted roles)
-  if (
-    employee.role === "SuperAdmin" ||
-    employee.role === "Admin" ||
-    employee.role === "Registrar" ||
-    employee.role === "DataCenter" ||
-    employee.role === "MIS" ||
-    employee.role === "Dean" ||
-    employee.role === "Accounting"
-  ) {
-    throw `Employee with ID "${params.employee_id}" cannot be assigned to a class due to their role (${employee.role}).`;
-  }
-
-  // Ensure that the employee's role includes "Instructor"
-  //   const employeeRoles = employee.role.split(",").map((role) => role.trim());
-  const employeeRoles = employee.role.includes(",")
-    ? employee.role.split(",").map((role) => role.trim())
-    : [employee.role.trim()];
-
-  if (
-    !employeeRoles.includes("Instructor") &&
-    !employeeRoles.includes("Teacher") &&
-    !employeeRoles.includes("Professor")
-  ) {
-    throw `Employee with ID "${params.employee_id}" does not have the 'Instructor', 'Teacher', or 'Professor' role and cannot create a class.`;
-  }
-
-  // Check if the course's department is part of the same campus (if applicable)
-  const department = await db.Department.findByPk(course.department_id);
-  if (department && department.campus_id !== course.campus_id) {
-    throw `The course's department is not part of the same campus.`;
-  }
-
-  // Check department rules
-  if (!course.department_id) {
-    // If course.department_id is null, employee must belong to a department with departmentCode "CEA"
-    const employeeDepartment = await db.Department.findByPk(
-      employee.department_id
-    );
-
-    if (!employeeDepartment || employeeDepartment.departmentCode !== "CEA") {
-      throw `Employee with ID "${params.employee_id}" must belong to the department with code "CEA" when the course has no department.`;
-    }
-  } else {
-    // If course has a department, check if departmentCodes match between course and employee
-    const courseDepartment = await db.Department.findByPk(course.department_id);
-    const employeeDepartment = await db.Department.findByPk(
-      employee.department_id
-    );
-
-    if (
-      !courseDepartment ||
-      !employeeDepartment ||
-      courseDepartment.departmentCode !== employeeDepartment.departmentCode
-    ) {
-      throw `The department code of the course does not match the department code of the employee.`;
-    }
+  // Validate timeStart and timeEnd
+  if (params.timeEnd <= params.timeStart) {
+    throw "Time End must be after Time Start.";
   }
 
   // Create the new class if all validations pass
   const newClass = await db.Class.create(params);
-  //   return newClass;
 
   // Log the creation action
   await db.History.create({

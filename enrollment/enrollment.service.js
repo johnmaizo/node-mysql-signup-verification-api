@@ -1532,6 +1532,18 @@ async function getAllEnrollmentStatus(
           ? status.student_personal_datum.middleName[0] + ". "
           : ""
       }${status.student_personal_datum.lastName}`,
+      programCode:
+        status.student_personal_datum.student_current_academicbackground.program
+          .programCode,
+      programDescription:
+        status.student_personal_datum.student_current_academicbackground.program
+          .programDescription,
+      departmentCode:
+        status.student_personal_datum.student_current_academicbackground.program
+          .department.departmentCode,
+      departmentName:
+        status.student_personal_datum.student_current_academicbackground.program
+          .department.departmentName,
       campusName:
         status.student_personal_datum.student_current_academicbackground.program
           .department.campus.campusName,

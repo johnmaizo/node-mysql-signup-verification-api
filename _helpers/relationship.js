@@ -197,6 +197,14 @@ function defineRelationships(db) {
   });
 
   // Continue with other existing relationships (omitted for brevity)
+
+  // ! Building Structure -> Classes
+  db.BuildingStructure.hasMany(db.Class, {
+    foreignKey: "structure_id",
+  });
+  db.Class.belongsTo(db.BuildingStructure, {
+    foreignKey: "structure_id",
+  });
 }
 
 module.exports = defineRelationships;

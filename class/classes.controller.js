@@ -46,9 +46,8 @@ module.exports = router;
 // Modify existing functions to pass the accountId
 function addClass(req, res, next) {
   classService
-    // .createClass(req.body)
     .createClass(req.body, req.user.id)
-    .then(() => res.json({message: "Class Added Successfully."}))
+    .then(() => res.json({ message: "Class added successfully." }))
     .catch(next);
 }
 
@@ -103,15 +102,29 @@ function updateClass(req, res, next) {
 }
 
 // ! Schemas
+// Validation Schema
 function addClassSchema(req, res, next) {
   const schema = Joi.object({
     className: Joi.string().required(),
-
     course_id: Joi.number().required(),
     semester_id: Joi.number().required(),
     employee_id: Joi.number().required(),
-
-    schedule: Joi.string().required(),
+    structure_id: Joi.number().required(),
+    timeStart: Joi.string()
+      .regex(/^([0-1]\d|2[0-3]):([0-5]\d)$/)
+      .required()
+      .label("Time Start")
+      .messages({
+        "string.pattern.base": `"Time Start" must be in HH:MM format`,
+      }),
+    timeEnd: Joi.string()
+      .regex(/^([0-1]\d|2[0-3]):([0-5]\d)$/)
+      .required()
+      .label("Time End")
+      .messages({
+        "string.pattern.base": `"Time End" must be in HH:MM format`,
+      }),
+    days: Joi.string().required(),
   });
   validateRequest(req, next, schema);
 }
