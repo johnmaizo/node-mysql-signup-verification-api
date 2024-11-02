@@ -1424,7 +1424,8 @@ async function getAllEnrollmentStatus(
   campus_id = null,
   registrar_status = null,
   accounting_status = null,
-  final_approval_status = null
+  final_approval_status = null,
+  payment_confirmed = null
 ) {
   try {
     // Build the where clause for EnrollmentProcess based on status filters
@@ -1443,21 +1444,25 @@ async function getAllEnrollmentStatus(
     }
 
     if (final_approval_status !== null && final_approval_status !== undefined) {
+      // Existing logic for final_approval_status
+    }
+
+    if (payment_confirmed !== null && payment_confirmed !== undefined) {
       // Convert string to boolean if necessary
-      let finalApprovalBool;
-      if (typeof final_approval_status === "boolean") {
-        finalApprovalBool = final_approval_status;
-      } else if (typeof final_approval_status === "string") {
-        if (final_approval_status.toLowerCase() === "true") {
-          finalApprovalBool = true;
-        } else if (final_approval_status.toLowerCase() === "false") {
-          finalApprovalBool = false;
+      let paymentConfirmedBool;
+      if (typeof payment_confirmed === "boolean") {
+        paymentConfirmedBool = payment_confirmed;
+      } else if (typeof payment_confirmed === "string") {
+        if (payment_confirmed.toLowerCase() === "true") {
+          paymentConfirmedBool = true;
+        } else if (payment_confirmed.toLowerCase() === "false") {
+          paymentConfirmedBool = false;
         }
       }
 
-      if (typeof finalApprovalBool === "boolean") {
-        enrollmentWhere.final_approval_status = {
-          [Op.eq]: finalApprovalBool,
+      if (typeof paymentConfirmedBool === "boolean") {
+        enrollmentWhere.payment_confirmed = {
+          [Op.eq]: paymentConfirmedBool,
         };
       }
     }
@@ -1472,12 +1477,18 @@ async function getAllEnrollmentStatus(
     }
 
     const enrollmentStatuses = await db.EnrollmentProcess.findAll({
-      where: enrollmentWhere, // Apply EnrollmentProcess status filters
+      where: enrollmentWhere,
       include: [
         {
           model: db.StudentPersonalData,
-          attributes: ["firstName", "lastName", "email", "campus_id"],
-          where: studentWhere, // Apply campus_id filter
+          attributes: [
+            "firstName",
+            "lastName",
+            "middleName",
+            "email",
+            "campus_id",
+          ],
+          where: studentWhere,
           include: [
             {
               model: db.StudentAcademicBackground,
@@ -1511,14 +1522,14 @@ async function getAllEnrollmentStatus(
           ],
         },
       ],
-      order: [["enrollment_id", "ASC"]], // Order by enrollment ID or as needed
+      order: [["enrollment_id", "ASC"]],
     });
 
     return enrollmentStatuses.map((status) => ({
       ...status.toJSON(),
       fullName: `${status.student_personal_datum.firstName} ${
         status.student_personal_datum.middleName
-          ? status.student_personal_datum.middleName[0]
+          ? status.student_personal_datum.middleName[0] + ". "
           : ""
       }${status.student_personal_datum.lastName}`,
       campusName:
@@ -1527,7 +1538,7 @@ async function getAllEnrollmentStatus(
     }));
   } catch (error) {
     console.error("Error in getAllEnrollmentStatus:", error.message);
-    throw error; // Re-throw the error after logging
+    throw error;
   }
 }
 

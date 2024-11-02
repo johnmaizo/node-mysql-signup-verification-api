@@ -194,11 +194,23 @@ function updateEnrollmentProcess(req, res, next) {
 
 
 function getAllEnrollmentStatus(req, res, next) {
-  const { campus_id, registrar_status, accounting_status, final_approval_status } = req.query;
+  const {
+    campus_id,
+    registrar_status,
+    accounting_status,
+    final_approval_status,
+    payment_confirmed,
+  } = req.query;
 
   // Pass all filters to the service layer
   enrollmentService
-    .getAllEnrollmentStatus(campus_id, registrar_status, accounting_status, final_approval_status)
+    .getAllEnrollmentStatus(
+      campus_id,
+      registrar_status,
+      accounting_status,
+      final_approval_status,
+      payment_confirmed
+    )
     .then((data) => res.json(data))
     .catch(next);
 }
