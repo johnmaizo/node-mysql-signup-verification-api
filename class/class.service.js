@@ -266,6 +266,12 @@ async function getClasses(whereClause, campus_id = null, schoolYear = null) {
         "role",
         "qualifications",
       ],
+      include: [
+        {
+          model: db.Department,
+          attributes: ["departmentCode", "departmentName"],
+        },
+      ],
     },
     {
       model: db.Semester,
