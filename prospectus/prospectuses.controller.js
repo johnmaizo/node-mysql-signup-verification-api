@@ -6,12 +6,6 @@ const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const prospectusService = require("./prospectus.service");
 
-// router.post(
-//   "/add-prospectus",
-//   authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS]),
-//   addProspectusSchema,
-//   addProspectus
-// );
 router.post("/add-prospectus", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS]), addProspectusSchema, addProspectus);
 router.post(
   "/assign-prospectus-subject",
