@@ -199,13 +199,13 @@ function transformClassData(cls) {
 
   return {
     ...cls.toJSON(),
-    instructureFullName:
+    instructorFullName:
       `${cls.employee.title} ${cls.employee.firstName}${
         cls.employee.middleName != null
           ? ` ${`${cls.employee.middleName[0]}.`}`
           : ""
       } ${cls.employee.lastName}${qualifications}` || null,
-    instructureFullNameWithRole:
+    instructorFullNameWithRole:
       `${cls.employee.title} ${cls.employee.firstName}${
         cls.employee.middleName != null
           ? ` ${`${cls.employee.middleName[0]}.`}`
