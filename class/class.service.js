@@ -172,11 +172,6 @@ function transformClassData(cls) {
   const timeStartFormatted = formatTime(cls.timeStart);
   const timeEndFormatted = formatTime(cls.timeEnd);
 
-  // const schedule = `${cls.days.join(
-  //   ", "
-  // )} - ${timeStartFormatted} to ${timeEndFormatted}`;
-
-  // Handle the 'days' field: ensure it's an array
   let daysArray = cls.days;
 
   if (typeof cls.days === "string") {
@@ -244,11 +239,15 @@ function transformClassData(cls) {
         `- ${cls.buildingstructure.roomName}`) ||
       ""
     }`.trim(),
+    room:
+      (cls.buildingstructure.roomName && cls.buildingstructure.roomName) || "",
     instructorFullNameWithDepartmentCode: `${cls.employee.title} ${
       cls.employee.firstName
-    }${cls.employee.middleName != null ? ` ${`${cls.employee.middleName[0]}.`}` : ""} ${
-      cls.employee.lastName
-    }${qualifications} - ${
+    }${
+      cls.employee.middleName != null
+        ? ` ${`${cls.employee.middleName[0]}.`}`
+        : ""
+    } ${cls.employee.lastName}${qualifications} - ${
       cls.employee.department?.departmentCode || "Department code not found"
     }`,
   };

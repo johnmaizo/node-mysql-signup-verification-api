@@ -396,6 +396,44 @@ function transformClassData(cls) {
       ? `, (${qualificationsArray.map((q) => q.abbreviation).join(", ")})`
       : "";
 
+  // Convert timeStart and timeEnd to readable format
+  const formatTime = (time) => {
+    if (!time) return "";
+    const [hour, minute] = time.split(":");
+    let hourNum = parseInt(hour);
+    const ampm = hourNum >= 12 ? "PM" : "AM";
+    hourNum = hourNum % 12 || 12;
+    return `${hourNum}:${minute} ${ampm}`;
+  };
+
+  const timeStartFormatted = formatTime(cls.timeStart);
+  const timeEndFormatted = formatTime(cls.timeEnd);
+
+  let daysArray = cls.days;
+
+  if (typeof cls.days === "string") {
+    try {
+      daysArray = JSON.parse(cls.days);
+
+      if (!Array.isArray(daysArray)) {
+        console.error("Error: Parsed 'days' is not an array:", daysArray);
+        daysArray = []; // Default to empty array if parsing doesn't return an array
+      }
+    } catch (error) {
+      console.error("Error parsing 'days' field:", error);
+      daysArray = []; // Default to empty array on parse failure
+    }
+  } else if (!Array.isArray(cls.days)) {
+    console.error("Error: 'days' is neither a string nor an array:", cls.days);
+    daysArray = []; // Default to empty array if 'days' is neither string nor array
+  }
+
+  // Now, safely use the join method
+  const schedule =
+    daysArray.length > 0
+      ? `${daysArray.join(", ")} - ${timeStartFormatted} to ${timeEndFormatted}`
+      : `No schedule information available`;
+
   return {
     // ...cls.toJSON(),
     class_id: cls.class_id,
@@ -403,7 +441,8 @@ function transformClassData(cls) {
     course_id: cls.course_id,
     semester_id: cls.semester_id,
     employee_id: cls.employee_id,
-    schedule: cls.schedule,
+    room_id: cls.structure_id,
+    schedule: schedule,
     createdAt: cls.createdAt,
     instructureFullName:
       `${cls.employee.title} ${cls.employee.firstName}${
@@ -430,11 +469,26 @@ function transformClassData(cls) {
     campusName: cls.semester.campus.campusName,
     subjectCode: cls.courseinfo.courseCode,
     subjectDescription: cls.courseinfo.courseDescription,
+    fullStructureDetails: `${
+      (cls.buildingstructure.buildingName &&
+        `${cls.buildingstructure.buildingName} `) ||
+      ""
+    }${
+      (cls.buildingstructure.floorName &&
+        `- ${cls.buildingstructure.floorName} `) ||
+      ""
+    }${
+      (cls.buildingstructure.roomName &&
+        `- ${cls.buildingstructure.roomName}`) ||
+      ""
+    }`.trim(),
+    room:
+      (cls.buildingstructure.roomName && cls.buildingstructure.roomName) || "",
   };
 }
 
 // Common function to get classes based on filter conditions
-async function getClasses(whereClause, campus_id = null) {
+async function getClasses(whereClause, campus_id = null, schoolYear = null) {
   const includeConditions = [
     {
       model: db.Employee,
@@ -451,19 +505,28 @@ async function getClasses(whereClause, campus_id = null) {
       model: db.Semester,
       attributes: ["schoolYear", "semesterName"],
       include: [{model: db.Campus, attributes: ["campusName"]}],
+      where: {},
+    },
+    {
+      model: db.BuildingStructure,
+      attributes: ["buildingName", "floorName", "roomName"],
     },
   ];
+
+  if (schoolYear) {
+    includeConditions[1].where.schoolYear = schoolYear;
+  }
 
   if (campus_id) {
     includeConditions.push({
       model: db.CourseInfo,
       where: {campus_id: campus_id},
-      attributes: ["courseCode", "courseDescription"], // Include course details
+      attributes: ["courseCode", "courseDescription"],
     });
   } else {
     includeConditions.push({
       model: db.CourseInfo,
-      attributes: ["courseCode", "courseDescription"], // Include course details
+      attributes: ["courseCode", "courseDescription"],
     });
   }
 
@@ -475,7 +538,12 @@ async function getClasses(whereClause, campus_id = null) {
   return classes.map(transformClassData);
 }
 
-async function getAllClassActive(campus_id = null, campusName = null) {
+async function getAllClassActive(
+  campus_id = null,
+  campusName = null,
+  schoolYear = null,
+  semester_id = null
+) {
   const whereClause = {isActive: true, isDeleted: false};
 
   if (campusName) {
@@ -486,7 +554,11 @@ async function getAllClassActive(campus_id = null, campusName = null) {
     campus_id = campus.campus_id;
   }
 
-  return await getClasses(whereClause, campus_id);
+  if (semester_id) {
+    whereClause.semester_id = semester_id;
+  }
+
+  return await getClasses(whereClause, campus_id, schoolYear);
 }
 // ! Classes END
 
