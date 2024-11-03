@@ -16,6 +16,12 @@ router.post(
   authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   enrollStudent
 );
+router.post(
+  "/submit-enlistment",
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  submitEnlistmentSchema,
+  submitEnlistment
+);
 router.get(
   "/",
   authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
@@ -30,6 +36,7 @@ router.get("/get-chart-data", authorize([Role.SuperAdmin, Role.Admin, Role.Regis
 router.get("/fetch-applicant-data", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]), fetchApplicantData);
 router.get("/get-all-applicant", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]), getAllApplicant);
 router.get("/get-all-applicant-count", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]), getAllApplicantCount);
+router.get("/student-academic-background/:id", getStudentAcademicBackground);
 
 router.get("/get-enrollment-status/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]), getEnrollmentStatusById);
 router.get("/get-all-enrollment-status", getAllEnrollmentStatus);
@@ -55,22 +62,24 @@ module.exports = router;
 
 function submitApplication(req, res, next) {
   enrollmentService
-  .submitApplication(req.body, req.user.id)
-  .then(() =>
-    res.json({
-      message: "Application submitted successfully and enrollment process started",
-    })
-  )
-  .catch((error) => {
-    console.error("Error response:", error.message);
+    .submitApplication(req.body, req.user.id)
+    .then((result) =>
+      res.json({
+        message: result.message,
+        student_personal_id: result.student_personal_id, // Send the ID here
+      })
+    )
+    .catch((error) => {
+      console.error("Error response:", error.message);
 
-    // Send detailed error message to the client
-    res.status(500).json({
-      message: "Application submitted failed.",
-      reason: error.message, // Detailed reason for the failure
+      // Send detailed error message to the client
+      res.status(500).json({
+        message: "Application submission failed.",
+        reason: error.message, // Detailed reason for the failure
+      });
     });
-  });
 }
+
 
 function enrollStudent(req, res, next) {
   enrollmentService
@@ -90,6 +99,17 @@ function enrollStudent(req, res, next) {
       );
       next(error);
     });
+}
+
+function submitEnlistment(req, res, next) {
+  enrollmentService
+    .submitEnlistment(req.body, req.user.id)
+    .then(() =>
+      res.json({
+        message: "Enlistment submitted successfully!",
+      })
+    )
+    .catch(next);
 }
 
 function getAllStudentsOfficial(req, res, next) {
@@ -223,6 +243,13 @@ function getEnrollmentStatusById(req, res, next) {
     .catch(next);
 }
 
+function getStudentAcademicBackground(req, res, next) {
+  enrollmentService
+    .getStudentAcademicBackground(req.params.id)
+    .then((student) => (student ? res.json(student) : res.sendStatus(404)))
+    .catch(next);
+}
+
 // ! Schemas
 function submitApplicationSchema(req, res, next) {
   const schema = Joi.object({
@@ -333,6 +360,14 @@ function submitApplicationSchema(req, res, next) {
     }).optional(),
   });
 
+  validateRequest(req, next, schema);
+}
+
+function submitEnlistmentSchema(req, res, next) {
+  const schema = Joi.object({
+    student_personal_id: Joi.number().required(),
+    class_ids: Joi.array().items(Joi.number()).required(),
+  });
   validateRequest(req, next, schema);
 }
 

@@ -213,6 +213,22 @@ function defineRelationships(db) {
   db.Prospectus.hasMany(db.StudentAcademicBackground, {
     foreignKey: "prospectus_id",
   });
+
+  // StudentPersonalData has many StudentClassEnrollments
+  db.StudentPersonalData.hasMany(db.StudentClassEnrollments, {
+    foreignKey: "student_personal_id",
+  });
+  db.StudentClassEnrollments.belongsTo(db.StudentPersonalData, {
+    foreignKey: "student_personal_id",
+  });
+
+  // Class has many StudentClassEnrollments
+  db.Class.hasMany(db.StudentClassEnrollments, {
+    foreignKey: "class_id",
+  });
+  db.StudentClassEnrollments.belongsTo(db.Class, {
+    foreignKey: "class_id",
+  });
 }
 
 module.exports = defineRelationships;

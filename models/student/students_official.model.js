@@ -20,16 +20,6 @@ function model(sequelize) {
       allowNull: false,
     },
 
-    // applicant_id: {
-    //   type: DataTypes.INTEGER,
-    //   references: {
-    //     model: "applicants",
-    //     key: "applicant_id",
-    //   },
-    //   allowNull: false,
-    //   onDelete: "CASCADE",
-    // },
-
     student_personal_id: {
       type: DataTypes.INTEGER,
       references: {

@@ -24,7 +24,7 @@ router.get(
 );
 router.get(
   "/active",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  // authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getAllClassActive
 );
 router.get(
@@ -64,10 +64,10 @@ function getAllClass(req, res, next) {
 }
 
 function getAllClassActive(req, res, next) {
-  const {campus_id, program_id} = req.query;
+  const { campus_id, schoolYear, semester_id } = req.query;
 
   classService
-    .getAllClassActive(campus_id, program_id)
+    .getAllClassActive(campus_id, schoolYear, semester_id)
     .then((courses) => res.json(courses))
     .catch(next);
 }

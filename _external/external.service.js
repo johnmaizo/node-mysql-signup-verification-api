@@ -527,12 +527,12 @@ async function getClasses(whereClause, campus_id = null, schoolYear = null) {
     includeConditions.push({
       model: db.CourseInfo,
       where: {campus_id: campus_id},
-      attributes: ["courseCode", "courseDescription"],
+      attributes: ["courseCode", "courseDescription", "unit"],
     });
   } else {
     includeConditions.push({
       model: db.CourseInfo,
-      attributes: ["courseCode", "courseDescription"],
+      attributes: ["courseCode", "courseDescription", "unit"],
     });
   }
 

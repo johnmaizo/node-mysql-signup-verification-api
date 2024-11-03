@@ -293,12 +293,12 @@ async function getClasses(whereClause, campus_id = null, schoolYear = null) {
     includeConditions.push({
       model: db.CourseInfo,
       where: {campus_id: campus_id},
-      attributes: ["courseCode", "courseDescription"],
+      attributes: ["courseCode", "courseDescription", "unit"],
     });
   } else {
     includeConditions.push({
       model: db.CourseInfo,
-      attributes: ["courseCode", "courseDescription"],
+      attributes: ["courseCode", "courseDescription", "unit"],
     });
   }
 
@@ -324,24 +324,32 @@ async function getAllClass(
   return await getClasses(whereClause, campus_id, schoolYear);
 }
 
-async function getAllClassActive(campus_id = null, program_id = null) {
+async function getAllClassActive(campus_id = null, schoolYear = null, semester_id = null) {
   const whereClause = {isActive: true, isDeleted: false};
 
+  if (semester_id) {
+    whereClause.semester_id = semester_id;
+  }
+
   if (campus_id) {
     whereClause.campus_id = campus_id;
   }
 
-  return await getCourses(whereClause, program_id);
+  return await getClasses(whereClause, campus_id, schoolYear);
 }
 
-async function getAllClassDeleted(campus_id = null, program_id = null) {
+async function getAllClassDeleted(campus_id = null, schoolYear = null, semester_id = null) {
   const whereClause = {isDeleted: true};
+
+  if (semester_id) {
+    whereClause.semester_id = semester_id;
+  }
 
   if (campus_id) {
     whereClause.campus_id = campus_id;
   }
 
-  return await getCourses(whereClause, program_id);
+  return await getClasses(whereClause, campus_id, schoolYear);
 }
 
 async function getAllClassCount(campus_id = null) {

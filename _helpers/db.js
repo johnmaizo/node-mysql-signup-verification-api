@@ -94,16 +94,20 @@ async function initialize() {
   db.StudentAcademicBackground = require("../models/student/student_academic_background.model")(sequelize)
   db.StudentAcademicHistory = require("../models/student/student_academic_history.model")(sequelize)
   db.StudentDocuments = require("../models/student/student_documents.model")(sequelize)
+  db.StudentOfficial = require("../models/student/students_official.model")(sequelize);
   db.StudentSubjects = require("../models/student/student_subject.model")(sequelize)
+
+
+  // ! Student Class Enrollments
+  db.StudentClassEnrollments = require("../models/student/student_class_enrollments.model")(sequelize);
+
 
   // ! Enrollment
   db.EnrollmentProcess = require("../models/student/enrollment_process.model")(
     sequelize
   );
 
-  // ! Student Official 
-  db.StudentOfficial = require("../models/student/students_official.model")(sequelize);
-
+  
 
   // ! Class
   db.Class = require("../models/class.model")(sequelize);
