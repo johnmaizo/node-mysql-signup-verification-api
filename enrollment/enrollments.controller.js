@@ -289,6 +289,7 @@ function submitApplicationSchema(req, res, next) {
 
     academicBackground: Joi.object({
       program_id: Joi.number().integer().required(),
+      prospectus_id: Joi.number().integer().required(),
       majorIn: Joi.string().optional().allow(null),  // Nullable field
       studentType: Joi.string().valid('Regular', 'Irregular').required(),  // Based on model
       applicationType: Joi.string().valid('Freshmen', 'Transferee', 'Cross Enrollee').required(),  // Based on model

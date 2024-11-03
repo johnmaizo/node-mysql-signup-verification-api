@@ -205,6 +205,14 @@ function defineRelationships(db) {
   db.Class.belongsTo(db.BuildingStructure, {
     foreignKey: "structure_id",
   });
+
+  // StudentAcademicBackground belongsTo Prospectus
+  db.StudentAcademicBackground.belongsTo(db.Prospectus, {
+    foreignKey: "prospectus_id",
+  });
+  db.Prospectus.hasMany(db.StudentAcademicBackground, {
+    foreignKey: "prospectus_id",
+  });
 }
 
 module.exports = defineRelationships;

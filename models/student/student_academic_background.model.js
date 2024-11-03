@@ -36,6 +36,15 @@ function model(sequelize) {
       allowNull: false,
     },
 
+    prospectus_id: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: "prospectus",
+        key: "prospectus_id",
+      },
+      allowNull: false,
+    },
+
     yearLevel: {type: DataTypes.STRING, allowNull: true},
 
     yearEntry: {type: DataTypes.INTEGER(4), allowNull: false},
