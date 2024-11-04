@@ -443,7 +443,10 @@ function transformClassData(cls) {
     employee_id: cls.employee_id,
     room_id: cls.structure_id,
     schedule: schedule,
-    createdAt: cls.createdAt,
+    timeStart: timeStartFormatted,
+    timeEnd: timeEndFormatted,
+    days: daysArray.join(", "),
+    daysArray: daysArray,
     instructureFullName:
       `${cls.employee.title} ${cls.employee.firstName}${
         cls.employee.middleName != null
