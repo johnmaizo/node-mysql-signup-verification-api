@@ -438,7 +438,7 @@ function transformClassData(cls) {
     // ...cls.toJSON(),
     class_id: cls.class_id,
     className: cls.className,
-    course_id: cls.course_id,
+    subject_id: cls.course_id,
     semester_id: cls.semester_id,
     employee_id: cls.employee_id,
     room_id: cls.structure_id,
