@@ -44,7 +44,31 @@ async function getStudentById(student_id, campus_id) {
             ],
           },
           {model: db.StudentAcademicHistory, as: "academicHistory"},
-          {model: db.StudentDocuments},
+          {model: db.StudentDocuments, as: "student_document"},
+          // Include StudentClassEnrollments
+          {
+            model: db.StudentClassEnrollments,
+            include: [
+              {
+                model: db.Class,
+                include: [
+                  {
+                    model: db.CourseInfo, // For Subject Code, Description, Units
+                  },
+                  {
+                    model: db.Semester, // For Semester and School Year
+                  },
+                  {
+                    model: db.BuildingStructure, // For Room info
+                  },
+                  {
+                    model: db.Employee, // For Instructor info
+                  },
+                  // Include Schedule if necessary
+                ],
+              },
+            ],
+          },
         ],
       },
       {

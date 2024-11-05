@@ -233,6 +233,8 @@ function defineRelationships(db) {
   db.StudentClassEnrollments.belongsTo(db.Class, {
     foreignKey: "class_id",
   });
+
+  
 }
 
 module.exports = defineRelationships;
