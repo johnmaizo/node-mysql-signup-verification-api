@@ -3,176 +3,213 @@ const db = require("_helpers/db");
 const Role = require("_helpers/role");
 
 module.exports = {
-  createStudent,
-  getAllStudents,
-  getAllStudentsActive,
-  getPreviousTotalStudents,
-  getPreviousTotalStudentsActive,
-
+  getStudentOfficial,
   getStudentById,
-  updateStudent,
-  // deleteStudent,
+  updateStudentInformation,
 };
 
-async function createStudent(params) {
-  // validate
-  if (await db.Student.findOne({where: {email: params.email}})) {
-    throw 'Email "' + params.email + '" is already registered';
+async function getStudentOfficial(student_personal_id) {
+  const studentOfficial = await db.StudentOfficial.findOne({
+    where: {student_personal_id},
+  });
+  if (!studentOfficial) {
+    throw new Error("Student official record not found.");
+  }
+  return studentOfficial;
+}
+
+async function getStudentById(student_id, campus_id) {
+  const student = await db.StudentOfficial.findOne({
+    where: {student_id, campus_id},
+    include: [
+      {
+        model: db.StudentPersonalData,
+        include: [
+          {model: db.StudentAddPersonalData, as: "addPersonalData"},
+          {model: db.StudentFamily, as: "familyDetails"},
+          {
+            model: db.StudentAcademicBackground,
+            include: [
+              {
+                model: db.Program,
+                include: [
+                  {
+                    model: db.Department,
+                  },
+                ],
+              },
+              {
+                model: db.Semester,
+              },
+            ],
+          },
+          {model: db.StudentAcademicHistory, as: "academicHistory"},
+          {model: db.StudentDocuments},
+        ],
+      },
+      {
+        model: db.Campus,
+      },
+    ],
+  });
+
+  if (!student) {
+    throw new Error("Student not found");
   }
 
-  params.student_id = await generateStudentId();
-
-  const student = new db.Student(params);
-
-  // save student
-  await student.save();
+  return student.toJSON();
 }
 
-/**
- * Generates a unique student ID based on the current year and the existing student IDs in the database.
- *
- * @return {string} The generated unique student ID.
- */
-async function generateStudentId() {
-  const currentYear = new Date().getFullYear().toString();
-  const lastStudent = await db.Student.findOne({
-    where: {
-      student_id: {
-        [Op.like]: `${currentYear}%`,
-      },
-    },
-    order: [["createdAt", "DESC"]],
-  });
+async function updateStudentInformation(params, accountId) {
+  const {sequelize} = db;
+  const transaction = await sequelize.transaction();
 
-  if (lastStudent) {
-    const lastId = lastStudent.student_id.split("-")[1];
-    const newIdNumber = (parseInt(lastId) + 1).toString().padStart(5, "0");
-    return `${currentYear}-${newIdNumber}`;
-  } else {
-    return `${currentYear}-00001`;
+  try {
+    const {
+      personalData,
+      addPersonalData,
+      familyDetails,
+      academicBackground,
+      academicHistory,
+      documents,
+    } = params;
+
+    const studentPersonalId = personalData.student_personal_id;
+
+    if (!studentPersonalId) {
+      throw new Error("Student Personal ID is required.");
+    }
+
+    // Fetch existing student data
+    const studentData = await db.StudentPersonalData.findByPk(
+      studentPersonalId,
+      {
+        transaction,
+      }
+    );
+
+    if (!studentData) {
+      throw new Error(`Student with ID ${studentPersonalId} not found.`);
+    }
+
+    // Update Student Personal Data
+    await studentData.update(personalData, {transaction});
+
+    // Update Additional Personal Data
+    const existingAddPersonalData = await db.StudentAddPersonalData.findOne({
+      where: {student_personal_id: studentPersonalId},
+      transaction,
+    });
+
+    if (existingAddPersonalData) {
+      await existingAddPersonalData.update(addPersonalData, {transaction});
+    } else {
+      await db.StudentAddPersonalData.create(
+        {
+          student_personal_id: studentPersonalId,
+          ...addPersonalData,
+        },
+        {transaction}
+      );
+    }
+
+    // Update Family Details
+    const existingFamilyDetails = await db.StudentFamily.findOne({
+      where: {student_personal_id: studentPersonalId},
+      transaction,
+    });
+
+    if (existingFamilyDetails) {
+      await existingFamilyDetails.update(familyDetails, {transaction});
+    } else {
+      await db.StudentFamily.create(
+        {
+          student_personal_id: studentPersonalId,
+          ...familyDetails,
+        },
+        {transaction}
+      );
+    }
+
+    // Update Academic Background
+    const existingAcademicBackground =
+      await db.StudentAcademicBackground.findOne({
+        where: {student_personal_id: studentPersonalId},
+        transaction,
+      });
+
+    if (existingAcademicBackground) {
+      await existingAcademicBackground.update(academicBackground, {
+        transaction,
+      });
+    } else {
+      await db.StudentAcademicBackground.create(
+        {
+          student_personal_id: studentPersonalId,
+          ...academicBackground,
+        },
+        {transaction}
+      );
+    }
+
+    // Update Academic History
+    const existingAcademicHistory = await db.StudentAcademicHistory.findOne({
+      where: {student_personal_id: studentPersonalId},
+      transaction,
+    });
+
+    if (existingAcademicHistory) {
+      await existingAcademicHistory.update(academicHistory, {transaction});
+    } else {
+      await db.StudentAcademicHistory.create(
+        {
+          student_personal_id: studentPersonalId,
+          ...academicHistory,
+        },
+        {transaction}
+      );
+    }
+
+    // Update Documents
+    const existingDocuments = await db.StudentDocuments.findOne({
+      where: {student_personal_id: studentPersonalId},
+      transaction,
+    });
+
+    if (existingDocuments) {
+      await existingDocuments.update(documents, {transaction});
+    } else {
+      await db.StudentDocuments.create(
+        {
+          student_personal_id: studentPersonalId,
+          ...documents,
+        },
+        {transaction}
+      );
+    }
+
+    // Log the update action in the history table
+    await db.History.create(
+      {
+        action: "update",
+        entity: "Student",
+        entityId: studentPersonalId,
+        changes: params,
+        accountId: accountId,
+      },
+      {transaction}
+    );
+
+    // Commit the transaction
+    await transaction.commit();
+
+    return {
+      message: "Student information updated successfully!",
+    };
+  } catch (error) {
+    // Rollback transaction if there is an error
+    await transaction.rollback();
+
+    throw new Error(`${error.message}`);
   }
-}
-
-async function getAllStudents() {
-  const student = await db.Student.findAll();
-  return student.map((x) => studentBasicDetails(x));
-}
-
-async function getAllStudentsActive() {
-  const students = await db.Student.count({
-    where: {
-      isActive: true,
-    },
-  });
-  return students;
-}
-
-async function getStudentById(id) {
-  const student = await db.Student.findByPk(id);
-  if (!student) throw "Student not found";
-  return student;
-}
-
-async function updateStudent(id, params) {
-  const student = await getStudentById(id);
-
-  if (!student) throw "Student not found";
-
-  // validate (if email was changed)
-  if (
-    params.email &&
-    student.email !== params.email &&
-    (await db.Student.findOne({where: {email: params.email}}))
-  ) {
-    throw 'Email "' + params.email + '" is already taken';
-  }
-
-  Object.assign(student, params);
-  await student.save();
-}
-
-async function getPreviousTotalStudents() {
-  const today = new Date();
-  const firstDayOfPreviousMonth = new Date(
-    today.getFullYear(),
-    today.getMonth() - 1,
-    1
-  );
-  const lastDayOfPreviousMonth = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    0
-  );
-
-  const previousTotalStudents = await db.Student.count({
-    where: {
-      createdAt: {
-        [Op.between]: [firstDayOfPreviousMonth, lastDayOfPreviousMonth],
-      },
-    },
-  });
-
-  return previousTotalStudents || 0;
-}
-
-
-async function getPreviousTotalStudentsActive() {
-  const today = new Date();
-  const firstDayOfPreviousMonth = new Date(
-    today.getFullYear(),
-    today.getMonth() - 1,
-    1
-  );
-  const lastDayOfPreviousMonth = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    0
-  );
-
-  const previousTotalStudentsActive = await db.Student.count({
-    where: {
-      createdAt: {
-        [Op.between]: [firstDayOfPreviousMonth, lastDayOfPreviousMonth],
-      },
-      isActive: true
-    },
-  });
-
-  return previousTotalStudentsActive || 0;
-}
-
-
-
-
-
-
-// ! Student Basic Details
-
-function studentBasicDetails(student) {
-  const {
-    student_id,
-    firstName,
-    middleName,
-    lastName,
-    gender,
-    email,
-    civilStatus,
-    ACR,
-    isActive,
-
-    createdAt,
-  } = student;
-  return {
-    student_id,
-    firstName,
-    middleName,
-    lastName,
-    gender,
-    email,
-    civilStatus,
-    ACR,
-    isActive,
-
-    createdAt,
-  };
 }

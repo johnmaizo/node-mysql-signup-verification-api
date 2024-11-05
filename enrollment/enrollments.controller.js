@@ -39,6 +39,24 @@ router.get("/get-all-applicant-count", authorize([Role.SuperAdmin, Role.Admin, R
 router.get("/student-academic-background/:id", getStudentAcademicBackground);
 
 router.get("/get-enrollment-status/:id", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]), getEnrollmentStatusById);
+router.get(
+  '/student-enrolled-classes/:student_personal_id/:semester_id',
+  // authorize([Role.Admin, Role.Registrar, Role.Accounting, Role.MIS]),
+  getStudentEnrolledClasses
+);
+router.get(
+  '/external/student-enrolled-classes/:student_id/:semester_id',
+  getStudentEnrolledClasses
+);
+router.get(
+  '/all-enrolled-classes',
+  authorize([Role.Admin, Role.Registrar, Role.Accounting, Role.MIS]),
+  getAllEnrolledClasses
+);
+router.get(
+  '/external/all-enrolled-classes',
+  getAllEnrolledClasses
+);
 router.get("/get-all-enrollment-status", getAllEnrollmentStatus);
 
 router.get(
@@ -247,6 +265,27 @@ function getStudentAcademicBackground(req, res, next) {
   enrollmentService
     .getStudentAcademicBackground(req.params.id)
     .then((student) => (student ? res.json(student) : res.sendStatus(404)))
+    .catch(next);
+}
+
+function getStudentEnrolledClasses(req, res, next) {
+  const student_personal_id = parseInt(req.params.student_personal_id);
+  const student_id = req.params.student_id;
+  const semester_id = parseInt(req.params.semester_id);
+  const status = req.query.status || 'enrolled';
+
+  enrollmentService
+    .getStudentEnrolledClasses(student_personal_id, student_id, semester_id, status)
+    .then((classes) => res.json(classes))
+    .catch(next);
+}
+
+function getAllEnrolledClasses(req, res, next) {
+  const semester_id = req.query.semester_id ? parseInt(req.query.semester_id) : null;
+
+  enrollmentService
+    .getAllEnrolledClasses(semester_id)
+    .then((classes) => res.json(classes))
     .catch(next);
 }
 

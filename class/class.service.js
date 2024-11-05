@@ -58,14 +58,11 @@ async function createClass(params, accountId) {
     throw "Time End must be after Time Start.";
   }
 
-  // Validate timeStart and timeEnd
-  if (params.timeEnd <= params.timeStart) {
-    throw "Time End must be after Time Start.";
-  }
-
+  // Room conflict check (add semester_id)
   const potentialConflicts = await db.Class.findAll({
     where: {
       structure_id: params.structure_id,
+      semester_id: params.semester_id, // Added semester_id
       isDeleted: false,
       timeStart: {
         [Op.lt]: params.timeEnd,
@@ -82,13 +79,14 @@ async function createClass(params, accountId) {
   });
 
   if (isOverlap) {
-    throw `The room is already booked at the specified time and days.`;
+    throw `The room is already booked at the specified time and days for this semester.`;
   }
 
-  // Check for overlapping classes for the same instructor
+  // Instructor conflict check (add semester_id)
   const overlappingInstructorClasses = await db.Class.findOne({
     where: {
       employee_id: params.employee_id,
+      semester_id: params.semester_id, // Added semester_id
       isDeleted: false,
       days: {
         [Op.overlap]: params.days,
@@ -103,7 +101,7 @@ async function createClass(params, accountId) {
   });
 
   if (overlappingInstructorClasses) {
-    throw `Instructor is already assigned to another class at the specified time and days.`;
+    throw `Instructor is already assigned to another class at the specified time and days for this semester.`;
   }
 
   // Create the new class if all validations pass
@@ -324,7 +322,11 @@ async function getAllClass(
   return await getClasses(whereClause, campus_id, schoolYear);
 }
 
-async function getAllClassActive(campus_id = null, schoolYear = null, semester_id = null) {
+async function getAllClassActive(
+  campus_id = null,
+  schoolYear = null,
+  semester_id = null
+) {
   const whereClause = {isActive: true, isDeleted: false};
 
   if (semester_id) {
@@ -338,7 +340,11 @@ async function getAllClassActive(campus_id = null, schoolYear = null, semester_i
   return await getClasses(whereClause, campus_id, schoolYear);
 }
 
-async function getAllClassDeleted(campus_id = null, schoolYear = null, semester_id = null) {
+async function getAllClassDeleted(
+  campus_id = null,
+  schoolYear = null,
+  semester_id = null
+) {
   const whereClause = {isDeleted: true};
 
   if (semester_id) {

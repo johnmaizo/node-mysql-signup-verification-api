@@ -84,7 +84,7 @@ app.use("/class", require("./class/classes.controller"));
 app.use("/prospectus", require("./prospectus/prospectuses.controller"));
 
 // ! Student
-// app.use("/students", require("./students/students.controller"));
+app.use("/students", require("./students/students.controller"));
 
 // swagger docs route
 app.use("/api-docs", require("_helpers/swagger"));

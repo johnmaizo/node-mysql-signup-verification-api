@@ -72,10 +72,6 @@ function defineRelationships(db) {
   db.Campus.hasMany(db.Employee, {foreignKey: "campus_id"});
   db.Employee.belongsTo(db.Campus, {foreignKey: "campus_id"});
 
-  // ! Program -> Applicant
-  db.Program.hasMany(db.StudentPersonalData, {foreignKey: "program_id"});
-  db.StudentPersonalData.belongsTo(db.Program, {foreignKey: "program_id"});
-
   // ! Campus -> Applicant
   db.Campus.hasMany(db.StudentPersonalData, {foreignKey: "campus_id"});
   db.StudentPersonalData.belongsTo(db.Campus, {foreignKey: "campus_id"});
@@ -194,6 +190,14 @@ function defineRelationships(db) {
   });
   db.Program.hasMany(db.StudentAcademicBackground, {
     foreignKey: "program_id",
+  });
+  
+  // ! StudentAcademicBackground belongsTo Semester
+  db.StudentAcademicBackground.belongsTo(db.Semester, {
+    foreignKey: "semester_id",
+  });
+  db.Semester.hasMany(db.StudentAcademicBackground, {
+    foreignKey: "semester_id",
   });
 
   // Continue with other existing relationships (omitted for brevity)

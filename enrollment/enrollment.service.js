@@ -30,6 +30,9 @@ module.exports = {
   fetchApplicantData,
   getAllApplicant,
   getAllApplicantCount,
+
+  getStudentEnrolledClasses,
+  getAllEnrolledClasses,
 };
 
 const url = process.env.MHAFRIC_API;
@@ -1047,29 +1050,31 @@ async function getAllStudentsOfficial(campusName = null) {
     where: {
       ...(campus ? {campus_id: campus.campus_id} : {}),
       student_id: {
-        [Op.like]: `${new Date().getFullYear()}%`, // Assuming student_id starts with the year
+        [Op.like]: `${new Date().getFullYear()}%`,
       },
     },
     include: [
       {
         model: db.StudentPersonalData,
-        // No alias used here
         include: [
           {
             model: db.StudentAcademicBackground,
-            // No alias used here
+
             include: [
               {
                 model: db.Program,
-                // No alias used here
                 include: [
                   {
                     model: db.Department,
-                    // No alias used here
                     attributes: ["department_id", "departmentName"],
                   },
                 ],
-                attributes: ["program_id", "department_id"],
+                attributes: [
+                  "program_id",
+                  "programDescription",
+                  "programCode",
+                  "department_id",
+                ],
               },
             ],
             attributes: [
@@ -1077,19 +1082,26 @@ async function getAllStudentsOfficial(campusName = null) {
               "studentType",
               "applicationType",
               "yearEntry",
+              "yearLevel",
               "yearGraduate",
             ],
           },
         ],
-        attributes: ["student_personal_id"],
+        attributes: [
+          "student_personal_id",
+          "firstName",
+          "middleName",
+          "lastName",
+          "email",
+        ],
       },
       {
         model: db.Campus,
-        // No alias used here
-        attributes: ["campusName"],
+
+        attributes: ["campusName", "campus_id"],
       },
     ],
-    attributes: ["student_id"], // Include other attributes as needed
+    attributes: ["student_id", "createdAt"], // Include other attributes as needed
   });
 
   console.log(`Fetched ${students.length} students.`);
@@ -1114,7 +1126,6 @@ async function getAllStudentsOfficial(campusName = null) {
       return; // Skip this student
     }
 
-    // Access the associated StudentAcademicBackground
     const academicBackground =
       studentPersonalData.student_current_academicbackground; // Assuming model name is 'student_current_academicbackground'
 
@@ -1125,8 +1136,7 @@ async function getAllStudentsOfficial(campusName = null) {
       return; // Skip this student
     }
 
-    // Access the associated Program
-    const program = academicBackground.program; // Assuming 'program' association without alias
+    const program = academicBackground.program;
 
     if (!program) {
       console.warn(
@@ -1136,7 +1146,7 @@ async function getAllStudentsOfficial(campusName = null) {
     }
 
     // Access the associated Department
-    const department = program.department; // Assuming 'department' association without alias
+    const department = program.department;
 
     if (!department) {
       console.warn(
@@ -1149,11 +1159,25 @@ async function getAllStudentsOfficial(campusName = null) {
       `Mapping Student ID ${student.student_id} to Department ${department.departmentName}`
     );
 
+    // Extract the personal data fields
+    const {firstName, middleName, lastName, email} = studentPersonalData;
+
     studentsWithDepartment.push({
       ...student.toJSON(),
       department_id: department.department_id,
       departmentName: department.departmentName,
-      campusName: student.Campus ? student.Campus.campusName : null, // Access without alias
+      campusName: student.campus ? student.campus.campusName : null,
+      campus_id: student.campus ? student.campus.campus_id : null,
+      firstName,
+      middleName,
+      lastName,
+      email,
+      programCode:
+        student.student_personal_datum.student_current_academicbackground
+          .program.programCode,
+      yearLevel:
+        student.student_personal_datum.student_current_academicbackground
+          .yearLevel,
     });
   });
 
@@ -1163,6 +1187,7 @@ async function getAllStudentsOfficial(campusName = null) {
 
   return studentsWithDepartment;
 }
+
 async function getAllStudentOfficialCount(campusName = null) {
   let campus;
 
@@ -1346,7 +1371,7 @@ async function getStudentAcademicBackground(id) {
   });
 
   if (!studentAcademicBackground) {
-    throw new Error("Student not found.");
+    throw new Error("Student academic background not found.");
   }
 
   return studentAcademicBackground;
@@ -1541,21 +1566,14 @@ async function updateEnrollmentProcess(params) {
   };
 }
 
-/**
- * Retrieves all enrollment statuses with optional filters.
- *
- * @param {number|null} campus_id - Optional campus ID to filter by.
- * @param {string|null} registrar_status - Optional registrar status value to filter by.
- * @param {string|null} accounting_status - Optional accounting status value to filter by.
- * @param {boolean|string|null} final_approval_status - Optional final approval status value to filter by.
- * @returns {Promise<Array>} - Array of enrollment status objects.
- */
 async function getAllEnrollmentStatus(
   campus_id = null,
   registrar_status = null,
   accounting_status = null,
   final_approval_status = null,
-  payment_confirmed = null
+  payment_confirmed = null,
+  schoolYear = null,
+  semester_id = null
 ) {
   try {
     // Build the where clause for EnrollmentProcess based on status filters
@@ -1606,6 +1624,13 @@ async function getAllEnrollmentStatus(
       };
     }
 
+    // Build the where clause for StudentAcademicBackground
+    const academicBackgroundWhere = {};
+
+    if (semester_id) {
+      academicBackgroundWhere.semester_id = semester_id;
+    }
+
     const enrollmentStatuses = await db.EnrollmentProcess.findAll({
       where: enrollmentWhere,
       include: [
@@ -1619,9 +1644,11 @@ async function getAllEnrollmentStatus(
             "campus_id",
           ],
           where: studentWhere,
+          required: true,
           include: [
             {
               model: db.StudentAcademicBackground,
+              as: "student_current_academicbackground",
               attributes: [
                 "id",
                 "program_id",
@@ -1630,7 +1657,15 @@ async function getAllEnrollmentStatus(
                 "semester_id",
                 "yearLevel",
               ],
+              where: academicBackgroundWhere,
+              required: true,
               include: [
+                {
+                  model: db.Semester,
+                  attributes: ["semester_id", "schoolYear", "semesterName"],
+                  required: true,
+                  where: schoolYear ? {schoolYear} : {},
+                },
                 {
                   model: db.Program,
                   attributes: ["programCode", "programDescription"],
@@ -1677,6 +1712,12 @@ async function getAllEnrollmentStatus(
       campusName:
         status.student_personal_datum.student_current_academicbackground.program
           .department.campus.campusName,
+      schoolYear:
+        status.student_personal_datum.student_current_academicbackground
+          .semester.schoolYear,
+      semesterName:
+        status.student_personal_datum.student_current_academicbackground
+          .semester.semesterName,
     }));
   } catch (error) {
     console.error("Error in getAllEnrollmentStatus:", error.message);
@@ -1745,4 +1786,316 @@ async function getEnrollmentStatusById(enrollment_id) {
       campusName: campus?.campusName || "Campus not found",
     },
   };
+}
+
+// ! Get Student Enrolled Classes
+
+async function getStudentEnrolledClasses(
+  student_personal_id,
+  student_id,
+  semester_id,
+  status = "enrolled"
+) {
+  let studentOfficialWhere =
+    student_personal_id && !student_id
+      ? {student_personal_id}
+      : student_id && {student_id};
+
+  // Fetch the student's official student ID
+  const studentOfficial = await db.StudentOfficial.findOne({
+    where: studentOfficialWhere,
+    attributes: ["student_id", "student_personal_id"],
+  });
+
+  // Use student_personal_id from studentOfficial if exists, else use the passed in student_personal_id
+  const personalIdToUse = studentOfficial
+    ? studentOfficial.student_personal_id
+    : student_personal_id;
+
+  // Fetch the classes the student is enrolled in for the specific semester
+  const enrolledClasses = await db.StudentClassEnrollments.findAll({
+    where: {
+      student_personal_id: personalIdToUse,
+      status,
+    },
+    include: [
+      {
+        model: db.Class,
+        where: {
+          semester_id,
+        },
+        include: [
+          {
+            model: db.CourseInfo,
+            attributes: [
+              "course_id",
+              "courseCode",
+              "courseDescription",
+              "unit",
+            ],
+          },
+          {
+            model: db.Semester,
+            attributes: ["semester_id", "schoolYear", "semesterName"],
+          },
+          {
+            model: db.Employee,
+            attributes: [
+              "employee_id",
+              "title",
+              "firstName",
+              "middleName",
+              "lastName",
+              "role",
+              "qualifications",
+            ],
+          },
+        ],
+      },
+    ],
+  });
+
+  // Check if there are any enrolled classes
+  if (!enrolledClasses || enrolledClasses.length === 0) {
+    return []; // Return an empty array if no classes are found
+  }
+
+  // Map the data to include only the necessary fields
+  const result = enrolledClasses.map((enrollment) => {
+    const cls = enrollment.class;
+    const courseInfo = cls.courseinfo;
+    const semester = cls.semester;
+    const instructor = cls.employee;
+
+    // Handle roles
+    let roles = instructor.role
+      ? instructor.role.split(",").map((r) => r.trim())
+      : [];
+
+    const validRoles = [
+      Role.SuperAdmin,
+      Role.Admin,
+      Role.MIS,
+      Role.Registrar,
+      Role.DataCenter,
+      Role.Dean,
+      Role.Accounting,
+    ];
+
+    // Filter roles to keep only valid ones
+    const forValidRoles = roles.filter((role) => validRoles.includes(role));
+
+    // Get the first valid role if available
+    const firstValidRole = roles.length > 0 ? roles[0] : null;
+
+    // Handle qualifications, parse the string into an array if needed
+    let qualificationsArray = [];
+    if (typeof instructor.qualifications === "string") {
+      try {
+        qualificationsArray = JSON.parse(instructor.qualifications);
+      } catch (error) {
+        console.error("Error parsing qualifications:", error);
+        qualificationsArray = []; // Handle the error by returning an empty array
+      }
+    } else if (Array.isArray(instructor.qualifications)) {
+      qualificationsArray = instructor.qualifications;
+    }
+
+    // Check if qualifications exist and map the abbreviations
+    const qualifications =
+      qualificationsArray.length > 0
+        ? `, (${qualificationsArray.map((q) => q.abbreviation).join(", ")})`
+        : "";
+
+    return {
+      student_id: studentOfficial ? studentOfficial.student_id : null,
+      student_personal_id: personalIdToUse,
+      class_id: cls.class_id,
+      course_id: courseInfo.course_id,
+      semester_id: semester.semester_id,
+      employee_id: instructor.employee_id,
+
+      className: cls.className,
+      subjectCode: courseInfo.courseCode,
+      subjectDescription: courseInfo.courseDescription,
+      unit: courseInfo.unit,
+      schoolYear: semester.schoolYear,
+      semesterName: semester.semesterName,
+      instructorFullName:
+        `${instructor.title} ${instructor.firstName}${
+          instructor.middleName != null
+            ? ` ${`${instructor.middleName[0]}.`}`
+            : ""
+        } ${instructor.lastName}${qualifications}` || null,
+      instructorFullNameWithRole:
+        `${instructor.title} ${instructor.firstName}${
+          instructor.middleName != null
+            ? ` ${`${instructor.middleName[0]}.`}`
+            : ""
+        } ${instructor.lastName}${qualifications} - ${
+          firstValidRole ? firstValidRole : forValidRoles
+        }` || null,
+      instructorName:
+        `${instructor.firstName}${
+          instructor.middleName != null
+            ? ` ${`${instructor.middleName[0]}.`}`
+            : ""
+        } ${instructor.lastName}` || null,
+    };
+  });
+
+  return result;
+}
+
+async function getAllEnrolledClasses(semester_id) {
+  // Build the where clause for Class based on semester_id
+  const classWhere = semester_id ? {semester_id} : {};
+
+  // Fetch all class enrollments with status 'enrolled' for the given semester
+  const enrolledClasses = await db.StudentClassEnrollments.findAll({
+    where: {
+      status: "enrolled",
+    },
+    include: [
+      {
+        model: db.StudentPersonalData,
+        include: [
+          {
+            model: db.StudentOfficial,
+            attributes: ["student_id"],
+          },
+        ],
+        attributes: [
+          "student_personal_id",
+          "firstName",
+          "middleName",
+          "lastName",
+          "suffix",
+        ],
+      },
+      {
+        model: db.Class,
+        where: classWhere,
+        include: [
+          {
+            model: db.CourseInfo,
+            attributes: [
+              "course_id",
+              "courseCode",
+              "courseDescription",
+              "unit",
+            ],
+          },
+          {
+            model: db.Semester,
+            attributes: ["semester_id", "schoolYear", "semesterName"],
+          },
+          {
+            model: db.Employee,
+            attributes: [
+              "employee_id",
+              "title",
+              "firstName",
+              "middleName",
+              "lastName",
+              "role",
+              "qualifications",
+            ],
+          },
+        ],
+      },
+    ],
+  });
+
+  console.log(enrolledClasses[0].toJSON());
+
+  // Map the data to include only the necessary fields
+  const result = enrolledClasses.map((enrollment) => {
+    const student = enrollment.student_personal_datum;
+    const studentOfficial = student.student_official;
+    const cls = enrollment.class;
+    const courseInfo = cls.courseinfo;
+    const semester = cls.semester;
+
+    let roles = cls.employee.role
+      ? cls.employee.role.split(",").map((r) => r.trim())
+      : [];
+
+    const validRoles = [
+      Role.SuperAdmin,
+      Role.Admin,
+      Role.MIS,
+      Role.Registrar,
+      Role.DataCenter,
+      Role.Dean,
+      Role.Accounting,
+    ];
+
+    // Filter roles to keep only valid ones
+    const forValidRoles = roles.filter((role) => validRoles.includes(role));
+
+    // Get the first valid role if available
+    const firstValidRole = roles.length > 0 ? roles[0] : null;
+
+    // Handle qualifications, parse the string into an array if needed
+    let qualificationsArray = [];
+    if (typeof cls.employee.qualifications === "string") {
+      try {
+        qualificationsArray = JSON.parse(cls.employee.qualifications);
+      } catch (error) {
+        console.error("Error parsing qualifications:", error);
+        qualificationsArray = []; // Handle the error by returning an empty array
+      }
+    } else if (Array.isArray(cls.employee.qualifications)) {
+      qualificationsArray = cls.employee.qualifications;
+    }
+
+    // Check if qualifications exist and map the abbreviations
+    const qualifications =
+      qualificationsArray.length > 0
+        ? `, (${qualificationsArray.map((q) => q.abbreviation).join(", ")})`
+        : "";
+
+    return {
+      student_id: studentOfficial ? studentOfficial.student_id : null,
+      student_personal_id: student.student_personal_id,
+      class_id: cls.class_id,
+      course_id: courseInfo.course_id,
+      semester_id: semester.semester_id,
+      employee_id: cls.employee.employee_id,
+
+      studentName: `${student.firstName} ${student.middleName || ""} ${
+        student.lastName
+      } ${student.suffix || ""}`.trim(),
+      className: cls.className,
+      subjectCode: courseInfo.courseCode,
+      subjectDescription: courseInfo.courseDescription,
+      unit: courseInfo.unit,
+      schoolYear: semester.schoolYear,
+      semesterName: semester.semesterName,
+
+      instructorFullName:
+        `${cls.employee.title} ${cls.employee.firstName}${
+          cls.employee.middleName != null
+            ? ` ${`${cls.employee.middleName[0]}.`}`
+            : ""
+        } ${cls.employee.lastName}${qualifications}` || null,
+      instructorFullNameWithRole:
+        `${cls.employee.title} ${cls.employee.firstName}${
+          cls.employee.middleName != null
+            ? ` ${`${cls.employee.middleName[0]}.`}`
+            : ""
+        } ${cls.employee.lastName}${qualifications} - ${
+          firstValidRole ? firstValidRole : forValidRoles
+        }` || null,
+      instructorName:
+        `${cls.employee.firstName}${
+          cls.employee.middleName != null
+            ? ` ${`${cls.employee.middleName[0]}.`}`
+            : ""
+        } ${cls.employee.lastName}` || null,
+    };
+  });
+
+  return result;
 }

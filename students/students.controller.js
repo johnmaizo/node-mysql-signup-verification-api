@@ -6,146 +6,169 @@ const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const studentService = require("./student.service");
 
-router.post(
-  "/add-student",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
-  addStudentSchema,
-  addStudent
-);
 router.get(
-  "/",
+  "/official/:student_personal_id",
   authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
-  getAllStudents
+  getStudentOfficial
 );
-router.get(
-  "/active",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
-  getAllStudentsActive
-);
-router.get(
-  "/previous",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
-  getPreviousTotalStudents
-);
-router.get(
-  "/previous-active",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
-  getPreviousTotalStudentsActive
-);
-router.get(
-  "/:id",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
-  getStudentById
-);
+
+router.get("/get-student-by-id", getStudentById);
 router.put(
-  "/:id",
+  "/update-student",
   authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   updateStudentSchema,
-  updateStudent
+  updateStudentInformation
 );
 
 module.exports = router;
 
-function addStudent(req, res, next) {
+function getStudentOfficial(req, res, next) {
+  const student_personal_id = parseInt(req.params.student_personal_id);
   studentService
-    .createStudent(req.body)
-    .then(() =>
-      res.json({
-        message: "Student Added Successfully.",
-      })
-    )
-    .catch(next);
-}
-
-function getAllStudents(req, res, next) {
-  studentService
-    .getAllStudents()
-    .then((students) => res.json(students))
-    .catch(next);
-}
-
-function getAllStudentsActive(req, res, next) {
-  studentService
-    .getAllStudentsActive()
-    .then((students) => res.json(students))
-    .catch(next);
-}
-
-function getPreviousTotalStudents(req, res, next) {
-  studentService
-    .getPreviousTotalStudents()
-    .then((previousTotal) => res.json({total: previousTotal}))
-    .catch(next);
-}
-
-function getPreviousTotalStudentsActive(req, res, next) {
-  studentService
-    .getPreviousTotalStudentsActive()
-    .then((previousTotal) => res.json({total: previousTotal}))
+    .getStudentOfficial(student_personal_id)
+    .then((data) => res.json(data))
     .catch(next);
 }
 
 function getStudentById(req, res, next) {
+  const {student_id, campus_id} = req.query;
   studentService
-    .getStudentById(req.params.id)
-    .then((student) => (student ? res.json(student) : res.sendStatus(404)))
+    .getStudentById(student_id, campus_id)
+    .then((student) => res.json(student))
     .catch(next);
 }
 
-function updateStudent(req, res, next) {
+function updateStudentInformation(req, res, next) {
   studentService
-    .updateStudent(req.params.id, req.body)
-    .then(() =>
-      res.json({
-        message: "Student Updated Successfully.",
-      })
-    )
-    .catch(next);
+    .updateStudentInformation(req.body, req.user.id)
+    .then((result) => res.json({message: result.message}))
+    .catch((error) => {
+      console.error("Error response:", error.message);
+
+      res.status(500).json({
+        message: "Student update failed.",
+        reason: error.message,
+      });
+    });
 }
 
-// ! Schemas
-function addStudentSchema(req, res, next) {
-  const schema = Joi.object({
-    firstName: Joi.string().required(),
-    middleName: [Joi.string().optional(), Joi.allow(null)],
-    lastName: Joi.string().required(),
-
-    email: Joi.string().email().required(),
-    contactNumber: Joi.string().required(),
-
-    gender: Joi.string().required(),
-    civilStatus: Joi.string().required(),
-    birthDate: Joi.date().required(),
-    birthPlace: Joi.string().required(),
-    religion: Joi.string().required(),
-    citizenship: Joi.string().required(),
-    country: Joi.string().required(),
-    ACR: [Joi.string().optional(), Joi.allow(null)],
-  });
-  validateRequest(req, next, schema);
-}
-
+// ! Schema
 function updateStudentSchema(req, res, next) {
   const schema = Joi.object({
-    firstName: Joi.string().empty(""),
-    middleName: [Joi.string().optional(), Joi.allow(null)],
-    lastName: Joi.string().empty(""),
+    personalData: Joi.object({
+      student_personal_id: Joi.number().integer().required(),
+      enrollmentType: Joi.string().valid("online", "on-site").required(),
+      applicant_id_for_online: Joi.number().optional().allow(null),
+      campus_id: Joi.number().integer().required(),
+      firstName: Joi.string().required(),
+      middleName: Joi.string().optional().allow(null),
+      lastName: Joi.string().required(),
+      suffix: Joi.string().optional().allow(null),
+      gender: Joi.string().required(),
+      email: Joi.string().email().required(),
+      contactNumber: Joi.string().required(),
+      address: Joi.string().required(),
+      birthDate: Joi.date().required(),
+      civilStatus: Joi.string().required(),
+      citizenship: Joi.string().required(),
+      country: Joi.string().required(),
+      birthPlace: Joi.string().required(),
+      religion: Joi.string().required(),
+      ACR: Joi.string().optional().allow(null),
+    }).required(),
 
-    email: Joi.string().email().empty(""),
-    contactNumber: Joi.string().empty(""),
+    addPersonalData: Joi.object({
+      cityAddress: Joi.string().required(),
+      cityTelNumber: Joi.string().optional().allow(null),
+      provinceAddress: Joi.string().optional().allow(null),
+      provinceTelNumber: Joi.string().optional().allow(null),
+    }).optional(),
 
-    gender: Joi.string().empty(""),
-    civilStatus: Joi.string().empty(""),
-    birthDate: Joi.date().empty(""),
-    birthPlace: Joi.string().empty(""),
-    religion: Joi.string().empty(""),
-    citizenship: Joi.string().empty(""),
-    country: Joi.string().empty(""),
-    ACR: [Joi.string().optional(), Joi.allow(null)],
+    familyDetails: Joi.object({
+      fatherFirstName: Joi.string().optional().allow(null),
+      fatherMiddleName: Joi.string().optional().allow(null),
+      fatherLastName: Joi.string().optional().allow(null),
+      fatherAddress: Joi.string().optional().allow(null),
+      fatherOccupation: Joi.string().optional().allow(null),
+      fatherContactNumber: Joi.string().optional().allow(null),
+      fatherCompanyName: Joi.string().optional().allow(null),
+      fatherCompanyAddress: Joi.string().optional().allow(null),
+      fatherEmail: Joi.string().optional().allow(null),
+      fatherIncome: Joi.string().optional().allow(null),
 
-    isActive: Joi.boolean().empty(""),
+      motherFirstName: Joi.string().optional().allow(null),
+      motherMiddleName: Joi.string().optional().allow(null),
+      motherLastName: Joi.string().optional().allow(null),
+      motherAddress: Joi.string().optional().allow(null),
+      motherOccupation: Joi.string().optional().allow(null),
+      motherContactNumber: Joi.string().optional().allow(null),
+      motherCompanyName: Joi.string().optional().allow(null),
+      motherCompanyAddress: Joi.string().optional().allow(null),
+      motherEmail: Joi.string().optional().allow(null),
+      motherIncome: Joi.string().optional().allow(null),
 
-    isDeleted: Joi.boolean().empty(""),
+      guardianFirstName: Joi.string().optional().allow(null),
+      guardianMiddleName: Joi.string().optional().allow(null),
+      guardianLastName: Joi.string().optional().allow(null),
+      guardianRelation: Joi.string().optional().allow(null),
+      guardianContactNumber: Joi.string().optional().allow(null),
+    }).optional(),
+
+    academicBackground: Joi.object({
+      program_id: Joi.number().integer().required(),
+      prospectus_id: Joi.number().integer().required(),
+      majorIn: Joi.string().optional().allow(null),
+      studentType: Joi.string().valid("Regular", "Irregular").required(),
+      applicationType: Joi.string()
+        .valid("Freshmen", "Transferee", "Cross Enrollee")
+        .required(),
+      semester_id: Joi.number().integer().required(),
+      yearLevel: Joi.string()
+        .valid(
+          "First Year",
+          "Second Year",
+          "Third Year",
+          "Fourth Year",
+          "Fifth Year"
+        )
+        .required(),
+      yearEntry: Joi.number().integer().required(),
+      yearGraduate: Joi.number().integer().allow(null),
+    }).required(),
+
+    academicHistory: Joi.object({
+      elementarySchool: Joi.string().required(),
+      elementaryAddress: Joi.string().required(),
+      elementaryHonors: Joi.string().optional().allow(null),
+      elementaryGraduate: Joi.date().optional().allow(null),
+
+      secondarySchool: Joi.string().required(),
+      secondaryAddress: Joi.string().required(),
+      secondaryHonors: Joi.string().optional().allow(null),
+      secondaryGraduate: Joi.date().optional().allow(null),
+
+      seniorHighSchool: Joi.string().optional().allow(null),
+      seniorHighAddress: Joi.string().optional().allow(null),
+      seniorHighHonors: Joi.string().optional().allow(null),
+      seniorHighSchoolGraduate: Joi.date().optional().allow(null),
+
+      ncae_grade: Joi.string().optional().allow(null),
+      ncae_year_taken: Joi.string().optional().allow(null),
+      latest_college: Joi.string().optional().allow(null),
+      college_address: Joi.string().optional().allow(null),
+      college_honors: Joi.string().optional().allow(null),
+      program: Joi.string().optional().allow(null),
+    }).optional(),
+
+    documents: Joi.object({
+      form_167: Joi.boolean().required(),
+      certificate_of_good_moral: Joi.boolean().required(),
+      transcript_of_records: Joi.boolean().required(),
+      nso_birth_certificate: Joi.boolean().required(),
+      two_by_two_id_photo: Joi.boolean().required(),
+      certificate_of_transfer_credential: Joi.boolean().required(),
+    }).optional(),
   });
+
   validateRequest(req, next, schema);
 }
