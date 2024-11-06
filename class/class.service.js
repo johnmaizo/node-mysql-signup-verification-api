@@ -16,105 +16,156 @@ module.exports = {
 
 // async function createClass(params) {
 async function createClass(params, accountId) {
-  // Check if a class with the same name already exists
-  const existingClass = await db.Class.findOne({
-    where: {className: params.className},
-  });
+  // Start a transaction to ensure atomicity
+  const transaction = await db.sequelize.transaction();
 
-  if (existingClass) {
-    throw `Class with the name "${params.className}" already exists.`;
-  }
+  try {
+    // 1. Check if a class with the same name already exists
+    const existingClass = await db.Class.findOne({
+      where: {className: params.className},
+      transaction,
+    });
 
-  // Fetch course, semester, employee, and room data
-  const course = await db.CourseInfo.findByPk(params.course_id);
-  if (!course) {
-    throw `Course with ID "${params.course_id}" not found.`;
-  }
+    if (existingClass) {
+      throw new Error(
+        `Class with the name "${params.className}" already exists.`
+      );
+    }
 
-  const semester = await db.Semester.findByPk(params.semester_id);
-  if (!semester) {
-    throw `Semester with ID "${params.semester_id}" not found.`;
-  }
+    // 2. Fetch related data: Course, Semester, Employee, and Room
+    const [course, semester, employee, room] = await Promise.all([
+      db.CourseInfo.findByPk(params.course_id, {transaction}),
+      db.Semester.findByPk(params.semester_id, {transaction}),
+      db.Employee.findByPk(params.employee_id, {transaction}),
+      db.BuildingStructure.findByPk(params.structure_id, {transaction}),
+    ]);
 
-  // Add validation to check if the semester is active
-  if (!semester.isActive) {
-    throw `The semester with ID "${params.semester_id}" is not active. Please select an active semester.`;
-  }
+    if (!course) {
+      throw new Error(`Course with ID "${params.course_id}" not found.`);
+    }
 
-  const employee = await db.Employee.findByPk(params.employee_id);
-  if (!employee) {
-    throw `Employee with ID "${params.employee_id}" not found.`;
-  }
+    if (!semester) {
+      throw new Error(`Semester with ID "${params.semester_id}" not found.`);
+    }
 
-  const room = await db.BuildingStructure.findByPk(params.structure_id);
-  if (!room) {
-    throw `Room with ID "${params.structure_id}" not found.`;
-  }
+    // 3. Validate if the semester is active
+    if (!semester.isActive) {
+      throw new Error(
+        `The semester with ID "${params.semester_id}" is not active. Please select an active semester.`
+      );
+    }
 
-  // Additional validations as needed...
+    if (!employee) {
+      throw new Error(`Employee with ID "${params.employee_id}" not found.`);
+    }
 
-  // Validate timeStart and timeEnd
-  if (params.timeEnd <= params.timeStart) {
-    throw "Time End must be after Time Start.";
-  }
+    if (!room) {
+      throw new Error(`Room with ID "${params.structure_id}" not found.`);
+    }
 
-  // Room conflict check (add semester_id)
-  const potentialConflicts = await db.Class.findAll({
-    where: {
-      structure_id: params.structure_id,
-      semester_id: params.semester_id, // Added semester_id
-      isDeleted: false,
-      timeStart: {
-        [Op.lt]: params.timeEnd,
+    // 4. Validate timeStart and timeEnd
+    if (params.timeEnd <= params.timeStart) {
+      throw new Error("Time End must be after Time Start.");
+    }
+
+    // 5. Ensure params.days is an array
+    if (!Array.isArray(params.days)) {
+      throw new Error("Invalid format for 'days'. It should be an array.");
+    }
+
+    // 6. Room conflict check
+    const potentialConflicts = await db.Class.findAll({
+      where: {
+        structure_id: params.structure_id,
+        semester_id: params.semester_id,
+        isDeleted: false,
+        timeStart: {
+          [Op.lt]: params.timeEnd,
+        },
+        timeEnd: {
+          [Op.gt]: params.timeStart,
+        },
       },
-      timeEnd: {
-        [Op.gt]: params.timeStart,
+      transaction,
+    });
+
+    const isRoomOverlap = potentialConflicts.some((cls) => {
+      let classDays = [];
+
+      if (typeof cls.days === "string") {
+        // Adjust the splitting logic based on your actual data format
+        classDays = cls.days.includes(",")
+          ? cls.days.split(",").map((day) => day.trim())
+          : cls.days.split("");
+      } else if (Array.isArray(cls.days)) {
+        classDays = cls.days;
+      }
+
+      // Check if any day overlaps
+      return classDays.some((day) => params.days.includes(day));
+    });
+
+    if (isRoomOverlap) {
+      throw new Error(
+        `The room is already booked at the specified time and days for this semester.`
+      );
+    }
+
+    // 7. Instructor conflict check
+    const overlappingInstructorClasses = await db.Class.findOne({
+      where: {
+        employee_id: params.employee_id,
+        semester_id: params.semester_id,
+        isDeleted: false,
+        days: {
+          [Op.overlap]: params.days,
+        },
+        timeStart: {
+          [Op.lt]: params.timeEnd,
+        },
+        timeEnd: {
+          [Op.gt]: params.timeStart,
+        },
       },
-    },
-  });
+      transaction,
+    });
 
-  const isOverlap = potentialConflicts.some((cls) => {
-    const classDays = cls.days || [];
-    return classDays.some((day) => params.days.includes(day));
-  });
+    if (overlappingInstructorClasses) {
+      throw new Error(
+        `Instructor is already assigned to another class at the specified time and days for this semester.`
+      );
+    }
 
-  if (isOverlap) {
-    throw `The room is already booked at the specified time and days for this semester.`;
+    // 8. Create the new class
+    const newClass = await db.Class.create(params, {transaction});
+
+    // 9. Log the creation action
+    await db.History.create(
+      {
+        action: "create",
+        entity: "Class",
+        entityId: newClass.class_id,
+        changes: params,
+        accountId: accountId,
+      },
+      {transaction}
+    );
+
+    // Commit the transaction
+    await transaction.commit();
+
+    // Optionally, return the newly created class
+    return newClass;
+  } catch (error) {
+    // Rollback the transaction in case of any errors
+    await transaction.rollback();
+
+    // Log the error for debugging purposes
+    console.error("Error in createClass:", error);
+
+    // Re-throw the error to be handled by the caller
+    throw error;
   }
-
-  // Instructor conflict check (add semester_id)
-  const overlappingInstructorClasses = await db.Class.findOne({
-    where: {
-      employee_id: params.employee_id,
-      semester_id: params.semester_id, // Added semester_id
-      isDeleted: false,
-      days: {
-        [Op.overlap]: params.days,
-      },
-      timeStart: {
-        [Op.lt]: params.timeEnd,
-      },
-      timeEnd: {
-        [Op.gt]: params.timeStart,
-      },
-    },
-  });
-
-  if (overlappingInstructorClasses) {
-    throw `Instructor is already assigned to another class at the specified time and days for this semester.`;
-  }
-
-  // Create the new class if all validations pass
-  const newClass = await db.Class.create(params);
-
-  // Log the creation action
-  await db.History.create({
-    action: "create",
-    entity: "Class",
-    entityId: newClass.class_id,
-    changes: params,
-    accountId: accountId,
-  });
 }
 
 function transformClassData(cls) {
