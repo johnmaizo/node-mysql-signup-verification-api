@@ -386,6 +386,7 @@ async function enrollStudentMockUpOnsite(student_personal_id) {
 
     console.log(classEnrollments[0].toJSON());
 
+    /*
     const onlineFullStudentInfoPOST = await axios.post(
       `${url}/api/onsite-full-student-data/`,
       {
@@ -512,11 +513,11 @@ async function enrollStudentMockUpOnsite(student_personal_id) {
       }
     );
 
-    // Log the full response from onlineFullStudentInfoPOST for inspection
     console.log(
       "Post response (onlineFullStudentInfoPOST):",
       onlineFullStudentInfoPOST.data
     );
+    */
 
     // Extract the IDs of these enrollments
     const enrollmentIds = classEnrollments.map(
