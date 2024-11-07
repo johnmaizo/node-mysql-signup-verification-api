@@ -6,10 +6,29 @@ const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const studentService = require("./student.service");
 
+router.post(
+  "/add-enrollment",
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  addEnrollmentSchema,
+  addEnrollment
+);
+
 router.get(
   "/official/:student_personal_id",
   authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
   getStudentOfficial
+);
+
+router.get(
+  "/personal-data/:student_personal_id",
+  // authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  getStudentPersonalDataById
+);
+
+router.get(
+  "/get-unenrolled-students",
+  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  getUnenrolledStudents
 );
 
 router.get("/get-student-by-id", getStudentById);
@@ -38,6 +57,13 @@ function getStudentById(req, res, next) {
     .catch(next);
 }
 
+function getStudentPersonalDataById(req, res, next) {
+  studentService
+    .getStudentPersonalDataById(req.params.student_personal_id)
+    .then((student) => (student ? res.json(student) : res.sendStatus(404)))
+    .catch(next);
+}
+
 function updateStudentInformation(req, res, next) {
   studentService
     .updateStudentInformation(req.body, req.user.id)
@@ -52,7 +78,35 @@ function updateStudentInformation(req, res, next) {
     });
 }
 
-// ! Schema
+function addEnrollment(req, res, next) {
+  studentService
+    .addEnrollment(req.body, req.user.id)
+    .then(() => res.json({message: "Enrollment added successfully."}))
+    .catch(next);
+}
+
+function getUnenrolledStudents(req, res, next) {
+  const {campus_id, existing_students, new_unenrolled_students} = req.query;
+  studentService
+    .getUnenrolledStudents(
+      campus_id,
+      existing_students,
+      new_unenrolled_students
+    )
+    .then((students) => res.json(students))
+    .catch(next);
+}
+
+// ! Schemas
+
+function addEnrollmentSchema(req, res, next) {
+  const schema = Joi.object({
+    student_personal_id: Joi.number().required(),
+    semester_id: Joi.number().required(),
+  });
+  validateRequest(req, next, schema);
+}
+
 function updateStudentSchema(req, res, next) {
   const schema = Joi.object({
     personalData: Joi.object({

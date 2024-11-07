@@ -3,10 +3,47 @@ const db = require("_helpers/db");
 const Role = require("_helpers/role");
 
 module.exports = {
+  addEnrollment,
   getStudentOfficial,
   getStudentById,
+  getUnenrolledStudents,
   updateStudentInformation,
+  getStudentPersonalDataById,
 };
+
+async function addEnrollment(params, accountId) {
+  const {student_personal_id, semester_id} = params;
+
+  // Check if the student exists
+  const student = await db.StudentPersonalData.findByPk(student_personal_id);
+  if (!student) {
+    throw new Error("Student not found.");
+  }
+
+  // Get the student's academic background
+  const academicBackground = await db.StudentAcademicBackground.findOne({
+    where: {student_personal_id},
+  });
+
+  if (!academicBackground) {
+    throw new Error("Student academic background not found.");
+  }
+
+  // Update the academic background's semester_id
+  academicBackground.semester_id = semester_id;
+  await academicBackground.save();
+
+  // Log the action if necessary
+  await db.History.create({
+    action: "update",
+    entity: "StudentAcademicBackground",
+    entityId: academicBackground.id,
+    changes: {semester_id},
+    accountId,
+  });
+
+  return;
+}
 
 async function getStudentOfficial(student_personal_id) {
   const studentOfficial = await db.StudentOfficial.findOne({
@@ -82,6 +119,115 @@ async function getStudentById(student_id, campus_id) {
   }
 
   return student.toJSON();
+}
+
+async function getUnenrolledStudents(
+  campus_id,
+  existing_students,
+  new_unenrolled_students
+) {
+  if (existing_students) {
+    // Fetch existing official students who have not been enrolled in the new semester
+    const activeSemester = await db.Semester.findOne({
+      where: {
+        isActive: true,
+        isDeleted: false,
+        ...(campus_id ? {campus_id} : {}),
+      },
+    });
+
+    if (!activeSemester) {
+      throw new Error("No active semester found.");
+    }
+
+    // Fetch students whose StudentAcademicBackground.semester_id is not the active semester
+    const students = await db.StudentPersonalData.findAll({
+      where: {
+        ...(campus_id ? {campus_id} : {}),
+      },
+      include: [
+        {
+          model: db.StudentAcademicBackground,
+          required: true,
+          where: {
+            semester_id: {[Op.ne]: activeSemester.semester_id},
+          },
+        },
+      ],
+    });
+
+    // For each student, check if they have enlisted subjects
+    const studentsWithEnrollmentStatus = await Promise.all(
+      students.map(async (student) => {
+        const hasEnlistedSubjects = await db.StudentClassEnrollments.findOne({
+          where: {
+            student_personal_id: student.student_personal_id,
+            status: "enlisted",
+          },
+        });
+
+        return {
+          student_personal_id: student.student_personal_id,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          middleName: student.middleName,
+          fullName: `${student.firstName} ${student.middleName || ""} ${
+            student.lastName
+          }`,
+          hasEnlistedSubjects: !!hasEnlistedSubjects,
+        };
+      })
+    );
+
+    return studentsWithEnrollmentStatus;
+  } else if (new_unenrolled_students) {
+    // Fetch new unenrolled students who have not been officially enrolled and not having to enlist
+    const students = await db.StudentPersonalData.findAll({
+      where: {
+        ...(campus_id ? {campus_id} : {}),
+      },
+      include: [
+        {
+          model: db.StudentAcademicBackground,
+          required: false,
+        },
+      ],
+    });
+
+    // Filter out students who have StudentAcademicBackgrounds
+    const unenrolledStudents = students.filter(
+      (student) =>
+        !student.student_academic_backgrounds ||
+        student.student_academic_backgrounds.length === 0
+    );
+
+    // For each student, check if they have enlisted subjects
+    const studentsWithEnrollmentStatus = await Promise.all(
+      unenrolledStudents.map(async (student) => {
+        const hasEnlistedSubjects = await db.StudentClassEnrollments.findOne({
+          where: {
+            student_personal_id: student.student_personal_id,
+            status: "enlisted",
+          },
+        });
+
+        return {
+          student_personal_id: student.student_personal_id,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          middleName: student.middleName,
+          fullName: `${student.firstName} ${student.middleName || ""} ${
+            student.lastName
+          }`,
+          hasEnlistedSubjects: !!hasEnlistedSubjects,
+        };
+      })
+    );
+
+    return studentsWithEnrollmentStatus;
+  } else {
+    return [];
+  }
 }
 
 async function updateStudentInformation(params, accountId) {
@@ -236,4 +382,31 @@ async function updateStudentInformation(params, accountId) {
 
     throw new Error(`${error.message}`);
   }
+}
+
+async function getStudentPersonalDataById(student_personal_id) {
+  const student = await db.StudentPersonalData.findOne({
+    where: {student_personal_id},
+    include: [
+      {
+        model: db.StudentAcademicBackground,
+        include: [{model: db.Semester}],
+      },
+      {model: db.StudentOfficial},
+    ],
+  });
+
+  if (!student) throw "Student not found";
+
+  return {
+    // ...student.toJSON(),
+    student_personal_id: student.student_personal_id,
+    firstName: student.firstName,
+    lastName: student.lastName,
+    officialStudentId: student?.student_official?.student_id || null,
+    schoolYear:
+      student.student_current_academicbackground.semester.schoolYear || "N/A",
+    semesterName:
+      student.student_current_academicbackground.semester.semesterName || "N/A",
+  };
 }

@@ -33,6 +33,7 @@ module.exports = {
 
   getStudentEnrolledClasses,
   getAllEnrolledClasses,
+  getEnlistedClasses,
 };
 
 const url = process.env.MHAFRIC_API;
@@ -165,16 +166,51 @@ async function submitEnlistment(params, accountId) {
       throw new Error("Student not found.");
     }
 
-    // Create entries in student_class_enrollments table
-    const studentClassEnrollmentsData = class_ids.map((class_id) => ({
-      student_personal_id,
-      class_id,
-      status: "enlisted",
-    }));
-
-    await db.StudentClassEnrollments.bulkCreate(studentClassEnrollmentsData, {
+    // Fetch existing enlisted classes for the student
+    const existingEnlistments = await db.StudentClassEnrollments.findAll({
+      where: {
+        student_personal_id,
+        status: "enlisted",
+      },
       transaction,
     });
+
+    const existingClassIds = existingEnlistments.map(
+      (enrollment) => enrollment.class_id
+    );
+
+    // Determine classes to add and remove
+    const classIdsToAdd = class_ids.filter(
+      (id) => !existingClassIds.includes(id)
+    );
+    const classIdsToRemove = existingClassIds.filter(
+      (id) => !class_ids.includes(id)
+    );
+
+    // Add new enlistments
+    if (classIdsToAdd.length > 0) {
+      const studentClassEnrollmentsData = classIdsToAdd.map((class_id) => ({
+        student_personal_id,
+        class_id,
+        status: "enlisted",
+      }));
+
+      await db.StudentClassEnrollments.bulkCreate(studentClassEnrollmentsData, {
+        transaction,
+      });
+    }
+
+    // Remove enlistments that are no longer selected
+    if (classIdsToRemove.length > 0) {
+      await db.StudentClassEnrollments.destroy({
+        where: {
+          student_personal_id,
+          class_id: classIdsToRemove,
+          status: "enlisted",
+        },
+        transaction,
+      });
+    }
 
     // Commit the transaction
     await transaction.commit();
@@ -1574,22 +1610,17 @@ async function getAllEnrollmentStatus(
   final_approval_status = null,
   payment_confirmed = null,
   schoolYear = null,
-  semester_id = null
+  semester_id = null,
+  requireEnlistedSubjects = false
 ) {
   try {
     // Build the where clause for EnrollmentProcess based on status filters
     const enrollmentWhere = {};
-
     if (registrar_status) {
-      enrollmentWhere.registrar_status = {
-        [Op.eq]: registrar_status,
-      };
+      enrollmentWhere.registrar_status = {[Op.eq]: registrar_status};
     }
-
     if (accounting_status) {
-      enrollmentWhere.accounting_status = {
-        [Op.eq]: accounting_status,
-      };
+      enrollmentWhere.accounting_status = {[Op.eq]: accounting_status};
     }
 
     if (final_approval_status !== null && final_approval_status !== undefined) {
@@ -1618,18 +1649,66 @@ async function getAllEnrollmentStatus(
 
     // Build the where clause for StudentPersonalData based on campus_id
     const studentWhere = {};
-
     if (campus_id) {
-      studentWhere.campus_id = {
-        [Op.eq]: campus_id,
-      };
+      studentWhere.campus_id = {[Op.eq]: campus_id};
     }
 
-    // Build the where clause for StudentAcademicBackground
     const academicBackgroundWhere = {};
-
     if (semester_id) {
       academicBackgroundWhere.semester_id = semester_id;
+    }
+
+    // Build the include array dynamically
+    const studentPersonalDataIncludes = [
+      {
+        model: db.StudentAcademicBackground,
+        as: "student_current_academicbackground",
+        attributes: [
+          "id",
+          "program_id",
+          "studentType",
+          "applicationType",
+          "semester_id",
+          "yearLevel",
+        ],
+        where: academicBackgroundWhere,
+        required: true,
+        include: [
+          {
+            model: db.Semester,
+            attributes: ["semester_id", "schoolYear", "semesterName"],
+            required: true,
+            where: schoolYear ? {schoolYear} : {},
+          },
+          {
+            model: db.Program,
+            attributes: ["programCode", "programDescription"],
+            include: [
+              {
+                model: db.Department,
+                attributes: ["departmentCode", "departmentName"],
+                include: [
+                  {
+                    model: db.Campus,
+                    attributes: ["campusName"],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ];
+
+    // Include StudentClassEnrollments if required
+    if (requireEnlistedSubjects) {
+      studentPersonalDataIncludes.push({
+        model: db.StudentClassEnrollments,
+        required: true, // Ensure the student has enlisted subjects
+        where: {
+          status: "enlisted",
+        },
+      });
     }
 
     const enrollmentStatuses = await db.EnrollmentProcess.findAll({
@@ -1646,46 +1725,7 @@ async function getAllEnrollmentStatus(
           ],
           where: studentWhere,
           required: true,
-          include: [
-            {
-              model: db.StudentAcademicBackground,
-              as: "student_current_academicbackground",
-              attributes: [
-                "id",
-                "program_id",
-                "studentType",
-                "applicationType",
-                "semester_id",
-                "yearLevel",
-              ],
-              where: academicBackgroundWhere,
-              required: true,
-              include: [
-                {
-                  model: db.Semester,
-                  attributes: ["semester_id", "schoolYear", "semesterName"],
-                  required: true,
-                  where: schoolYear ? {schoolYear} : {},
-                },
-                {
-                  model: db.Program,
-                  attributes: ["programCode", "programDescription"],
-                  include: [
-                    {
-                      model: db.Department,
-                      attributes: ["departmentCode", "departmentName"],
-                      include: [
-                        {
-                          model: db.Campus,
-                          attributes: ["campusName"],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
+          include: studentPersonalDataIncludes,
         },
       ],
       order: [["enrollment_id", "ASC"]],
@@ -2099,4 +2139,46 @@ async function getAllEnrolledClasses(semester_id) {
   });
 
   return result;
+}
+
+async function getEnlistedClasses(student_personal_id) {
+  const enlistedClasses = await db.StudentClassEnrollments.findAll({
+    where: {
+      student_personal_id: student_personal_id,
+      status: "enlisted",
+    },
+    include: [
+      {
+        model: db.Class,
+        include: [
+          {
+            model: db.CourseInfo,
+          },
+          {
+            model: db.Employee,
+          },
+          // Include other associations as needed
+        ],
+      },
+    ],
+  });
+
+  // Map the data to return the necessary class details
+  return enlistedClasses.map((enrollment) => {
+    const cls = enrollment.class;
+    return {
+      class_id: cls.class_id,
+      className: cls.className,
+      subjectCode: cls.courseinfo.courseCode,
+      subjectDescription: cls.courseinfo.courseDescription,
+      schedule: cls.schedule,
+      days: cls.days,
+      timeStart: cls.timeStart,
+      timeEnd: cls.timeEnd,
+      room: cls.buildingstructure ? cls.buildingstructure.roomName : "",
+      instructorFullName: `${cls.employee.firstName} ${cls.employee.lastName}`,
+      courseinfo: cls.courseinfo,
+      // Add other fields as needed
+    };
+  });
 }

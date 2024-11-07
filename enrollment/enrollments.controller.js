@@ -22,6 +22,7 @@ router.post(
   submitEnlistmentSchema,
   submitEnlistment
 );
+router.get('/get-enlisted-classes/:student_personal_id', getEnlistedClasses);
 router.get(
   "/",
   authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
@@ -138,6 +139,12 @@ function getAllStudentsOfficial(req, res, next) {
     .catch(next);
 }
 
+function getEnlistedClasses(req, res, next) {
+  enrollmentService.getEnlistedClasses(req.params.student_personal_id)
+    .then(classes => res.json(classes))
+    .catch(next);
+}
+
 function getAllStudentOfficialCount(req, res, next) {
   const {campusName} = req.query;
 
@@ -238,7 +245,13 @@ function getAllEnrollmentStatus(req, res, next) {
     accounting_status,
     final_approval_status,
     payment_confirmed,
+    schoolYear,
+    semester_id,
+    require_enlisted_subjects,
   } = req.query;
+
+  // Convert require_enlisted_subjects to boolean
+  const requireEnlistedSubjectsBool = require_enlisted_subjects === 'true';
 
   // Pass all filters to the service layer
   enrollmentService
@@ -247,7 +260,10 @@ function getAllEnrollmentStatus(req, res, next) {
       registrar_status,
       accounting_status,
       final_approval_status,
-      payment_confirmed
+      payment_confirmed,
+      schoolYear,
+      semester_id,
+      requireEnlistedSubjectsBool
     )
     .then((data) => res.json(data))
     .catch(next);
