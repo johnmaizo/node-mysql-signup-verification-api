@@ -2090,6 +2090,7 @@ async function getAllEnrolledClasses(semester_id) {
         : "";
 
     return {
+      student_class_id: enrollment.student_class_enrollment_id,
       student_id: studentOfficial ? studentOfficial.student_id : null,
       student_personal_id: student.student_personal_id,
       class_id: cls.class_id,
