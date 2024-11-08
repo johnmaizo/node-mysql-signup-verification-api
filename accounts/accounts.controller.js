@@ -13,6 +13,7 @@ router.get('/me', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.D
 router.post('/authenticate', authenticateSchema, authenticate);
 router.post('/refresh-token', refreshToken);
 router.post('/revoke-token', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS]), revokeTokenSchema, revokeToken);
+
 router.post('/register', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS]), registerSchema, register);
 router.post('/verify-email', verifyEmailSchema, verifyEmail);
 router.post('/forgot-password', forgotPasswordSchema, forgotPassword);
@@ -194,25 +195,10 @@ function getById(req, res, next) {
 function createSchema(req, res, next) {
     // Define the schema with conditional password and confirmPassword fields
     const schema = Joi.object({
-        // title: Joi.string().required(),
-        // firstName: Joi.string().required(),
-        // middleName: Joi.string().allow(null, '').optional(),
-        // lastName: Joi.string().required(),
-
-        // address: Joi.string().required(),
-        // contactNumber: Joi.string().required(),
-        // gender: Joi.string().required(),
-        
         employee_id: Joi.number().required(),
         email: Joi.string().email().required(),
         password: Joi.string().min(6).required(),
         confirmPassword: Joi.string().valid(Joi.ref('password')).required(),
-
-        // role: Joi.alternatives().try(
-        //     Joi.string(),
-        //     Joi.array().items(Joi.string())
-        // ).required(),
-        // campus_id: Joi.number().required(),
     });
 
     validateRequest(req, next, schema);

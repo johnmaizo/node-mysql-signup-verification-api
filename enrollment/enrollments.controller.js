@@ -247,13 +247,8 @@ function getAllEnrollmentStatus(req, res, next) {
     payment_confirmed,
     schoolYear,
     semester_id,
-    require_enlisted_subjects,
   } = req.query;
 
-  // Convert require_enlisted_subjects to boolean
-  const requireEnlistedSubjectsBool = require_enlisted_subjects === 'true';
-
-  // Pass all filters to the service layer
   enrollmentService
     .getAllEnrollmentStatus(
       campus_id,
@@ -262,10 +257,9 @@ function getAllEnrollmentStatus(req, res, next) {
       final_approval_status,
       payment_confirmed,
       schoolYear,
-      semester_id,
-      requireEnlistedSubjectsBool
+      semester_id
     )
-    .then((data) => res.json(data))
+    .then((statuses) => res.json(statuses))
     .catch(next);
 }
 

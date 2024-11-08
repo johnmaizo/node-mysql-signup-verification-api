@@ -1610,8 +1610,7 @@ async function getAllEnrollmentStatus(
   final_approval_status = null,
   payment_confirmed = null,
   schoolYear = null,
-  semester_id = null,
-  requireEnlistedSubjects = false
+  semester_id = null
 ) {
   try {
     // Build the where clause for EnrollmentProcess based on status filters
@@ -1622,11 +1621,9 @@ async function getAllEnrollmentStatus(
     if (accounting_status) {
       enrollmentWhere.accounting_status = {[Op.eq]: accounting_status};
     }
-
     if (final_approval_status !== null && final_approval_status !== undefined) {
-      // Existing logic for final_approval_status
+      enrollmentWhere.final_approval_status = {[Op.eq]: final_approval_status};
     }
-
     if (payment_confirmed !== null && payment_confirmed !== undefined) {
       // Convert string to boolean if necessary
       let paymentConfirmedBool;
@@ -1700,16 +1697,9 @@ async function getAllEnrollmentStatus(
       },
     ];
 
-    // Include StudentClassEnrollments if required
-    if (requireEnlistedSubjects) {
-      studentPersonalDataIncludes.push({
-        model: db.StudentClassEnrollments,
-        required: true, // Ensure the student has enlisted subjects
-        where: {
-          status: "enlisted",
-        },
-      });
-    }
+    // Remove 'requireEnlistedSubjects' condition to include all students
+    // Previously, if 'requireEnlistedSubjects' was true, it might exclude existing students
+    // Now, we include all students matching the criteria
 
     const enrollmentStatuses = await db.EnrollmentProcess.findAll({
       where: enrollmentWhere,
@@ -1717,6 +1707,7 @@ async function getAllEnrollmentStatus(
         {
           model: db.StudentPersonalData,
           attributes: [
+            "student_personal_id",
             "firstName",
             "lastName",
             "middleName",
@@ -1738,6 +1729,7 @@ async function getAllEnrollmentStatus(
           ? status.student_personal_datum.middleName[0] + ". "
           : ""
       }${status.student_personal_datum.lastName}`,
+      student_personal_id: status.student_personal_datum.student_personal_id,
       programCode:
         status.student_personal_datum.student_current_academicbackground.program
           .programCode,
