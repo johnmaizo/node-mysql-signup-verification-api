@@ -119,7 +119,9 @@ function defineRelationships(db) {
   db.CourseInfo.hasMany(db.PreRequisite, {foreignKey: "course_id"});
   db.PreRequisite.belongsTo(db.CourseInfo, {foreignKey: "course_id"});
 
-  // ! Campus -> StudentOfficalBasic
+  // Relationships for the new tables:
+
+  // ! Campus -> Student Official
   db.Campus.hasMany(db.StudentOfficial, {foreignKey: "campus_id"});
   db.StudentOfficial.belongsTo(db.Campus, {foreignKey: "campus_id"});
 
@@ -131,7 +133,13 @@ function defineRelationships(db) {
     foreignKey: "student_personal_id",
   });
 
-  // Relationships for the new tables:
+  // EnrollmentProcess -> Semester
+  db.EnrollmentProcess.belongsTo(db.Semester, {
+    foreignKey: "semester_id",
+  });
+  db.Semester.hasMany(db.EnrollmentProcess, {
+    foreignKey: "semester_id",
+  });
 
   // ! StudentPersonalData -> StudentAddPersonalData (1-to-1)
   db.StudentPersonalData.hasOne(db.StudentAddPersonalData, {
@@ -191,7 +199,7 @@ function defineRelationships(db) {
   db.Program.hasMany(db.StudentAcademicBackground, {
     foreignKey: "program_id",
   });
-  
+
   // ! StudentAcademicBackground belongsTo Semester
   db.StudentAcademicBackground.belongsTo(db.Semester, {
     foreignKey: "semester_id",
@@ -233,8 +241,6 @@ function defineRelationships(db) {
   db.StudentClassEnrollments.belongsTo(db.Class, {
     foreignKey: "class_id",
   });
-
-  
 }
 
 module.exports = defineRelationships;

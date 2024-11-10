@@ -229,7 +229,7 @@ function submitEnlistment(req, res, next) {
     .submitEnlistment(req.body, req.user.id)
     .then(() =>
       res.json({
-        message: "Enlistment submitted successfully!",
+        message: "Enlistment submitted successfully! Waiting for the Payment Approval from Accounting Office.",
       })
     )
     .catch(next);

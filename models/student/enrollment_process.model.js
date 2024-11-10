@@ -1,3 +1,5 @@
+// models/enrollment_process.model.js
+
 const {DataTypes} = require("sequelize");
 
 module.exports = model;
@@ -10,21 +12,21 @@ function model(sequelize) {
       autoIncrement: true,
     },
 
-    // applicant_id: {
-    //   type: DataTypes.INTEGER,
-    //   references: {
-    //     model: "applicants",
-    //     key: "applicant_id",
-    //   },
-    //   allowNull: false,
-    //   onDelete: "CASCADE",
-    // },
-
     student_personal_id: {
       type: DataTypes.INTEGER,
       references: {
         model: "student_personal_data",
         key: "student_personal_id",
+      },
+      allowNull: false,
+      onDelete: "CASCADE",
+    },
+
+    semester_id: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: "semesters",
+        key: "semester_id",
       },
       allowNull: false,
       onDelete: "CASCADE",

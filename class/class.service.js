@@ -274,6 +274,7 @@ function transformClassData(cls) {
     campusName: cls.semester.campus.campusName,
     subjectCode: cls.courseinfo.courseCode,
     subjectDescription: cls.courseinfo.courseDescription,
+    subjectUnits: cls.courseinfo.unit,
     schedule: schedule,
     fullStructureDetails: `${
       (cls.buildingstructure.buildingName &&

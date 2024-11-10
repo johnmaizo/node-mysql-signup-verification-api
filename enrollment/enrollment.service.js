@@ -109,10 +109,12 @@ async function submitApplication(params, accountId) {
     await db.EnrollmentProcess.create(
       {
         student_personal_id: studentPersonalId,
+        semester_id: academicBackground.semester_id,
         registrar_status: "accepted",
         registrar_status_date: new Date(),
         accounting_status: "upcoming",
         payment_confirmed: false,
+        final_approval_status: false,
       },
       {transaction}
     );
@@ -358,15 +360,19 @@ async function enrollStudentMockUpOnsite(student_personal_id) {
       transaction,
     });
 
-    console.log(applicant.toJSON());
-
     if (!applicant) {
       throw new Error("Applicant not found");
     }
 
-    // Check if the student is already enrolled
+    // **Modified Section: Check if the student is already enrolled**
     if (applicant.status === "enrolled") {
-      throw new Error("Student is already enrolled");
+      console.log(
+        `Student with personal ID ${student_personal_id} is already enrolled. Skipping enrollment process.`
+      );
+      // **Rollback the transaction since no changes are made**
+      await transaction.rollback();
+      // **Optionally, return a status indicating the enrollment was skipped**
+      return {status: "skipped", message: "Student is already enrolled."};
     }
 
     // Generate student ID if not already generated
@@ -420,7 +426,14 @@ async function enrollStudentMockUpOnsite(student_personal_id) {
       transaction,
     });
 
+    if (classEnrollments.length === 0) {
+      throw new Error("No enlisted classes found for the student.");
+    }
+
+    // Log the first class enrollment for debugging
     console.log(classEnrollments[0].toJSON());
+
+    // Post data to the external API
 
     /*
     const onlineFullStudentInfoPOST = await axios.post(
@@ -496,12 +509,7 @@ async function enrollStudentMockUpOnsite(student_personal_id) {
             "Regular",
           semester_entry:
             applicant.student_current_academicbackground?.semester_id, // Adjust as needed
-          year_level:
-            // applicant.student_current_academicbackground?.yearLevel &&
-            // applicant.student_current_academicbackground?.yearLevel.length > 8
-            //   ? "4th Year"
-            //   : applicant.student_current_academicbackground?.yearLevel,
-            applicant.student_current_academicbackground?.yearLevel,
+          year_level: applicant.student_current_academicbackground?.yearLevel,
           year_entry:
             applicant.student_current_academicbackground?.yearEntry || 0,
           year_graduate:
@@ -603,7 +611,15 @@ async function enrollStudentMockUpOnsite(student_personal_id) {
 
     // Commit the transaction
     await transaction.commit();
+
+    console.log(
+      `Enrollment process completed successfully for student ID ${student_id}.`
+    );
+
+    // **Optionally, return a status indicating success**
+    return {status: "enrolled", student_id};
   } catch (error) {
+    // Rollback the transaction in case of any errors
     await transaction.rollback();
     console.error(
       "Error in enrollStudentMockUpOnsite:",
@@ -1480,15 +1496,32 @@ async function updateEnrollmentProcess(params) {
     throw new Error(`Applicant with ID ${student_personal_id} does not exist.`);
   }
 
-  // Fetch the current enrollment process for the applicant
+  // Fetch the active semester
+  const activeSemester = await db.Semester.findOne({
+    where: {
+      isActive: true,
+      isDeleted: false,
+      campus_id: applicant.campus_id, // Assuming campus_id is associated with the student
+    },
+  });
+
+  if (!activeSemester) {
+    throw new Error("No active semester found.");
+  }
+
+  // Fetch the current enrollment process for the applicant and active semester
   let enrollmentProcess = await db.EnrollmentProcess.findOne({
-    where: {student_personal_id: student_personal_id},
+    where: {
+      student_personal_id: student_personal_id,
+      semester_id: activeSemester.semester_id,
+    },
   });
 
   if (!enrollmentProcess) {
-    // If no existing process found, create a new record with default "in-progress" statuses
+    // If no existing process found, create a new record with default statuses
     enrollmentProcess = await db.EnrollmentProcess.create({
       student_personal_id: student_personal_id,
+      semester_id: activeSemester.semester_id,
       registrar_status: "in-progress",
       accounting_status: "upcoming",
       payment_confirmed: false, // Set payment to false initially
@@ -1584,7 +1617,10 @@ async function updateEnrollmentProcess(params) {
     enrollmentProcess.payment_confirmed
   ) {
     // Enroll the student by calling enrollStudentMockUpOnsite
-    await enrollStudentMockUpOnsite(student_personal_id);
+    await enrollStudentMockUpOnsite(
+      student_personal_id,
+      activeSemester.semester_id
+    );
 
     // Update final approval status
     enrollmentProcess.final_approval_status = true;
@@ -1625,16 +1661,11 @@ async function getAllEnrollmentStatus(
       enrollmentWhere.final_approval_status = {[Op.eq]: final_approval_status};
     }
     if (payment_confirmed !== null && payment_confirmed !== undefined) {
-      // Convert string to boolean if necessary
       let paymentConfirmedBool;
       if (typeof payment_confirmed === "boolean") {
         paymentConfirmedBool = payment_confirmed;
       } else if (typeof payment_confirmed === "string") {
-        if (payment_confirmed.toLowerCase() === "true") {
-          paymentConfirmedBool = true;
-        } else if (payment_confirmed.toLowerCase() === "false") {
-          paymentConfirmedBool = false;
-        }
+        paymentConfirmedBool = payment_confirmed.toLowerCase() === "true";
       }
 
       if (typeof paymentConfirmedBool === "boolean") {
@@ -1643,6 +1674,9 @@ async function getAllEnrollmentStatus(
         };
       }
     }
+    if (semester_id) {
+      enrollmentWhere.semester_id = semester_id;
+    }
 
     // Build the where clause for StudentPersonalData based on campus_id
     const studentWhere = {};
@@ -1650,57 +1684,7 @@ async function getAllEnrollmentStatus(
       studentWhere.campus_id = {[Op.eq]: campus_id};
     }
 
-    const academicBackgroundWhere = {};
-    if (semester_id) {
-      academicBackgroundWhere.semester_id = semester_id;
-    }
-
-    // Build the include array dynamically
-    const studentPersonalDataIncludes = [
-      {
-        model: db.StudentAcademicBackground,
-        as: "student_current_academicbackground",
-        attributes: [
-          "id",
-          "program_id",
-          "studentType",
-          "applicationType",
-          "semester_id",
-          "yearLevel",
-        ],
-        where: academicBackgroundWhere,
-        required: true,
-        include: [
-          {
-            model: db.Semester,
-            attributes: ["semester_id", "schoolYear", "semesterName"],
-            required: true,
-            where: schoolYear ? {schoolYear} : {},
-          },
-          {
-            model: db.Program,
-            attributes: ["programCode", "programDescription"],
-            include: [
-              {
-                model: db.Department,
-                attributes: ["departmentCode", "departmentName"],
-                include: [
-                  {
-                    model: db.Campus,
-                    attributes: ["campusName"],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    ];
-
-    // Remove 'requireEnlistedSubjects' condition to include all students
-    // Previously, if 'requireEnlistedSubjects' was true, it might exclude existing students
-    // Now, we include all students matching the criteria
-
+    // Fetch enrollment statuses with necessary includes
     const enrollmentStatuses = await db.EnrollmentProcess.findAll({
       where: enrollmentWhere,
       include: [
@@ -1716,7 +1700,51 @@ async function getAllEnrollmentStatus(
           ],
           where: studentWhere,
           required: true,
-          include: studentPersonalDataIncludes,
+          include: [
+            {
+              model: db.StudentAcademicBackground,
+              as: "student_current_academicbackground",
+              attributes: [
+                "id",
+                "program_id",
+                "studentType",
+                "applicationType",
+                "semester_id",
+                "yearLevel",
+              ],
+              required: true,
+              include: [
+                {
+                  model: db.Program,
+                  attributes: ["programCode", "programDescription"],
+                  include: [
+                    {
+                      model: db.Department,
+                      attributes: ["departmentCode", "departmentName"],
+                      include: [
+                        {
+                          model: db.Campus,
+                          attributes: ["campusName"],
+                        },
+                      ],
+                    },
+                  ],
+                },
+                {
+                  model: db.Semester,
+                  attributes: ["semester_id", "schoolYear", "semesterName"],
+                  required: true,
+                  where: schoolYear ? {schoolYear} : {},
+                },
+              ],
+            },
+          ],
+        },
+        {
+          model: db.Semester,
+          attributes: ["semester_id", "schoolYear", "semesterName"],
+          required: true,
+          where: semester_id ? {semester_id} : schoolYear ? {schoolYear} : {},
         },
       ],
       order: [["enrollment_id", "ASC"]],
