@@ -8,33 +8,69 @@ const semesterService = require("./semester.service");
 
 router.post(
   "/add-semester",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.MIS,
+    Role.Accounting,
+  ]),
   addSemesterSchema,
   addSemester
 );
 router.get(
   "/",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.MIS,
+    Role.Accounting,
+  ]),
   getAllSemester
 );
 router.get(
   "/active",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.MIS,
+    Role.Accounting,
+  ]),
   getAllSemesterActive
 );
 router.get(
   "/deleted",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.MIS,
+    Role.Accounting,
+  ]),
   getAllSemesterDeleted
 );
 router.get(
   "/:id",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.MIS,
+    Role.Accounting,
+  ]),
   getSemesterById
 );
 router.put(
   "/:id",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.MIS,
+    Role.Accounting,
+  ]),
   updateSemesterSchema,
   updateSemester
 );

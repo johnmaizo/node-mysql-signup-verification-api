@@ -8,38 +8,75 @@ const classService = require("./class.service");
 
 router.post(
   "/add-class",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.MIS,
+    Role.Accounting,
+  ]),
   addClassSchema,
   addClass
 );
 
-router.get("/", 
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+router.get(
+  "/",
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.MIS,
+    Role.Accounting,
+  ]),
   getAllClass
 );
 router.get(
   "/count",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.MIS,
+    Role.Accounting,
+  ]),
   getAllClassCount
 );
 router.get(
   "/active",
-  // authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  // authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS, Role.Accounting]),
   getAllClassActive
 );
 router.get(
   "/deleted",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.MIS,
+    Role.Accounting,
+  ]),
   getAllClassDeleted
 );
 router.get(
   "/:id",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.MIS,
+    Role.Accounting,
+  ]),
   getClassById
 );
 router.put(
   "/:id",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.MIS,
+    Role.Accounting,
+  ]),
   updateClassSchema,
   updateClass
 );
@@ -50,12 +87,12 @@ module.exports = router;
 function addClass(req, res, next) {
   classService
     .createClass(req.body, req.user.id)
-    .then(() => res.json({ message: "Class added successfully." }))
+    .then(() => res.json({message: "Class added successfully."}))
     .catch(next);
 }
 
 function getAllClass(req, res, next) {
-  const { campus_id, schoolYear, semester_id } = req.query;
+  const {campus_id, schoolYear, semester_id} = req.query;
 
   classService
     .getAllClass(campus_id, schoolYear, semester_id)
@@ -64,7 +101,7 @@ function getAllClass(req, res, next) {
 }
 
 function getAllClassActive(req, res, next) {
-  const { campus_id, schoolYear, semester_id } = req.query;
+  const {campus_id, schoolYear, semester_id} = req.query;
 
   classService
     .getAllClassActive(campus_id, schoolYear, semester_id)

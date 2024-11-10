@@ -8,33 +8,57 @@ const studentService = require("./student.service");
 
 router.post(
   "/add-enrollment",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.MIS,
+    Role.Accounting,
+  ]),
   addEnrollmentSchema,
   addEnrollment
 );
 
 router.get(
   "/official/:student_personal_id",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.MIS,
+    Role.Accounting,
+  ]),
   getStudentOfficial
 );
 
 router.get(
   "/personal-data/:student_personal_id",
-  // authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  // authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS, Role.Accounting]),
   getStudentPersonalDataById
 );
 
 router.get(
   "/get-unenrolled-students",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.MIS,
+    Role.Accounting,
+  ]),
   getUnenrolledStudents
 );
 
 router.get("/get-student-by-id", getStudentById);
 router.put(
   "/update-student",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.MIS]),
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.MIS,
+    Role.Accounting,
+  ]),
   updateStudentSchema,
   updateStudentInformation
 );
