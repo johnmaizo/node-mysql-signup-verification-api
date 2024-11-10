@@ -367,13 +367,74 @@ async function enrollStudentMockUpOnsite(student_personal_id) {
     // **Modified Section: Check if the student is already enrolled**
     if (applicant.status === "enrolled") {
       console.log(
-        `Student with personal ID ${student_personal_id} is already enrolled. Skipping enrollment process.`
+        `Student with personal ID ${student_personal_id} is already enrolled. Proceeding to update class enrollments.`
       );
-      // **Rollback the transaction since no changes are made**
-      await transaction.rollback();
-      // **Optionally, return a status indicating the enrollment was skipped**
-      return {status: "skipped", message: "Student is already enrolled."};
+
+      // Get the student's prospectus ID and semester ID
+      const {prospectus_id, semester_id} =
+        applicant.student_current_academicbackground;
+
+      // Find class enrollments for the specific semester with status "enlisted"
+      const classEnrollments = await db.StudentClassEnrollments.findAll({
+        where: {
+          student_personal_id,
+          status: "enlisted",
+        },
+        include: [
+          {
+            model: db.Class,
+            where: {semester_id},
+            include: [{model: db.CourseInfo}],
+          },
+        ],
+        transaction,
+      });
+
+      console.log(
+        "\n\nclassEnrollments: ",
+        classEnrollments.map((enrollment) => enrollment.toJSON())
+      );
+
+      if (classEnrollments.length === 0) {
+        console.log("No enlisted classes found for the student.");
+        // Commit the transaction and exit since there's nothing to update
+        await transaction.commit();
+        return {
+          status: "skipped",
+          message:
+            "Student is already enrolled with no enlisted classes to update.",
+        };
+      }
+
+      // Extract the IDs of these enrollments
+      const enrollmentIds = classEnrollments.map(
+        (enrollment) => enrollment.student_class_enrollment_id
+      );
+
+      // Update statuses of these class enrollments to "enrolled"
+      const [affectedRows] = await db.StudentClassEnrollments.update(
+        {status: "enrolled"},
+        {
+          where: {student_class_enrollment_id: {[Op.in]: enrollmentIds}},
+          transaction,
+        }
+      );
+
+      console.log(
+        `Updated ${affectedRows} class enrollments to 'enrolled' for student ID ${student_personal_id}.`
+      );
+
+      // Commit the transaction after successful updates
+      await transaction.commit();
+
+      // **Optionally, return a status indicating the update was successful**
+      return {
+        status: "updated",
+        message: "Student is already enrolled, class enrollments updated.",
+      };
     }
+
+    // **Proceed with the enrollment process for students not already enrolled**
 
     // Generate student ID if not already generated
     let student_id;
@@ -435,7 +496,7 @@ async function enrollStudentMockUpOnsite(student_personal_id) {
 
     // Post data to the external API
 
-    
+    /*
     const onlineFullStudentInfoPOST = await axios.post(
       `${url}/api/onsite-full-student-data/`,
       {
@@ -561,7 +622,7 @@ async function enrollStudentMockUpOnsite(student_personal_id) {
       "Post response (onlineFullStudentInfoPOST):",
       onlineFullStudentInfoPOST.data
     );
-    
+    */
 
     // Extract the IDs of these enrollments
     const enrollmentIds = classEnrollments.map(
