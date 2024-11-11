@@ -19,14 +19,63 @@ router.post(
   addProspectusAssignSubjectSchema,
   addProspectusAssignSubject
 );
-router.get("/get-all-prospectus", getAllProspectus);
-router.get("/get-all-prospectus-subjects", getAllProspectusSubjects);
-router.get("/get-all-prospectus/count", getAllProspectusCount);
-router.get("/get-all-prospectus/active", getAllProspectusActive);
-router.get("/get-all-prospectus/deleted", getAllProspectusDeleted);
-router.get("/get-prospectus-by-id/:id", getProspectusById);
-router.get("/get-prospectus-subjects-by-id/:id", getProspectusSubjectsById);
-router.put("/update-prospectus/:id", updateProspectusSchema, updateProspectus);
+router.get("/get-all-prospectus", authorize([
+  Role.SuperAdmin,
+  Role.Admin,
+  Role.Registrar,
+  Role.DataCenter,
+  Role.MIS,
+]), getAllProspectus);
+router.get("/get-all-prospectus-subjects", authorize([
+  Role.SuperAdmin,
+  Role.Admin,
+  Role.Registrar,
+  Role.DataCenter,
+  Role.MIS,
+]), getAllProspectusSubjects);
+router.get("/external/get-all-prospectus-subjects", getAllProspectusSubjects); //! External
+router.get("/get-all-prospectus/count", authorize([
+  Role.SuperAdmin,
+  Role.Admin,
+  Role.Registrar,
+  Role.DataCenter,
+  Role.MIS,
+]), getAllProspectusCount);
+router.get("/get-all-prospectus/active", authorize([
+  Role.SuperAdmin,
+  Role.Admin,
+  Role.Registrar,
+  Role.DataCenter,
+  Role.MIS,
+]), getAllProspectusActive);
+router.get("/get-all-prospectus/deleted", authorize([
+  Role.SuperAdmin,
+  Role.Admin,
+  Role.Registrar,
+  Role.DataCenter,
+  Role.MIS,
+]), getAllProspectusDeleted);
+router.get("/get-prospectus-by-id/:id", authorize([
+  Role.SuperAdmin,
+  Role.Admin,
+  Role.Registrar,
+  Role.DataCenter,
+  Role.MIS,
+]), getProspectusById);
+router.get("/get-prospectus-subjects-by-id/:id", authorize([
+  Role.SuperAdmin,
+  Role.Admin,
+  Role.Registrar,
+  Role.DataCenter,
+  Role.MIS,
+]), getProspectusSubjectsById);
+router.put("/update-prospectus/:id", authorize([
+  Role.SuperAdmin,
+  Role.Admin,
+  Role.Registrar,
+  Role.DataCenter,
+  Role.MIS,
+]), updateProspectusSchema, updateProspectus);
 
 module.exports = router;
 
