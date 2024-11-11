@@ -6,7 +6,18 @@ const authorize = require("_middleware/authorize");
 const Role = require("_helpers/role");
 const prospectusService = require("./prospectus.service");
 
-router.post("/add-prospectus", authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS]), addProspectusSchema, addProspectus);
+router.post(
+  "/add-prospectus",
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.DataCenter,
+    Role.MIS,
+  ]),
+  addProspectusSchema,
+  addProspectus
+);
 router.post(
   "/assign-prospectus-subject",
   authorize([
@@ -19,70 +30,93 @@ router.post(
   addProspectusAssignSubjectSchema,
   addProspectusAssignSubject
 );
-router.get("/get-all-prospectus", authorize([
-  Role.SuperAdmin,
-  Role.Admin,
-  Role.Registrar,
-  Role.DataCenter,
-  Role.MIS,
-]), getAllProspectus);
-router.get("/get-all-prospectus-subjects", authorize([
-  Role.SuperAdmin,
-  Role.Admin,
-  Role.Registrar,
-  Role.DataCenter,
-  Role.MIS,
-]), getAllProspectusSubjects);
+router.get(
+  "/get-all-prospectus",
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.DataCenter,
+    Role.MIS,
+  ]),
+  getAllProspectus
+);
+router.get(
+  "/get-all-prospectus-subjects",
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.DataCenter,
+    Role.MIS,
+  ]),
+  getAllProspectusSubjects
+);
 router.get("/external/get-all-prospectus-subjects", getAllProspectusSubjects); //! External
-router.get("/get-all-prospectus/count", authorize([
-  Role.SuperAdmin,
-  Role.Admin,
-  Role.Registrar,
-  Role.DataCenter,
-  Role.MIS,
-]), getAllProspectusCount);
-router.get("/get-all-prospectus/active", authorize([
-  Role.SuperAdmin,
-  Role.Admin,
-  Role.Registrar,
-  Role.DataCenter,
-  Role.MIS,
-]), getAllProspectusActive);
-router.get("/get-all-prospectus/deleted", authorize([
-  Role.SuperAdmin,
-  Role.Admin,
-  Role.Registrar,
-  Role.DataCenter,
-  Role.MIS,
-]), getAllProspectusDeleted);
-router.get("/get-prospectus-by-id/:id", authorize([
-  Role.SuperAdmin,
-  Role.Admin,
-  Role.Registrar,
-  Role.DataCenter,
-  Role.MIS,
-]), getProspectusById);
-router.get("/get-prospectus-subjects-by-id/:id", authorize([
-  Role.SuperAdmin,
-  Role.Admin,
-  Role.Registrar,
-  Role.DataCenter,
-  Role.MIS,
-]), getProspectusSubjectsById);
-router.put("/update-prospectus/:id", authorize([
-  Role.SuperAdmin,
-  Role.Admin,
-  Role.Registrar,
-  Role.DataCenter,
-  Role.MIS,
-]), updateProspectusSchema, updateProspectus);
+router.get(
+  "/get-all-prospectus/count",
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.DataCenter,
+    Role.MIS,
+  ]),
+  getAllProspectusCount
+);
+router.get("/get-all-prospectus/active", getAllProspectusActive);
+router.get(
+  "/get-all-prospectus/deleted",
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.DataCenter,
+    Role.MIS,
+  ]),
+  getAllProspectusDeleted
+);
+router.get(
+  "/get-prospectus-by-id/:id",
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.DataCenter,
+    Role.MIS,
+  ]),
+  getProspectusById
+);
+router.get(
+  "/get-prospectus-subjects-by-id/:id",
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.DataCenter,
+    Role.MIS,
+  ]),
+  getProspectusSubjectsById
+);
+router.put(
+  "/update-prospectus/:id",
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.DataCenter,
+    Role.MIS,
+  ]),
+  updateProspectusSchema,
+  updateProspectus
+);
 
 module.exports = router;
 
 function addProspectus(req, res, next) {
   prospectusService
-  // .createProspectus(req.body)
-  .createProspectus(req.body, req.user.id)
+    // .createProspectus(req.body)
+    .createProspectus(req.body, req.user.id)
     .then(() =>
       res.json({
         message: "Prospectus Added Successfully.",
@@ -122,10 +156,10 @@ function getAllProspectusSubjects(req, res, next) {
 }
 
 function getAllProspectusActive(req, res, next) {
-  const {campus_id} = req.query;
+  const {campus_id, campusName, program_id, programCode} = req.query;
 
   prospectusService
-    .getAllProspectusActive(campus_id)
+    .getAllProspectusActive(campus_id, campusName, program_id, programCode)
     .then((prospectuses) => res.json(prospectuses))
     .catch(next);
 }

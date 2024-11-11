@@ -71,10 +71,22 @@ async function createProspectus(params, accountId) {
     throw `Prospectus name "${params.prospectusName}" is already registered for Campus "${params.campusName}".`;
   }
 
+  // Check for existing active prospectus for the same program
+  const activeProspectus = await db.Prospectus.findOne({
+    where: {
+      program_id: program.program_id,
+      isActive: true,
+    },
+  });
+
+  // Determine the isActive status for the new prospectus
+  const isActiveStatus = activeProspectus ? false : true;
+
   // Create the new prospectus
   const newProspectus = await db.Prospectus.create({
     ...params,
     program_id: program.program_id, // Explicitly set the program_id
+    isActive: isActiveStatus, // Set isActive based on existing active prospectus
   });
 
   // Fetch the created prospectus with the associated program
@@ -203,81 +215,117 @@ async function getAllProspectus(
 async function getAllProspectusActive(
   campus_id = null,
   campusName = null,
-  programCode = null,
-  program_id = null
+  program_id = null,
+  programCode = null
 ) {
-  // Validate Campus
-  const campusWhereClause = {};
-  if (campus_id) campusWhereClause.campus_id = campus_id;
-  if (campusName) campusWhereClause.campusName = campusName;
+  // Initialize the base where clause for Prospectus
+  const prospectusWhereClause = {
+    isActive: true,
+    isDeleted: false,
+  };
 
-  const campus = await db.Campus.findOne({
-    where: campusWhereClause,
-  });
-
-  if (!campus) {
-    throw new Error(
-      "Campus not found with the provided campus_id and/or campusName"
-    );
-  }
-
-  // Validate Program
-  const programWhereClause = {};
-  if (program_id) programWhereClause.program_id = program_id;
-  if (programCode) programWhereClause.programCode = programCode;
-
-  const program = await db.Program.findOne({
-    where: programWhereClause,
-    include: [
-      {
-        model: db.Department,
-        required: true,
-        include: [
-          {
-            model: db.Campus,
-            required: true,
-            where: campusWhereClause,
-          },
-        ],
-      },
-    ],
-  });
-
-  if (!program) {
-    throw new Error(
-      "Program not found with the provided program_id and/or programCode, or it is not associated with the specified campus."
-    );
-  }
-
-  // Fetch Active Prospectus
-  const prospectus = await db.Prospectus.findAll({
-    where: {
-      isActive: true,
-      isDeleted: false,
+  // Initialize the include array for Prospectus
+  const includeArray = [
+    {
+      model: db.Program,
+      required: true, // Ensures inner join, only includes Prospectus with associated Program
+      attributes: ["programCode", "program_id", "programDescription"],
+      include: [
+        {
+          model: db.Department,
+          required: true, // Ensures inner join, only includes Program with associated Department
+          attributes: ["departmentName", "departmentCode"],
+          include: [
+            {
+              model: db.Campus,
+              required: true, // Ensures inner join, only includes Department with associated Campus
+              attributes: ["campusName", "campus_id"],
+            },
+          ],
+        },
+      ],
     },
-    include: [
-      {
-        model: db.Program,
-        required: true,
-        where: programWhereClause,
-        include: [
-          {
-            model: db.Department,
-            required: true,
-            include: [
-              {
-                model: db.Campus,
-                required: true,
-                where: campusWhereClause,
-              },
-            ],
-          },
-        ],
-      },
-    ],
+  ];
+
+  // Step 1: Apply Program Filters if provided
+  if (program_id !== null || programCode !== null) {
+    const programWhere = {};
+    if (program_id !== null) {
+      programWhere.program_id = program_id;
+    }
+    if (programCode !== null) {
+      programWhere.programCode = programCode;
+      // For case-insensitive matching (PostgreSQL), use Op.iLike
+      // programWhere.programCode = { [Op.iLike]: programCode };
+    }
+
+    includeArray[0].where = programWhere;
+
+    console.log(
+      "Applied Program Where Clause:",
+      JSON.stringify(programWhere, null, 2)
+    );
+  }
+
+  // Step 2: Apply Campus Filters if provided
+  if (campus_id !== null || campusName !== null) {
+    const campusWhere = {};
+    if (campus_id !== null) {
+      campusWhere.campus_id = campus_id;
+    }
+    if (campusName !== null) {
+      campusWhere.campusName = campusName;
+    }
+
+    // Navigate to the Campus include and apply the where clause
+    // includeArray[0] => Program
+    // includeArray[0].include[0] => Department
+    // includeArray[0].include[0].include[0] => Campus
+
+    const departmentInclude = includeArray[0].include.find(
+      (include) => include.model === db.Department
+    );
+    if (departmentInclude) {
+      const campusInclude = departmentInclude.include.find(
+        (include) => include.model === db.Campus
+      );
+      if (campusInclude) {
+        // Merge existing where clauses if any
+        campusInclude.where = {
+          ...campusInclude.where,
+          ...campusWhere,
+        };
+        console.log(
+          "Applied Campus Where Clause:",
+          JSON.stringify(campusWhere, null, 2)
+        );
+      }
+    }
+  }
+
+  // Debugging: Log the constructed where clauses and includes
+  console.log(
+    "Prospectus Where Clause:",
+    JSON.stringify(prospectusWhereClause, null, 2)
+  );
+  console.log("Include Array:", JSON.stringify(includeArray, null, 2));
+
+  // Step 3: Fetch Active Prospectuses based on the constructed where clause and includes
+  const prospectuses = await db.Prospectus.findAll({
+    where: prospectusWhereClause,
+    include: includeArray,
   });
 
-  return prospectus.map(transformProspectusData);
+  // Debugging: Log the number of prospectuses found
+  console.log(`Number of Prospectuses Found: ${prospectuses.length}`);
+
+  // Optional: Handle case when no prospectuses are found
+  if (prospectuses.length === 0) {
+    return []; // Or you can choose to throw an error/message
+  }
+
+  // Transform and return the fetched prospectus data
+  return prospectuses.map(transformProspectusData);
 }
 
 async function getAllProspectusDeleted(
@@ -473,86 +521,132 @@ async function getProspectusById(id) {
 }
 
 async function updateProspectus(id, params, accountId) {
-  // Fetch the prospectus by its ID
-  const prospectus = await db.Prospectus.findByPk(id);
+  // Start a transaction to ensure atomicity
+  const transaction = await db.sequelize.transaction();
 
-  if (!prospectus) {
-    throw `Prospectus with ID "${id}" not found.`;
-  }
+  try {
+    // Fetch the prospectus by its ID within the transaction
+    const prospectus = await db.Prospectus.findByPk(id, {transaction});
 
-  // If the action is to delete the prospectus
-  if (params.isDeleted !== undefined) {
-    if (params.isDeleted && prospectus.isActive) {
+    if (!prospectus) {
+      throw new Error(`Prospectus with ID "${id}" not found.`);
+    }
+
+    // If the action is to delete the prospectus
+    if (params.isDeleted !== undefined) {
+      if (params.isDeleted && prospectus.isActive) {
+        throw new Error(
+          `You must set the status of "${prospectus.prospectusName}" to inactive before you can delete this prospectus.`
+        );
+      }
+
+      // Set the prospectus as deleted and save within the transaction
+      Object.assign(prospectus, {isDeleted: params.isDeleted});
+      await prospectus.save({transaction});
+
+      // Log the deletion action within the transaction
+      await db.History.create(
+        {
+          action: "delete",
+          entity: "Prospectus",
+          entityId: prospectus.prospectus_id,
+          changes: params,
+          accountId: accountId,
+        },
+        {transaction}
+      );
+
+      // Commit the transaction and return
+      await transaction.commit();
+      return;
+    }
+
+    // Fetch the program along with department and campus details to verify the update conditions
+    const program = await db.Program.findOne({
+      where: {program_id: params.program_id},
+      include: [
+        {
+          model: db.Department,
+          include: [
+            {
+              model: db.Campus,
+              where: {campusName: params.campusName},
+              attributes: ["campusName"],
+            },
+          ],
+          attributes: ["departmentName", "departmentCode"],
+        },
+      ],
+      transaction, // Ensure the query is part of the transaction
+    });
+
+    // Check if the program, department, and campus exist
+    if (!program) {
+      throw new Error(`Program not found.`);
+    } else if (!program.department) {
       throw new Error(
-        `You must set the Status of "${prospectus.prospectusName}" to Inactive before you can delete this prospectus.`
+        `Program does not belong to the specified campus "${params.campusName}". Please check the campus name or the program and try again.`
       );
     }
 
-    // Set the prospectus as deleted and save
-    Object.assign(prospectus, {isDeleted: params.isDeleted});
-    await prospectus.save();
+    // If the user is attempting to set isActive to true
+    if (params.isActive === true) {
+      // Check if there is another active prospectus for the same program
+      const activeProspectus = await db.Prospectus.findOne({
+        where: {
+          program_id: program.program_id,
+          isActive: true,
+          prospectus_id: {[Op.ne]: id}, // Exclude the current prospectus
+        },
+        transaction, // Ensure the query is part of the transaction
+      });
 
-    // Log the deletion action
-    await db.History.create({
-      action: "delete",
-      entity: "Prospectus",
-      entityId: prospectus.prospectus_id,
-      changes: params,
-      accountId: accountId,
-    });
+      if (activeProspectus) {
+        throw new Error(
+          `There's currently an active prospectus ("${activeProspectus.prospectusName}"). You must set it to inactive before activating this prospectus.`
+        );
+      }
+    }
 
-    return;
-  }
+    // Log the original state before update
+    const originalData = {...prospectus.get({plain: true})};
 
-  // Fetch the program along with department and campus details to verify the update conditions
-  const program = await db.Program.findOne({
-    where: {program_id: params.program_id},
-    include: [
-      {
-        model: db.Department,
-        include: [
-          {
-            model: db.Campus,
-            where: {campusName: params.campusName},
-            attributes: ["campusName"],
-          },
-        ],
-        attributes: ["departmentName", "departmentCode"],
-      },
-    ],
-  });
+    // Update the prospectus with the new params within the transaction
+    Object.assign(prospectus, params);
+    await prospectus.save({transaction});
 
-  // Check if the program, department, and campus exist
-  if (!program) {
-    throw `Program not found.`;
-  } else if (!program.department) {
-    throw `Program does not belong to the specified campus "${params.campusName}". Please check the campus name or the program and try again.`;
-  }
+    // Check if there are actual changes made to the prospectus
+    const updatedData = prospectus.get({plain: true});
+    const hasChanges = !deepEqual(originalData, updatedData);
 
-  // Log the original state before update
-  const originalData = {...prospectus.dataValues};
+    if (hasChanges) {
+      // Determine the specific changes
+      const changes = {};
+      for (const key in params) {
+        if (originalData[key] !== updatedData[key]) {
+          changes[key] = {from: originalData[key], to: updatedData[key]};
+        }
+      }
 
-  // Update the prospectus with the new params
-  Object.assign(prospectus, params);
-  await prospectus.save();
+      // Log the update action with changes within the transaction
+      await db.History.create(
+        {
+          action: "update",
+          entity: "Prospectus",
+          entityId: prospectus.prospectus_id,
+          changes: changes,
+          accountId: accountId,
+        },
+        {transaction}
+      );
+    }
 
-  // Check if there are actual changes made to the prospectus
-  const hasChanges = !deepEqual(originalData, prospectus.dataValues);
-
-  if (hasChanges) {
-    // Log the update action with changes
-    const changes = {
-      original: originalData,
-      updated: params,
-    };
-
-    await db.History.create({
-      action: "update",
-      entity: "Prospectus",
-      entityId: prospectus.prospectus_id,
-      changes: changes,
-      accountId: accountId,
-    });
+    // Commit the transaction
+    await transaction.commit();
+  } catch (error) {
+    // Rollback the transaction in case of any errors
+    await transaction.rollback();
+    throw error;
   }
 }
 
@@ -565,7 +659,7 @@ async function updateProspectus(id, params, accountId) {
  * Logs debug information during processing.
  * Inserts prospectus subjects and their prerequisites into the database.
  * Generates history logs for the created prospectus subjects and prerequisites.
- * 
+ *
  * @param {Array} params - Array of objects containing assignment parameters like campus ID, prospectus ID, year level, subject code, prerequisites, and semester name.
  * @param {string} accountId - The ID of the account associated with the prospectus assignments.
  * @returns {Promise<Array>} - A promise that resolves to an array of inserted prospectus subjects.
@@ -1199,6 +1293,9 @@ async function getAllProspectusSubjects(
       {
         model: db.Prospectus,
         required: true,
+        where: {
+          isActive: true,
+        },
         include: [
           {
             model: db.Program,
