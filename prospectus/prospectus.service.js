@@ -1201,7 +1201,8 @@ async function getAllProspectusSubjects(
   campus_id = null,
   campusName = null,
   prospectus_id = null,
-  programCode = null
+  programCode = null,
+  external = null
 ) {
   // Validate Campus
   const campusWhereClause = {};
@@ -1294,7 +1295,7 @@ async function getAllProspectusSubjects(
         model: db.Prospectus,
         required: true,
         where: {
-          isActive: true,
+          ...(external === "true" ? {isActive: true} : null),
         },
         include: [
           {

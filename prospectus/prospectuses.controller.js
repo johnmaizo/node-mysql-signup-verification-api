@@ -52,7 +52,7 @@ router.get(
   ]),
   getAllProspectusSubjects
 );
-router.get("/external/get-all-prospectus-subjects", getAllProspectusSubjects); //! External
+router.get("/external/get-all-prospectus-subjects", getAllProspectusSubjectsExternal); //! External
 router.get(
   "/get-all-prospectus/count",
   authorize([
@@ -150,7 +150,16 @@ function getAllProspectusSubjects(req, res, next) {
   const {campus_id, campusName, prospectus_id, programCode} = req.query;
 
   prospectusService
-    .getAllProspectusSubjects(campus_id, campusName, prospectus_id, programCode)
+    .getAllProspectusSubjects(campus_id, campusName, prospectus_id, programCode, "false")
+    .then((prospectuses) => res.json(prospectuses))
+    .catch(next);
+}
+
+function getAllProspectusSubjectsExternal(req, res, next) {
+  const {campus_id, campusName, prospectus_id, programCode} = req.query;
+
+  prospectusService
+    .getAllProspectusSubjects(campus_id, campusName, prospectus_id, programCode, "true")
     .then((prospectuses) => res.json(prospectuses))
     .catch(next);
 }
