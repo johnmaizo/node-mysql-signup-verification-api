@@ -502,12 +502,12 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
           },
         }
       );
-    }
 
-    console.log(
-      "Post response (onlineFullStudentInfoPOST):",
-      onlineFullStudentInfoPOST.data
-    );
+      console.log(
+        "Post response (onlineFullStudentInfoPOST):",
+        onlineFullStudentInfoPOST.data
+      );
+    }
 
     // Extract the IDs of these enrollments
     const enrollmentIds = classEnrollments.map(
