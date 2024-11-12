@@ -378,133 +378,136 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
 
     // Post data to the external API
 
-    /*
-    const onlineFullStudentInfoPOST = await axios.post(
-      `${MHAFRIC_API_URL}/api/onsite-full-student-data/`,
-      {
-        student_id: student_id,
-        campus: campus.campus_id,
-        personal_data: {
-          f_name: applicant.firstName || "",
-          m_name: applicant.middleName || "",
-          suffix: applicant.suffix || "",
-          l_name: applicant.lastName || "",
-          sex: applicant.gender || "Unknown",
-          birth_date: applicant.birthDate || "1900-01-01",
-          birth_place: applicant.birthPlace || "Unknown",
-          marital_status: applicant.civilStatus || "Single",
-          religion: applicant.religion || "Unknown",
-          country: applicant.country || "Unknown",
-          email: applicant.email || "",
-          acr: applicant.ACR || null,
-          status: "officially enrolled",
-          on_site: true,
+    if (applicant.enrollmentType === "on-site") {
+      const onlineFullStudentInfoPOST = await axios.post(
+        `${MHAFRIC_API_URL}/api/onsite-full-student-data/`,
+        {
+          student_id: student_id,
+          campus: campus.campus_id,
+          personal_data: {
+            f_name: applicant.firstName || "",
+            m_name: applicant.middleName || "",
+            suffix: applicant.suffix || "",
+            l_name: applicant.lastName || "",
+            sex: applicant.gender || "Unknown",
+            birth_date: applicant.birthDate || "1900-01-01",
+            birth_place: applicant.birthPlace || "Unknown",
+            marital_status: applicant.civilStatus || "Single",
+            religion: applicant.religion || "Unknown",
+            country: applicant.country || "Unknown",
+            email: applicant.email || "",
+            acr: applicant.ACR || null,
+            status: "officially enrolled",
+            on_site: true,
+          },
+          add_personal_data: {
+            city_address: applicant.addPersonalData?.cityAddress || "Unknown",
+            province_address:
+              applicant.addPersonalData?.provinceAddress || "Unknown",
+            contact_number: applicant.contactNumber || "",
+            city_contact_number:
+              applicant.addPersonalData?.cityTelNumber || null,
+            province_contact_number:
+              applicant.addPersonalData?.provinceTelNumber || null,
+            citizenship: applicant.citizenship || "Unknown",
+          },
+          family_background: {
+            father_fname: applicant.familyDetails?.fatherFirstName || "",
+            father_mname: applicant.familyDetails?.fatherMiddleName || "",
+            father_lname: applicant.familyDetails?.fatherLastName || "",
+            father_contact_number:
+              applicant.familyDetails?.fatherContactNumber || "",
+            father_email: applicant.familyDetails?.fatherEmail || "",
+            father_occupation: applicant.familyDetails?.fatherOccupation || "",
+            father_income: applicant.familyDetails?.fatherIncome || 0,
+            father_company: applicant.familyDetails?.fatherCompanyName || "",
+            mother_fname: applicant.familyDetails?.motherFirstName || "",
+            mother_mname: applicant.familyDetails?.motherMiddleName || "",
+            mother_lname: applicant.familyDetails?.motherLastName || "",
+            mother_contact_number:
+              applicant.familyDetails?.motherContactNumber || "",
+            mother_email: applicant.familyDetails?.motherEmail || "",
+            mother_occupation: applicant.familyDetails?.motherOccupation || "",
+            mother_income: applicant.familyDetails?.motherIncome || "",
+            mother_company: applicant.familyDetails?.motherCompanyName || "",
+            guardian_fname: applicant.familyDetails?.guardianFirstName || "",
+            guardian_mname: applicant.familyDetails?.guardianMiddleName || "",
+            guardian_lname: applicant.familyDetails?.guardianLastName || "",
+            guardian_relation: applicant.familyDetails?.guardianRelation || "",
+            guardian_contact_number:
+              applicant.familyDetails?.guardianContactNumber || "",
+            guardian_email:
+              applicant.familyDetails?.guardianFirstName &&
+              applicant.familyDetails?.guardianLastName
+                ? `${applicant.familyDetails?.guardianFirstName}${applicant.familyDetails?.guardianLastName}@example.com`
+                    .toLowerCase()
+                    .trim()
+                : null,
+          },
+          academic_background: {
+            program: applicant.student_current_academicbackground.program_id,
+            major_in:
+              applicant.student_current_academicbackground?.majorIn || null,
+            student_type:
+              applicant.student_current_academicbackground?.studentType ||
+              "Regular",
+            semester_entry:
+              applicant.student_current_academicbackground?.semester_id, // Adjust as needed
+            year_level: applicant.student_current_academicbackground?.yearLevel,
+            year_entry:
+              applicant.student_current_academicbackground?.yearEntry || 0,
+            year_graduate:
+              applicant.student_current_academicbackground?.yearGraduate || 0,
+            application_type:
+              applicant.student_current_academicbackground?.applicationType ||
+              "Freshmen",
+          },
+          academic_history: {
+            elementary_school:
+              applicant.academicHistory?.elementarySchool || "Not Provided",
+            elementary_address:
+              applicant.academicHistory?.elementaryAddress || "Not Provided",
+            elementary_honors:
+              applicant.academicHistory?.elementaryHonors || "None",
+            elementary_graduate:
+              applicant.academicHistory?.elementaryGraduate || null,
+            junior_highschool:
+              applicant.academicHistory?.secondarySchool || "Not Provided",
+            junior_address:
+              applicant.academicHistory?.secondaryAddress || "Not Provided",
+            junior_honors: applicant.academicHistory?.secondaryHonors || "None",
+            junior_graduate:
+              applicant.academicHistory?.secondaryGraduate || null,
+            senior_highschool:
+              applicant.academicHistory?.seniorHighSchool || "Not Provided",
+            senior_address:
+              applicant.academicHistory?.seniorHighAddress || "Not Provided",
+            senior_honors:
+              applicant.academicHistory?.seniorHighHonors || "None",
+            senior_graduate:
+              applicant.academicHistory?.seniorHighSchoolGraduate || null,
+            ncae_grade: applicant.academicHistory?.ncae_grade || "N/A",
+            ncae_year_taken: applicant.academicHistory?.ncae_year_taken || null,
+            latest_college:
+              applicant.academicHistory?.latest_college || "Not Provided",
+            college_address:
+              applicant.academicHistory?.college_address || "Not Provided",
+            college_honors: applicant.academicHistory?.college_honors || "None",
+            program: applicant.academicHistory?.program || "N/A",
+          },
         },
-        add_personal_data: {
-          city_address: applicant.addPersonalData?.cityAddress || "Unknown",
-          province_address:
-            applicant.addPersonalData?.provinceAddress || "Unknown",
-          contact_number: applicant.contactNumber || "",
-          city_contact_number: applicant.addPersonalData?.cityTelNumber || null,
-          province_contact_number:
-            applicant.addPersonalData?.provinceTelNumber || null,
-          citizenship: applicant.citizenship || "Unknown",
-        },
-        family_background: {
-          father_fname: applicant.familyDetails?.fatherFirstName || "",
-          father_mname: applicant.familyDetails?.fatherMiddleName || "",
-          father_lname: applicant.familyDetails?.fatherLastName || "",
-          father_contact_number:
-            applicant.familyDetails?.fatherContactNumber || "",
-          father_email: applicant.familyDetails?.fatherEmail || "",
-          father_occupation: applicant.familyDetails?.fatherOccupation || "",
-          father_income: applicant.familyDetails?.fatherIncome || 0,
-          father_company: applicant.familyDetails?.fatherCompanyName || "",
-          mother_fname: applicant.familyDetails?.motherFirstName || "",
-          mother_mname: applicant.familyDetails?.motherMiddleName || "",
-          mother_lname: applicant.familyDetails?.motherLastName || "",
-          mother_contact_number:
-            applicant.familyDetails?.motherContactNumber || "",
-          mother_email: applicant.familyDetails?.motherEmail || "",
-          mother_occupation: applicant.familyDetails?.motherOccupation || "",
-          mother_income: applicant.familyDetails?.motherIncome || "",
-          mother_company: applicant.familyDetails?.motherCompanyName || "",
-          guardian_fname: applicant.familyDetails?.guardianFirstName || "",
-          guardian_mname: applicant.familyDetails?.guardianMiddleName || "",
-          guardian_lname: applicant.familyDetails?.guardianLastName || "",
-          guardian_relation: applicant.familyDetails?.guardianRelation || "",
-          guardian_contact_number:
-            applicant.familyDetails?.guardianContactNumber || "",
-          guardian_email:
-            applicant.familyDetails?.guardianFirstName &&
-            applicant.familyDetails?.guardianLastName
-              ? `${applicant.familyDetails?.guardianFirstName}${applicant.familyDetails?.guardianLastName}@example.com`
-                  .toLowerCase()
-                  .trim()
-              : null,
-        },
-        academic_background: {
-          program: applicant.student_current_academicbackground.program_id,
-          major_in:
-            applicant.student_current_academicbackground?.majorIn || null,
-          student_type:
-            applicant.student_current_academicbackground?.studentType ||
-            "Regular",
-          semester_entry:
-            applicant.student_current_academicbackground?.semester_id, // Adjust as needed
-          year_level: applicant.student_current_academicbackground?.yearLevel,
-          year_entry:
-            applicant.student_current_academicbackground?.yearEntry || 0,
-          year_graduate:
-            applicant.student_current_academicbackground?.yearGraduate || 0,
-          application_type:
-            applicant.student_current_academicbackground?.applicationType ||
-            "Freshmen",
-        },
-        academic_history: {
-          elementary_school:
-            applicant.academicHistory?.elementarySchool || "Not Provided",
-          elementary_address:
-            applicant.academicHistory?.elementaryAddress || "Not Provided",
-          elementary_honors:
-            applicant.academicHistory?.elementaryHonors || "None",
-          elementary_graduate:
-            applicant.academicHistory?.elementaryGraduate || null,
-          junior_highschool:
-            applicant.academicHistory?.secondarySchool || "Not Provided",
-          junior_address:
-            applicant.academicHistory?.secondaryAddress || "Not Provided",
-          junior_honors: applicant.academicHistory?.secondaryHonors || "None",
-          junior_graduate: applicant.academicHistory?.secondaryGraduate || null,
-          senior_highschool:
-            applicant.academicHistory?.seniorHighSchool || "Not Provided",
-          senior_address:
-            applicant.academicHistory?.seniorHighAddress || "Not Provided",
-          senior_honors: applicant.academicHistory?.seniorHighHonors || "None",
-          senior_graduate:
-            applicant.academicHistory?.seniorHighSchoolGraduate || null,
-          ncae_grade: applicant.academicHistory?.ncae_grade || "N/A",
-          ncae_year_taken: applicant.academicHistory?.ncae_year_taken || null,
-          latest_college:
-            applicant.academicHistory?.latest_college || "Not Provided",
-          college_address:
-            applicant.academicHistory?.college_address || "Not Provided",
-          college_honors: applicant.academicHistory?.college_honors || "None",
-          program: applicant.academicHistory?.program || "N/A",
-        },
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
 
     console.log(
       "Post response (onlineFullStudentInfoPOST):",
       onlineFullStudentInfoPOST.data
     );
-    */
 
     // Extract the IDs of these enrollments
     const enrollmentIds = classEnrollments.map(
