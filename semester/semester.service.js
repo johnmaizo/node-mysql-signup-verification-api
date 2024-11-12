@@ -124,6 +124,8 @@ async function getSemesters(whereClause) {
         attributes: ["campusName"], // Include only the campus name
       },
     ],
+    // order: [["schoolYear", "DESC"], ["semesterName", "DESC"]],
+    order: [["schoolYear", "DESC"]],
   });
 
   return semesters.map(transformSemesterData);
