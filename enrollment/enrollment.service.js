@@ -8,6 +8,8 @@ const deepEqual = require("deep-equal");
 
 require("dotenv").config();
 
+const MHAFRIC_API_URL = process.env.MHAFRIC_API;
+
 module.exports = {
   submitApplication,
   submitEnlistment,
@@ -15,8 +17,6 @@ module.exports = {
   updateEnrollmentProcess,
   getAllEnrollmentStatus,
   getEnrollmentStatusById,
-
-  enrollStudent,
   getAllStudentsOfficial,
   getAllStudentsOfficalActive,
   getAllStudentOfficialCount,
@@ -27,16 +27,13 @@ module.exports = {
   updateStudent,
   // deleteStudent,
 
-  fetchApplicantData,
-  getAllApplicant,
-  getAllApplicantCount,
+  enrollOlineApplicantStudent,
+  getAllOnlineApplicant,
 
   getStudentEnrolledClasses,
   getAllEnrolledClasses,
   getEnlistedClasses,
 };
-
-const url = process.env.MHAFRIC_API;
 
 async function submitApplication(params, accountId) {
   const {sequelize} = require("_helpers/db");
@@ -226,122 +223,7 @@ async function submitEnlistment(params, accountId) {
   }
 }
 
-// async function enrollStudent(params, accountId) {
-async function enrollStudent(params) {
-  const studentparams = {};
-  let campus_name = "";
-
-  console.log(params);
-
-  if (!params.applicant_id) {
-    throw new Error("Applicant ID is required");
-  }
-
-  // Fetch the applicant data
-  const request = await axios.get(`${url}/api/stdntbasicinfoapplication`, {
-    params: {
-      filter: `applicant_id=${params.applicant_id}`,
-    },
-  });
-
-  if (request.data[0].status === "accepted") {
-    throw new Error(
-      `Student "${request.data[0].first_name} ${request.data[0].last_name}" is Already Enrolled`
-    );
-  }
-
-  // Check if data exists
-  if (request.data && request.data.length > 0) {
-    const applicantData = request.data[0]; // Assuming the relevant data is in the first object
-
-    // Mapping response data to studentparams
-    studentparams.firstName = applicantData.first_name;
-    studentparams.middleName = applicantData.middle_name;
-    studentparams.lastName = applicantData.last_name;
-    studentparams.isTransferee = applicantData.is_transferee;
-    studentparams.yearLevel = applicantData.year_level;
-    studentparams.contactNumber = applicantData.contact_number;
-    studentparams.birthDate = applicantData.birth_date;
-
-    // Mapping other fields
-    studentparams.suffix = applicantData.suffix;
-    studentparams.address = applicantData.address;
-    studentparams.program = applicantData.program;
-    studentparams.gender = applicantData.sex;
-    studentparams.email = applicantData.email;
-    studentparams.status = applicantData.status;
-
-    campus_name = applicantData.campus;
-  } else {
-    // Throw error if no results are found
-    throw new Error("No Results in response");
-  }
-
-  // Fetch the campus based on the campus name
-  const campus = await db.Campus.findOne({where: {campusName: campus_name}});
-
-  // Check if campus exists
-  if (!campus) {
-    throw new Error("Campus not found");
-  }
-
-  // Assign campus_id to studentparams
-  studentparams.campus_id = campus.campus_id;
-
-  // Generate student ID
-  studentparams.student_id = await generateStudentId(
-    // studentparams.program,
-    campus_name
-  );
-
-  // New POST request after generating the student ID
-  const postResponse = await axios.post(
-    `${url}/api/stdntbasicinfo/`,
-    {
-      student_id: studentparams.student_id,
-      applicant_id: params.applicant_id,
-      pswrd: studentparams.student_id,
-    },
-    {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
-
-  if (!postResponse.data) {
-    throw new Error("Bad Request");
-  }
-
-  console.log("Post response:", postResponse.data);
-
-  // New PUT request after the POST request
-  const putResponse = await axios.put(
-    `${url}/api/stdntbasicinfomod/${params.applicant_id}/false`,
-    {
-      status: "accepted",
-    },
-    {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
-
-  if (!putResponse.data) {
-    throw new Error("Bad Request");
-  }
-
-  console.log("PUT response (status update):", putResponse.data);
-
-  studentparams.status = "accepted";
-
-  // Save student details in the database
-  const studentOfficial = new db.StudentOfficial(studentparams);
-  await studentOfficial.save();
-}
-
-async function enrollStudentMockUpOnsite(student_personal_id) {
+async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
   const transaction = await db.sequelize.transaction();
 
   try {
@@ -498,7 +380,7 @@ async function enrollStudentMockUpOnsite(student_personal_id) {
 
     /*
     const onlineFullStudentInfoPOST = await axios.post(
-      `${url}/api/onsite-full-student-data/`,
+      `${MHAFRIC_API_URL}/api/onsite-full-student-data/`,
       {
         student_id: student_id,
         campus: campus.campus_id,
@@ -683,7 +565,7 @@ async function enrollStudentMockUpOnsite(student_personal_id) {
     // Rollback the transaction in case of any errors
     await transaction.rollback();
     console.error(
-      "Error in enrollStudentMockUpOnsite:",
+      "Error in enrollOlineApplicantStudentMockUpOnsite:",
       error.response ? error.response.data : error.message
     );
     throw new Error(
@@ -831,321 +713,318 @@ async function generateStudentId(campusName) {
   // If a student exists, increment the last student ID,  otherwise start from 00001
   if (lastStudent) {
     const lastId = lastStudent.student_id.split("-")[1]; // Get the numeric part of the ID
-    const newIdNumber = (parseInt(lastId) + 1).toString().padStart(5, "0"); // ! Change to 5 later
+    const newIdNumber = (parseInt(lastId) + 1).toString().padStart(5, "0");
     return `${currentYear}-${newIdNumber}`;
   } else {
-    return `${currentYear}-00001`; // ! Change to 5 later
+    return `${currentYear}-00001`;
   }
 }
 
-/**
- * Fetch applicant data from the MH Afric API and update or create new records in the
- * Applicant table. If an applicant record already exists, it will be updated if the
- * data from the API is different from the existing data. If the data is the same, the
- * record will not be updated.
- *
- * @param {string} [campusName] - The campus name to filter the applicant data by.
- * @param {boolean} [isAborted] - Whether the processing has been aborted. If true, the
- * transaction will be rolled back.
- *
- * @returns {Promise<{isUpToDate: boolean}>} - A promise that resolves to an object with
- * a single property, `isUpToDate`, which is a boolean indicating whether the applicant
- * data was up to date or not.
- */
-async function fetchApplicantData(campusName = null, isAborted = false) {
-  let apiUrl;
-  const {sequelize} = require("_helpers/db");
-  const pLimit = await import("p-limit");
+// ! Online Applicants
 
-  const limit = pLimit.default(5); // Allow up to 5 concurrent operations
-
-  if (campusName) {
-    const campus = await db.Campus.findOne({where: {campusName}});
-    if (!campus) throw new Error("Campus not found");
-    apiUrl = `${url}/api/stdntbasicinfo?filter=campus=${campus.campus_id}`;
-  } else {
-    apiUrl = `${url}/api/stdntbasicinfo/`;
-  }
-
-  const transaction = await sequelize.transaction();
-  let isUpToDate = true;
-
+async function enrollOlineApplicantStudent({fulldata_applicant_id}) {
+  console.log("\n\n\nFULLDATA_applicant_id: ", fulldata_applicant_id);
   try {
-    const response = await axios.get(apiUrl);
-    if (response.data && Array.isArray(response.data)) {
-      const applicantsData = response.data;
+    // Fetch data from external API
+    const response = await axios.get(
+      `${MHAFRIC_API_URL}/api/full-student-data/?filter=fulldata_applicant_id=${fulldata_applicant_id}`
+    );
+    const data = response.data;
 
-      // Fetch campuses and programs with the correct structure
-      const campuses = await db.Campus.findAll(); // Fetch all campuses as usual
-      const programs = await db.Program.findAll({
-        include: [
-          {
-            model: db.Department,
-            include: [
-              {
-                model: db.Campus, // Ensure that the program belongs to the right campus
-                attributes: ["campus_id", "campusName"],
-              },
-            ],
-          },
-        ],
-      });
+    // Map the data to our database schema
+    const personalData = data.personal_data[0];
+    const addPersonalData = data.add_personal_data[0];
+    const familyBackground = data.family_background[0];
+    const academicBackground = data.academic_background[0];
+    const academicHistory = data.academic_history[0];
 
-      // Create a campus map to easily find campus records by name
-      const campusMap = Object.fromEntries(
-        campuses.map((c) => [c.campus_id, c])
-      );
+    // Fetch Program to get campus_id
+    const program = await db.Program.findByPk(academicBackground.program, {
+      include: [
+        {
+          model: db.Department,
+          include: [
+            {
+              model: db.Campus,
+            },
+          ],
+        },
+      ],
+    });
 
-      // Create a program map based on the correct department-campus relationship
-      const programMap = Object.fromEntries(
-        programs.map((p) => {
-          const campus = p.department.campus;
-          if (campus) {
-            return [`${campus.campus_id}_${p.program_id}`, p];
-          }
-          return [p.program_id, p]; // Fallback if no campus is found
-        })
-      );
-
-      let skippedApplicants = []; // Track skipped applicants
-
-      await Promise.all(
-        applicantsData.map((applicantData) =>
-          limit(async () => {
-            if (isAborted) {
-              console.log("Processing aborted, rolling back transaction...");
-              await transaction.rollback();
-              return;
-            }
-
-            try {
-              const campusRecord = campusMap[applicantData.campus];
-              if (!campusRecord) {
-                skippedApplicants.push({
-                  reason: "No campus match",
-                  data: applicantData,
-                });
-                return;
-              }
-
-              const programRecordKey = `${campusRecord.campus_id}_${applicantData.program}`;
-              const programRecord = programMap[programRecordKey];
-
-              if (!programRecord) {
-                skippedApplicants.push({
-                  reason: "No program match or program-campus mismatch",
-                  data: applicantData,
-                });
-                return;
-              }
-
-              const newApplicant = {
-                applicant_id_external: applicantData.applicant_id,
-                enrollmentType: "online",
-                firstName: applicantData.first_name
-                  ? applicantData.first_name.trim()
-                  : null,
-                middleName: applicantData.middle_name
-                  ? applicantData.middle_name.trim()
-                  : null,
-                lastName: applicantData.last_name
-                  ? applicantData.last_name.trim()
-                  : null,
-                suffix: applicantData.suffix
-                  ? applicantData.suffix.trim()
-                  : null,
-                gender: applicantData.sex || null,
-                email: applicantData.email
-                  ? applicantData.email.trim().toLowerCase()
-                  : null,
-                contactNumber: applicantData.contact_number
-                  ? applicantData.contact_number.trim()
-                  : null,
-                address: applicantData.address
-                  ? applicantData.address.trim()
-                  : null,
-                yearLevel: applicantData.year_level || null,
-                isTransferee: applicantData.is_transferee ? true : false,
-                campus_id: programRecord.department.campus.campus_id,
-                program_id: programRecord.program_id,
-                birthDate: applicantData.birth_date || null,
-                // status: applicantData.status || null,
-                isActive: applicantData.is_active || null,
-                dateEnrolled: applicantData.created_at || null,
-              };
-
-              const existingApplicant = await db.StudentPersonalData.findOne({
-                where: {
-                  firstName: newApplicant.firstName,
-                  lastName: newApplicant.lastName,
-                  birthDate: newApplicant.birthDate,
-                  campus_id: programRecord.department.campus.campus_id,
-                  program_id: programRecord.program_id,
-                  email: newApplicant.email,
-                },
-              });
-
-              if (existingApplicant) {
-                // Compare only relevant fields
-                const relevantFields = [
-                  "firstName",
-                  "middleName",
-                  "lastName",
-                  "suffix",
-                  "gender",
-                  "email",
-                  "contactNumber",
-                  "address",
-                  "yearLevel",
-                  "isTransferee",
-                  "campus_id",
-                  "program_id",
-                  "birthDate",
-                  "status",
-                  "dateEnrolled",
-                ];
-
-                const existingApplicantData = {};
-                const newApplicantData = {};
-
-                relevantFields.forEach((field) => {
-                  if (field === "dateEnrolled") {
-                    // Normalize dateEnrolled by stripping milliseconds (if any)
-                    const normalizeDate = (date) => {
-                      return date
-                        ? new Date(date).toISOString().split(".")[0] + "Z"
-                        : null;
-                    };
-
-                    existingApplicantData[field] = normalizeDate(
-                      existingApplicant[field]
-                    );
-                    newApplicantData[field] = normalizeDate(
-                      newApplicant[field]
-                    );
-                  } else if (field === "isTransferee") {
-                    existingApplicantData[field] = Boolean(
-                      existingApplicant[field]
-                    );
-                    newApplicantData[field] = Boolean(newApplicant[field]);
-                  } else if (["campus_id", "program_id"].includes(field)) {
-                    existingApplicantData[field] = Number(
-                      existingApplicant[field]
-                    );
-                    newApplicantData[field] = Number(newApplicant[field]);
-                  } else {
-                    existingApplicantData[field] = existingApplicant[field]
-                      ? existingApplicant[field].toString().trim()
-                      : null;
-                    newApplicantData[field] = newApplicant[field]
-                      ? newApplicant[field].toString().trim()
-                      : null;
-                  }
-                });
-
-                const isDifferent = !deepEqual(
-                  existingApplicantData,
-                  newApplicantData
-                );
-
-                if (isDifferent) {
-                  await db.StudentPersonalData.update(newApplicant, {
-                    where: {applicant_id: existingApplicant.applicant_id},
-                    transaction,
-                  });
-                  isUpToDate = false;
-                } else {
-                  // No change in applicant data
-                  isUpToDate = true;
-                }
-              } else {
-                // Create new applicant record
-                await db.StudentPersonalData.create(newApplicant, {
-                  transaction,
-                });
-                isUpToDate = false; // New data was inserted
-              }
-            } catch (err) {
-              console.error(`Error processing applicant: ${err.message}`);
-            }
-          })
-        )
-      );
-
-      if (skippedApplicants.length > 0) {
-        console.log("Skipped applicants: ", skippedApplicants);
-      }
+    if (!program) {
+      throw new Error("Program not found");
     }
 
-    await transaction.commit();
-    return {isUpToDate};
+    const campus_id = program.department.campus.campus_id;
+
+    // Fetch Semester
+    const semester = await db.Semester.findByPk(
+      academicBackground.semester_entry
+    );
+
+    if (!semester) {
+      throw new Error("Semester not found");
+    }
+
+    // Get prospectus_id
+    const prospectus = await db.Prospectus.findOne({
+      where: {
+        program_id: program.program_id,
+        isActive: true,
+        isDeleted: false,
+      },
+    });
+
+    if (!prospectus) {
+      throw new Error("Prospectus not found for the program");
+    }
+
+    const prospectus_id = prospectus.prospectus_id;
+
+    // Start a transaction
+    const transaction = await db.sequelize.transaction();
+
+    try {
+      // Create student_personal_data
+      const studentPersonalData = await db.StudentPersonalData.create(
+        {
+          enrollmentType: personalData.on_site ? "on-site" : "online",
+          applicant_id_for_online: personalData.fulldata_applicant_id,
+          campus_id: campus_id,
+          status: personalData.status,
+          firstName: personalData.f_name,
+          middleName: personalData.m_name,
+          lastName: personalData.l_name,
+          suffix: personalData.suffix,
+          gender: personalData.sex,
+          email: personalData.email,
+          birthDate: personalData.birth_date,
+          birthPlace: personalData.birth_place,
+          civilStatus: personalData.marital_status,
+          religion: personalData.religion,
+          country: personalData.country,
+          citizenship: addPersonalData.citizenship,
+          ACR: personalData.acr,
+          address:
+            addPersonalData.city_address ||
+            addPersonalData.province_address ||
+            "",
+          contactNumber: addPersonalData.contact_number || "",
+          isActive: personalData.is_active,
+          isDeleted: personalData.is_deleted,
+        },
+        {transaction}
+      );
+
+      const student_personal_id = studentPersonalData.student_personal_id;
+
+      // Create student_add_personal_data
+      await db.StudentAddPersonalData.create(
+        {
+          student_personal_id: student_personal_id,
+          cityAddress: addPersonalData.city_address,
+          provinceAddress: addPersonalData.province_address,
+          cityTelNumber: addPersonalData.city_contact_number,
+          provinceTelNumber: addPersonalData.province_contact_number,
+          isActive: addPersonalData.is_active,
+          isDeleted: addPersonalData.is_deleted,
+        },
+        {transaction}
+      );
+
+      // Create student_family
+      await db.StudentFamily.create(
+        {
+          student_personal_id: student_personal_id,
+          fatherFirstName: familyBackground.father_fname,
+          fatherMiddleName: familyBackground.father_mname,
+          fatherLastName: familyBackground.father_lname,
+          fatherContactNumber: familyBackground.father_contact_number,
+          fatherEmail: familyBackground.father_email,
+          fatherOccupation: familyBackground.father_occupation,
+          fatherIncome: familyBackground.father_income,
+          fatherCompanyName: familyBackground.father_company,
+          motherFirstName: familyBackground.mother_fname,
+          motherMiddleName: familyBackground.mother_mname,
+          motherLastName: familyBackground.mother_lname,
+          motherContactNumber: familyBackground.mother_contact_number,
+          motherEmail: familyBackground.mother_email,
+          motherOccupation: familyBackground.mother_occupation,
+          motherIncome: familyBackground.mother_income,
+          motherCompanyName: familyBackground.mother_company,
+          guardianFirstName: familyBackground.guardian_fname,
+          guardianMiddleName: familyBackground.guardian_mname,
+          guardianLastName: familyBackground.guardian_lname,
+          guardianRelation: familyBackground.guardian_relation,
+          guardianContactNumber: familyBackground.guardian_contact_number,
+        },
+        {transaction}
+      );
+
+      // Create student_academic_background
+      await db.StudentAcademicBackground.create(
+        {
+          student_personal_id: student_personal_id,
+          program_id: academicBackground.program,
+          majorIn: academicBackground.major_in,
+          studentType: academicBackground.student_type,
+          applicationType: academicBackground.application_type,
+          semester_id: academicBackground.semester_entry,
+          prospectus_id: prospectus_id,
+          yearLevel: academicBackground.year_level,
+          yearEntry: academicBackground.year_entry,
+          yearGraduate: academicBackground.year_graduate,
+        },
+        {transaction}
+      );
+
+      // Create student_academic_history
+      await db.StudentAcademicHistory.create(
+        {
+          student_personal_id: student_personal_id,
+          elementarySchool: academicHistory.elementary_school,
+          elementaryAddress: academicHistory.elementary_address,
+          elementaryHonors: academicHistory.elementary_honors,
+          elementaryGraduate: academicHistory.elementary_graduate,
+          secondarySchool: academicHistory.junior_highschool,
+          secondaryAddress: academicHistory.junior_address,
+          secondaryHonors: academicHistory.junior_honors,
+          secondaryGraduate: academicHistory.junior_graduate,
+          seniorHighSchool: academicHistory.senior_highschool,
+          seniorHighAddress: academicHistory.senior_address,
+          seniorHighHonors: academicHistory.senior_honors,
+          seniorHighSchoolGraduate: academicHistory.senior_graduate,
+          ncae_grade: academicHistory.ncae_grade,
+          ncae_year_taken: academicHistory.ncae_year_taken,
+          latest_college: academicHistory.latest_college,
+          college_address: academicHistory.college_address,
+          college_honors: academicHistory.college_honors,
+          program: academicHistory.program,
+        },
+        {transaction}
+      );
+
+      // Commit transaction
+      await transaction.commit();
+
+      // After successful commit, make the PUT request
+      const putUrl = `${MHAFRIC_API_URL}/api/deactivate_or_modify_personal-student-data/${fulldata_applicant_id}/False`;
+      const putBody = {
+        status: "initially enrolled",
+      };
+
+      try {
+        const putResponse = await axios.put(putUrl, putBody);
+        console.log(
+          `PUT request successful: ${putResponse.status} ${putResponse.statusText}`
+        );
+      } catch (putError) {
+        console.error("Error in PUT request:", putError.message);
+        // Optional: Depending on your requirements, you might want to handle this differently.
+        // For example, you could log it, retry, or notify someone.
+      }
+    } catch (error) {
+      // Rollback transaction
+      await transaction.rollback();
+      throw error;
+    }
   } catch (error) {
-    if (!transaction.finished) await transaction.rollback();
+    console.error("Error in enrollOlineApplicantStudent:", error.message);
     throw error;
   }
 }
 
-async function getApplicants(whereClause, campus_id = null) {
-  const applicants = await db.StudentPersonalData.findAll({
-    where: {
-      ...whereClause,
-      ...(campus_id ? {campus_id} : undefined),
-    },
-    include: [
-      {
-        model: db.Program,
-        attributes: ["programCode", "programDescription"],
-        include: [
-          {
-            model: db.Department,
-            attributes: ["departmentCode", "departmentName"],
-            required: false, // Fetch department even if campus is not found
+async function getAllOnlineApplicant(campus_id = null) {
+  try {
+    // Construct the API URL with optional campus filter
+    let url = `${MHAFRIC_API_URL}/api/full-student-data/`;
+    if (campus_id) {
+      url += `?filter=campus=${campus_id}`;
+    }
+
+    // Fetch data from the API
+    const response = await axios.get(url);
+    const data = response.data;
+
+    // Filter applicants with status 'pending'
+    const pendingApplicants = data.personal_data.filter(
+      (applicant) => applicant.status === "pending"
+    );
+
+    // Process and map the filtered data to extract required fields
+    const applicants = await Promise.all(
+      pendingApplicants.map(async (applicant) => {
+        const {
+          f_name: firstName,
+          m_name: middleName,
+          l_name: lastName,
+          suffix,
+          on_site,
+          status,
+          fulldata_applicant_id,
+        } = applicant;
+
+        // Find academic background for the applicant
+        const academic = data.academic_background.find(
+          (item) => item.fulldata_applicant_id === fulldata_applicant_id
+        );
+
+        // Retrieve program information
+        let programDetails = {};
+        if (academic && academic.program) {
+          const program = await db.Program.findOne({
+            where: {program_id: academic.program},
             include: [
               {
-                model: db.Campus,
-                attributes: ["campusName"],
+                model: db.Department,
+                include: [
+                  {
+                    model: db.Campus,
+                  },
+                ],
               },
             ],
-          },
-        ],
-      },
-    ],
-    order: [["applicant_id", "ASC"]], // Apply sorting here (by applicant_id)
-  });
+          });
 
-  return applicants.map((applicant) => ({
-    ...applicant.toJSON(),
-    programCode: applicant.program.programCode || "programCode not found",
-    departmentName: applicant.program.department
-      ? applicant.program.department.departmentName
-      : "Department not found",
-    campusName:
-      applicant.program.department && applicant.program.department.campus
-        ? applicant.program.department.campus.campusName
-        : "Campus not found",
-  }));
-}
+          if (program) {
+            programDetails = {
+              programCode: program.programCode,
+              programDescription: program.programDescription,
+              campus_id: program.department.campus.campus_id,
+              campusName: program.department.campus.campusName,
+            };
+          }
+        }
 
-async function getAllApplicant(campus_id = null) {
-  const whereClause = {isActive: true, isDeleted: false};
+        return {
+          fulldata_applicant_id: fulldata_applicant_id,
+          firstName: firstName,
+          middleName: middleName,
+          lastName: lastName,
+          fullName: `${firstName} ${middleName || ""} ${lastName} ${
+            suffix || ""
+          }`.trim(),
+          programCode: programDetails.programCode || null,
+          programDescription: programDetails.programDescription || null,
+          yearLevel: academic ? academic.year_level : null,
+          on_site,
+          status,
+          enrollmentType: on_site ? "On-site" : "Online",
+          campus_id: programDetails.campus_id || null,
+          campusName: programDetails.campusName || null,
+        };
+      })
+    );
 
-  return await getApplicants(whereClause, campus_id);
-}
-
-async function getAllApplicantCount(campus_id = null) {
-  const whereClause = {isActive: true, isDeleted: false};
-
-  return await db.StudentPersonalData.count({
-    where: {
-      ...whereClause,
-      ...(campus_id ? {campus_id} : {}),
-    },
-  });
+    return applicants;
+  } catch (error) {
+    console.error("Error fetching online applicants:", error);
+    throw new Error("Failed to retrieve online applicants");
+  }
 }
 
 // ! For Student
-
-// Helper function to get all students officially enrolled, optionally filtered by campusName
 async function getAllStudentsOfficial(campusName = null) {
   let campus;
 
@@ -1677,8 +1556,8 @@ async function updateEnrollmentProcess(params) {
     enrollmentProcess.accounting_status === "accepted" &&
     enrollmentProcess.payment_confirmed
   ) {
-    // Enroll the student by calling enrollStudentMockUpOnsite
-    await enrollStudentMockUpOnsite(
+    // Enroll the student by calling enrollOlineApplicantStudentMockUpOnsite
+    await enrollOlineApplicantStudentMockUpOnsite(
       student_personal_id,
       activeSemester.semester_id
     );

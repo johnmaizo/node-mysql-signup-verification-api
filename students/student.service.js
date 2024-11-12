@@ -226,8 +226,19 @@ async function getUnenrolledStudents(
       },
       include: [
         {
+          model: db.StudentAcademicBackground,
+          require: true,
+          include: [
+            {
+              model: db.Program,
+              require: true,
+              attributes: ["programCode", "programDescription"],
+            },
+          ],
+        },
+        {
           model: db.StudentClassEnrollments,
-          required: true, // Ensures at least one enrolled class
+          required: false, // Ensures at least one enrolled class
           where: {
             status: "enlisted",
           },
@@ -255,14 +266,20 @@ async function getUnenrolledStudents(
 
     // Map the students as needed
     const studentsWithEnrollmentStatus = students.map((student) => ({
-      student_personal_id: student.student_personal_id,
+      id: student.student_personal_id,
       firstName: student.firstName,
       lastName: student.lastName,
       middleName: student.middleName,
       fullName: `${student.firstName} ${student.middleName || ""} ${
         student.lastName
       }`,
-      hasEnlistedSubjects: true, // Since the query ensures they have enlisted classes
+      programCode:
+        student.student_current_academicbackground.program.programCode,
+      yearLevel: student.student_current_academicbackground.yearLevel,
+      enrollmentType: student.enrollmentType,
+      hasEnlistedSubjects: student.student_class_enrollments.length
+        ? true
+        : false,
     }));
 
     return studentsWithEnrollmentStatus;

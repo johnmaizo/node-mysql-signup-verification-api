@@ -39,13 +39,13 @@ router.get(
 
 router.get(
   "/get-unenrolled-students",
-  authorize([
-    Role.SuperAdmin,
-    Role.Admin,
-    Role.Registrar,
-    Role.MIS,
-    Role.Accounting,
-  ]),
+  // authorize([
+  //   Role.SuperAdmin,
+  //   Role.Admin,
+  //   Role.Registrar,
+  //   Role.MIS,
+  //   Role.Accounting,
+  // ]),
   getUnenrolledStudents
 );
 

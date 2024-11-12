@@ -19,17 +19,6 @@ router.post(
   submitApplication
 );
 router.post(
-  "/enroll-student",
-  authorize([
-    Role.SuperAdmin,
-    Role.Admin,
-    Role.Registrar,
-    Role.MIS,
-    Role.Accounting,
-  ]),
-  enrollStudent
-);
-router.post(
   "/submit-enlistment",
   authorize([
     Role.SuperAdmin,
@@ -41,6 +30,7 @@ router.post(
   submitEnlistmentSchema,
   submitEnlistment
 );
+router.post('/enroll-online-applicant-student', enrollOnlineApplicantStudentSchema, enrollOlineApplicantStudent);
 router.get("/get-enlisted-classes/:student_personal_id", getEnlistedClasses);
 router.get(
   "/",
@@ -75,8 +65,9 @@ router.get(
   ]),
   getChartData
 );
+router.get("/get-all-online-applicant", getAllOnlineApplicant);
 router.get(
-  "/fetch-applicant-data",
+  "/student-academic-background/:id",
   authorize([
     Role.SuperAdmin,
     Role.Admin,
@@ -84,31 +75,8 @@ router.get(
     Role.MIS,
     Role.Accounting,
   ]),
-  fetchApplicantData
+  getStudentAcademicBackground
 );
-router.get(
-  "/get-all-applicant",
-  authorize([
-    Role.SuperAdmin,
-    Role.Admin,
-    Role.Registrar,
-    Role.MIS,
-    Role.Accounting,
-  ]),
-  getAllApplicant
-);
-router.get(
-  "/get-all-applicant-count",
-  authorize([
-    Role.SuperAdmin,
-    Role.Admin,
-    Role.Registrar,
-    Role.MIS,
-    Role.Accounting,
-  ]),
-  getAllApplicantCount
-);
-router.get("/student-academic-background/:id", getStudentAcademicBackground);
 
 router.get(
   "/get-enrollment-status/:id",
@@ -204,35 +172,22 @@ function submitApplication(req, res, next) {
     });
 }
 
-function enrollStudent(req, res, next) {
-  enrollmentService
-    .enrollStudent(req.body, req.user.id)
-    // .then((message) => res.json(message))
-    // .catch((error) => next(error));
-
-    .then(() =>
-      res.json({
-        message: "Student Enrolled Successfully!",
-      })
-    )
-    .catch((error) => {
-      console.error(
-        "Error response:",
-        error.response ? error.response.data : error.message
-      );
-      next(error);
-    });
-}
-
 function submitEnlistment(req, res, next) {
   enrollmentService
     .submitEnlistment(req.body, req.user.id)
     .then(() =>
       res.json({
-        message: "Enlistment submitted successfully! Waiting for the Payment Approval from Accounting Office.",
+        message:
+          "Enlistment submitted successfully! Waiting for the Payment Approval from Accounting Office.",
       })
     )
     .catch(next);
+}
+
+function enrollOlineApplicantStudent(req, res, next) {
+  enrollmentService.enrollOlineApplicantStudent(req.body)
+      .then(() => res.json({ message: 'Enrollment accepted and data saved successfully.' }))
+      .catch(next);
 }
 
 function getAllStudentsOfficial(req, res, next) {
@@ -268,58 +223,11 @@ function getChartData(req, res, next) {
     .catch(next);
 }
 
-async function fetchApplicantData(req, res, next) {
-  const {campusName} = req.query;
-
-  let isAborted = false;
-
-  // Listen for 'aborted' event
-  req.on("aborted", () => {
-    isAborted = true;
-  });
-
-  try {
-    const result = await enrollmentService.fetchApplicantData(
-      campusName,
-      isAborted
-    );
-
-    if (isAborted) {
-      console.log("Request aborted, stopping processing.");
-      return;
-    }
-
-    const message = result.isUpToDate
-      ? "All applicants are up to date."
-      : "Fetch Applicant Data Successfully! Updates or new entries have been made.";
-    res.json({message});
-  } catch (error) {
-    if (!isAborted) {
-      console.error(
-        "Error response:",
-        error.response ? error.response.data : error.message
-      );
-      next(error);
-    } else {
-      console.log("Error handling aborted process");
-    }
-  }
-}
-
-function getAllApplicant(req, res, next) {
+function getAllOnlineApplicant(req, res, next) {
   const {campus_id} = req.query;
 
   enrollmentService
-    .getAllApplicant(campus_id)
-    .then((applicants) => res.json(applicants))
-    .catch(next);
-}
-
-function getAllApplicantCount(req, res, next) {
-  const {campus_id} = req.query;
-
-  enrollmentService
-    .getAllApplicantCount(campus_id)
+    .getAllOnlineApplicant(campus_id)
     .then((applicants) => res.json(applicants))
     .catch(next);
 }
@@ -528,6 +436,13 @@ function submitApplicationSchema(req, res, next) {
     }).optional(),
   });
 
+  validateRequest(req, next, schema);
+}
+
+function enrollOnlineApplicantStudentSchema(req, res, next) {
+  const schema = Joi.object({
+      fulldata_applicant_id: Joi.number().required()
+  });
   validateRequest(req, next, schema);
 }
 
