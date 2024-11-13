@@ -28,10 +28,33 @@ router.post(
     Role.Accounting,
   ]),
   submitEnlistmentSchema,
-  submitEnlistment
+  submitEnlistmentInternal
 );
-router.post('/enroll-online-applicant-student', enrollOnlineApplicantStudentSchema, enrollOlineApplicantStudent);
-router.get("/get-enlisted-classes/:student_personal_id", getEnlistedClasses);
+router.post(
+  "/external/submit-enlistment",
+  submitEnlistmentExternalSchema,
+  submitEnlistmentExternal
+); // ! External Enlistment
+router.post(
+  "/enroll-online-applicant-student",
+  enrollOnlineApplicantStudentSchema,
+  enrollOlineApplicantStudent
+);
+router.get(
+  "/get-enlisted-classes/:student_personal_id",
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.MIS,
+    Role.Accounting,
+  ]),
+  getEnlistedClasses
+);
+router.get(
+  "/external/get-enlisted-classes/:fulldata_applicant_id",
+  getEnlistedClassesExternal
+); // ! External Get Enlisted Classes
 router.get(
   "/",
   authorize([
@@ -172,9 +195,28 @@ function submitApplication(req, res, next) {
     });
 }
 
-function submitEnlistment(req, res, next) {
+function submitEnlistmentInternal(req, res, next) {
+  const {student_personal_id, class_ids} = req.body;
+
   enrollmentService
-    .submitEnlistment(req.body, req.user.id)
+    .submitEnlistment(
+      {student_personal_id, class_ids},
+      {accountId: req.user.id, external: false}
+    )
+    .then(() =>
+      res.json({
+        message:
+          "Enlistment submitted successfully! Waiting for the Payment Approval from the Accounting Office.",
+      })
+    )
+    .catch(next);
+}
+
+function submitEnlistmentExternal(req, res, next) {
+  const {fulldata_applicant_id, class_ids} = req.body;
+
+  enrollmentService
+    .submitEnlistment({fulldata_applicant_id, class_ids}, {external: true})
     .then(() =>
       res.json({
         message:
@@ -185,9 +227,12 @@ function submitEnlistment(req, res, next) {
 }
 
 function enrollOlineApplicantStudent(req, res, next) {
-  enrollmentService.enrollOlineApplicantStudent(req.body)
-      .then(() => res.json({ message: 'Enrollment accepted and data saved successfully.' }))
-      .catch(next);
+  enrollmentService
+    .enrollOlineApplicantStudent(req.body)
+    .then(() =>
+      res.json({message: "Enrollment accepted and data saved successfully."})
+    )
+    .catch(next);
 }
 
 function getAllStudentsOfficial(req, res, next) {
@@ -200,7 +245,14 @@ function getAllStudentsOfficial(req, res, next) {
 
 function getEnlistedClasses(req, res, next) {
   enrollmentService
-    .getEnlistedClasses(req.params.student_personal_id)
+    .getEnlistedClasses(req.params.student_personal_id, false)
+    .then((classes) => res.json(classes))
+    .catch(next);
+}
+
+function getEnlistedClassesExternal(req, res, next) {
+  enrollmentService
+    .getEnlistedClasses(req.params.fulldata_applicant_id, true)
     .then((classes) => res.json(classes))
     .catch(next);
 }
@@ -441,7 +493,7 @@ function submitApplicationSchema(req, res, next) {
 
 function enrollOnlineApplicantStudentSchema(req, res, next) {
   const schema = Joi.object({
-      fulldata_applicant_id: Joi.number().required()
+    fulldata_applicant_id: Joi.number().required(),
   });
   validateRequest(req, next, schema);
 }
@@ -449,6 +501,14 @@ function enrollOnlineApplicantStudentSchema(req, res, next) {
 function submitEnlistmentSchema(req, res, next) {
   const schema = Joi.object({
     student_personal_id: Joi.number().required(),
+    class_ids: Joi.array().items(Joi.number()).required(),
+  });
+  validateRequest(req, next, schema);
+}
+
+function submitEnlistmentExternalSchema(req, res, next) {
+  const schema = Joi.object({
+    fulldata_applicant_id: Joi.number().required(),
     class_ids: Joi.array().items(Joi.number()).required(),
   });
   validateRequest(req, next, schema);

@@ -153,14 +153,31 @@ async function submitApplication(params, accountId) {
   }
 }
 
-async function submitEnlistment(params, accountId) {
-  const {student_personal_id, class_ids} = params;
+async function submitEnlistment(params, options = {}) {
+  const {accountId = null, external = false} = options;
+  let {student_personal_id, class_ids, fulldata_applicant_id} = params;
 
   const transaction = await db.sequelize.transaction();
 
   try {
+    // If external, resolve student_personal_id using fulldata_applicant_id
+    if (external) {
+      const studentData = await db.StudentPersonalData.findOne({
+        where: {applicant_id_for_online: fulldata_applicant_id},
+        transaction,
+      });
+
+      if (!studentData) {
+        throw new Error("Invalid fulldata_applicant_id. Student not found.");
+      }
+
+      student_personal_id = studentData.student_personal_id;
+    }
+
     // Ensure the student exists
-    const student = await db.StudentPersonalData.findByPk(student_personal_id);
+    const student = await db.StudentPersonalData.findByPk(student_personal_id, {
+      transaction,
+    });
     if (!student) {
       throw new Error("Student not found.");
     }
@@ -211,10 +228,30 @@ async function submitEnlistment(params, accountId) {
       });
     }
 
+    // Optionally, log the action in history if not external
+    if (!external && accountId) {
+      // Prepare changes description
+      const changes = {
+        addedClassIds: classIdsToAdd,
+        removedClassIds: classIdsToRemove,
+      };
+
+      await db.History.create(
+        {
+          action: "create",
+          entity: "Enlistment",
+          entityId: student_personal_id, // Assuming entityId refers to the student
+          changes: JSON.stringify(changes), // Store changes as a JSON string
+          student_personal_id,
+          class_ids,
+          accountId: accountId,
+        },
+        {transaction}
+      );
+    }
+
     // Commit the transaction
     await transaction.commit();
-
-    // Optionally, log the action in history
 
     return;
   } catch (error) {
@@ -378,6 +415,8 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
 
     // Post data to the external API
 
+    /*
+
     if (applicant.enrollmentType === "on-site") {
       const onlineFullStudentInfoPOST = await axios.post(
         `${MHAFRIC_API_URL}/api/onsite-full-student-data/`,
@@ -508,6 +547,8 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
         onlineFullStudentInfoPOST.data
       );
     }
+
+    */
 
     // Extract the IDs of these enrollments
     const enrollmentIds = classEnrollments.map(
@@ -2105,7 +2146,22 @@ async function getAllEnrolledClasses(semester_id) {
   return result;
 }
 
-async function getEnlistedClasses(student_personal_id) {
+async function getEnlistedClasses(id, external = false) {
+  let student_personal_id = id;
+
+  // If external, resolve student_personal_id using fulldata_applicant_id
+  if (external) {
+    const studentData = await db.StudentPersonalData.findOne({
+      where: {applicant_id_for_online: id},
+    });
+
+    if (!studentData) {
+      throw new Error("Invalid fulldata_applicant_id. Student not found.");
+    }
+
+    student_personal_id = studentData.student_personal_id;
+  }
+
   const enlistedClasses = await db.StudentClassEnrollments.findAll({
     where: {
       student_personal_id: student_personal_id,
@@ -2142,7 +2198,6 @@ async function getEnlistedClasses(student_personal_id) {
       room: cls.buildingstructure ? cls.buildingstructure.roomName : "",
       instructorFullName: `${cls.employee.firstName} ${cls.employee.lastName}`,
       courseinfo: cls.courseinfo,
-      // Add other fields as needed
     };
   });
 }
