@@ -12,7 +12,7 @@ router.get("/get-all-semesters", getAllSemester);
 router.get("/get-semester-active", getAllSemesterActive);
 router.get("/get-department-active", getAllDepartmentsActive);
 router.get("/get-programs-active", getAllProgramActive);
-router.get("/get-class-active", getAllClassActive);
+// router.get("/get-class-active", getAllClassActive);
 router.get("/get-subjects-active", getAllCourseActive);
 router.get("/get-structures-active", getAllStructuresActive);
 

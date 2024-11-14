@@ -78,6 +78,7 @@ function defineRelationships(db) {
 
   // ! For Class below
   // ! Course Info -> Class
+  /*
   db.CourseInfo.hasMany(db.Class, {foreignKey: "course_id"});
   db.Class.belongsTo(db.CourseInfo, {foreignKey: "course_id"});
 
@@ -88,6 +89,7 @@ function defineRelationships(db) {
   // ! Employee -> Class
   db.Employee.hasMany(db.Class, {foreignKey: "employee_id"});
   db.Class.belongsTo(db.Employee, {foreignKey: "employee_id"});
+  */
 
   // ! Program -> Prospectus
   db.Program.hasMany(db.Prospectus, {foreignKey: "program_id"});
@@ -211,12 +213,12 @@ function defineRelationships(db) {
   // Continue with other existing relationships (omitted for brevity)
 
   // ! Building Structure -> Classes
-  db.BuildingStructure.hasMany(db.Class, {
-    foreignKey: "structure_id",
-  });
-  db.Class.belongsTo(db.BuildingStructure, {
-    foreignKey: "structure_id",
-  });
+  // db.BuildingStructure.hasMany(db.Class, {
+  //   foreignKey: "structure_id",
+  // });
+  // db.Class.belongsTo(db.BuildingStructure, {
+  //   foreignKey: "structure_id",
+  // });
 
   // StudentAcademicBackground belongsTo Prospectus
   db.StudentAcademicBackground.belongsTo(db.Prospectus, {
@@ -235,12 +237,12 @@ function defineRelationships(db) {
   });
 
   // Class has many StudentClassEnrollments
-  db.Class.hasMany(db.StudentClassEnrollments, {
-    foreignKey: "class_id",
-  });
-  db.StudentClassEnrollments.belongsTo(db.Class, {
-    foreignKey: "class_id",
-  });
+  // db.Class.hasMany(db.StudentClassEnrollments, {
+  //   foreignKey: "class_id",
+  // });
+  // db.StudentClassEnrollments.belongsTo(db.Class, {
+  //   foreignKey: "class_id",
+  // });
 }
 
 module.exports = defineRelationships;

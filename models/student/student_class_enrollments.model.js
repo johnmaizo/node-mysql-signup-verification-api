@@ -21,10 +21,6 @@ function model(sequelize) {
     },
     class_id: {
       type: DataTypes.INTEGER,
-      references: {
-        model: "classes",
-        key: "class_id",
-      },
       allowNull: false,
     },
     status: {

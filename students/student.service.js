@@ -1,6 +1,9 @@
 const {Op} = require("sequelize");
 const db = require("_helpers/db");
 const Role = require("_helpers/role");
+const {default: axios} = require("axios");
+
+const SCHEDULING_API_URL = process.env.SCHEDULING_API_URL;
 
 module.exports = {
   addEnrollment,
@@ -52,20 +55,42 @@ async function addEnrollment(params, accountId) {
     throw new Error("Student academic background not found.");
   }
 
+  // Define the sequence of year levels
+  const yearLevels = ["First Year", "Second Year", "Third Year", "Fourth Year"];
+
+  // Find the index of the current year level
+  let currentLevelIndex = yearLevels.indexOf(academicBackground.yearLevel);
+
+  if (currentLevelIndex === -1) {
+    throw new Error(`Invalid yearLevel: ${academicBackground.yearLevel}`);
+  }
+
+  // Advance to the next year level if not already at the last level
+  if (currentLevelIndex < yearLevels.length - 1) {
+    academicBackground.yearLevel = yearLevels[currentLevelIndex + 1];
+  } else {
+    // Optional: Handle the case where the student is already in the Fourth Year
+    // For example, keep the yearLevel as "Fourth Year" or handle graduation
+    academicBackground.yearLevel = "Graduated";
+  }
+
   // Update the academic background's semester_id
   academicBackground.semester_id = semester_id;
   await academicBackground.save();
 
-  // Log the action if necessary
+  // Log the action
   await db.History.create({
     action: "update",
     entity: "StudentAcademicBackground",
     entityId: academicBackground.id,
-    changes: {semester_id},
+    changes: {
+      semester_id,
+      yearLevel: academicBackground.yearLevel,
+    },
     accountId,
   });
 
-  // Log the action if necessary
+  // Log the creation of the new enrollment process
   await db.History.create({
     action: "create",
     entity: "EnrollmentProcess",
@@ -88,184 +113,284 @@ async function getStudentOfficial(student_personal_id) {
 }
 
 async function getStudentById(student_id, campus_id) {
-  const student = await db.StudentOfficial.findOne({
-    where: {student_id, campus_id},
-    include: [
-      {
-        model: db.StudentPersonalData,
-        include: [
-          {model: db.StudentAddPersonalData, as: "addPersonalData"},
-          {model: db.StudentFamily, as: "familyDetails"},
-          {
-            model: db.StudentAcademicBackground,
-            include: [
-              {
-                model: db.Program,
-                include: [
-                  {
-                    model: db.Department,
-                  },
-                ],
-              },
-              {
-                model: db.Semester,
-              },
-            ],
-          },
-          {model: db.StudentAcademicHistory, as: "academicHistory"},
-          {model: db.StudentDocuments, as: "student_document"},
-          // Include StudentClassEnrollments
-          {
-            model: db.StudentClassEnrollments,
-            include: [
-              {
-                model: db.Class,
-                include: [
-                  {
-                    model: db.CourseInfo, // For Subject Code, Description, Units
-                  },
-                  {
-                    model: db.Semester, // For Semester and School Year
-                  },
-                  {
-                    model: db.BuildingStructure, // For Room info
-                  },
-                  {
-                    model: db.Employee, // For Instructor info
-                  },
-                  // Include Schedule if necessary
-                ],
-              },
-            ],
-          },
-        ],
-      },
-      {
-        model: db.Campus,
-      },
-    ],
-  });
+  try {
+    // Fetch the student along with necessary associations, excluding db.Class
+    const student = await db.StudentOfficial.findOne({
+      where: {student_id, campus_id},
+      include: [
+        {
+          model: db.StudentPersonalData,
+          include: [
+            {model: db.StudentAddPersonalData, as: "addPersonalData"},
+            {model: db.StudentFamily, as: "familyDetails"},
+            {
+              model: db.StudentAcademicBackground,
+              include: [
+                {
+                  model: db.Program,
+                  include: [
+                    {
+                      model: db.Department,
+                    },
+                  ],
+                },
+                {
+                  model: db.Semester,
+                },
+              ],
+            },
+            {model: db.StudentAcademicHistory, as: "academicHistory"},
+            {model: db.StudentDocuments, as: "student_document"},
+            {
+              model: db.StudentClassEnrollments,
+              include: [
+                // Remove db.Class from includes
+                // We'll handle class details using the external API
+              ],
+            },
+          ],
+        },
+        {
+          model: db.Campus,
+        },
+      ],
+    });
 
-  if (!student) {
-    throw new Error("Student not found");
+    if (!student) {
+      throw new Error("Student not found");
+    }
+
+    // Step 1: Fetch all classes from the external API once
+    let allExternalClasses;
+    try {
+      const response = await axios.get(
+        `${SCHEDULING_API_URL}/teachers/all-subjects`
+      );
+      allExternalClasses = response.data; // Assuming the API returns an array of class objects
+    } catch (error) {
+      console.error("Error fetching classes from external API:", error);
+      throw new Error("Failed to fetch classes from the external source.");
+    }
+
+    // Create a map of class_id to class object for quick lookup
+    const externalClassesMap = new Map();
+    allExternalClasses.forEach((cls) => {
+      externalClassesMap.set(cls.id, cls);
+    });
+
+    // Convert Sequelize instance to plain object
+    const studentData = student.toJSON();
+
+    if (
+      studentData.student_personal_datum &&
+      studentData.student_personal_datum.student_class_enrollments
+    ) {
+      // Enrich each enrollment with classDetails
+      studentData.student_personal_datum.student_class_enrollments =
+        studentData.student_personal_datum.student_class_enrollments.map(
+          (enrollment) => {
+            const externalClass = externalClassesMap.get(enrollment.class_id);
+
+            if (!externalClass) {
+              // If external class data is not found, skip enrichment or handle accordingly
+              return enrollment;
+            }
+
+            // Construct classDetails based on externalClass data
+            const classDetails = {
+              subjectCode: externalClass.subject_code,
+              unit: externalClass.units,
+              subjectDescription: externalClass.subject,
+              semesterName: externalClass.semester,
+              schoolYear: externalClass.school_year,
+              schedule: {
+                day: externalClass.day,
+                start: externalClass.start,
+                end: externalClass.end,
+                recurrencePattern: externalClass.recurrencePattern,
+              },
+              room: {
+                room_number: externalClass.room, // As per your instruction, room is a string, not an object
+              },
+              instructorFullName: externalClass.teacher,
+              // If you have more instructor details, include them here
+            };
+
+            return {
+              ...enrollment,
+              classDetails, // Attach classDetails to the enrollment
+            };
+          }
+        );
+    }
+
+    return studentData;
+  } catch (error) {
+    console.error("Error in getStudentById:", error.message);
+    throw new Error(`Failed to retrieve student data: ${error.message}`);
   }
-
-  return student.toJSON();
 }
-
 async function getUnenrolledStudents(
   campus_id,
   existing_students,
   new_unenrolled_students
 ) {
-  // Get active semester
+  // Step 1: Get active semester
+  const semesterWhere = {
+    isActive: true,
+    isDeleted: false,
+  };
+  if (campus_id) {
+    semesterWhere.campus_id = campus_id;
+  }
+
   const activeSemester = await db.Semester.findOne({
-    where: {
-      isActive: true,
-      isDeleted: false,
-      ...(campus_id ? {campus_id} : {}),
-    },
+    where: semesterWhere,
+    attributes: ["semester_id"], // Select only needed fields
   });
 
   if (!activeSemester) {
     throw new Error("No active semester found.");
   }
 
+  // Initialize an empty array to hold the result
+  let studentsWithEnrollmentStatus = [];
+
   if (existing_students) {
+    // Step 2a: Handle existing_students
+
     // Fetch existing official students who have not been enrolled in the new semester
     const students = await db.StudentPersonalData.findAll({
-      where: {
-        ...(campus_id ? {campus_id} : {}),
-      },
+      where: campus_id ? {campus_id} : {},
+      attributes: [
+        "student_personal_id",
+        "firstName",
+        "lastName",
+        "middleName",
+      ],
       include: [
         {
           model: db.StudentOfficial,
+          attributes: ["student_id"],
           required: true, // Only include students who have a StudentOfficial record
         },
         {
           model: db.StudentAcademicBackground,
+          attributes: [], // No need to select fields from here
           required: true,
           where: {
             semester_id: {[Op.ne]: activeSemester.semester_id},
           },
         },
-      ],
-    });
-
-    // For each student, check if they have enlisted subjects
-    const studentsWithEnrollmentStatus = await Promise.all(
-      students.map(async (student) => {
-        const hasEnlistedSubjects = await db.StudentClassEnrollments.findOne({
+        {
+          model: db.StudentClassEnrollments,
+          attributes: ["student_class_enrollment_id"], // Use the correct primary key
+          required: false, // Left join to check if any enrollment exists
           where: {
-            student_personal_id: student.student_personal_id,
             status: "enlisted",
           },
-        });
+        },
+      ],
+      // Use raw queries and grouping to optimize
+      distinct: true,
+    });
 
-        return {
-          student_id: student.student_official.student_id,
-          student_personal_id: student.student_personal_id,
-          firstName: student.firstName,
-          lastName: student.lastName,
-          middleName: student.middleName,
-          fullName: `${student.firstName} ${student.middleName || ""} ${
-            student.lastName
-          }`,
-          hasEnlistedSubjects: !!hasEnlistedSubjects,
-        };
-      })
-    );
+    // Map the students to include enrollment status without individual queries
+    studentsWithEnrollmentStatus = students.map((student) => ({
+      student_id: student.StudentOfficial.student_id,
+      student_personal_id: student.student_personal_id,
+      firstName: student.firstName,
+      lastName: student.lastName,
+      middleName: student.middleName,
+      fullName: `${student.firstName} ${student.middleName || ""} ${
+        student.lastName
+      }`,
+      hasEnlistedSubjects: student.StudentClassEnrollments.length > 0,
+    }));
 
     return studentsWithEnrollmentStatus;
   } else if (new_unenrolled_students) {
-    // Directly fetch students who have no student_id and have enlisted classes
+    // Step 2b: Handle new_unenrolled_students
+
+    // Step 2b.1: Fetch classes from the external API
+    let externalClasses;
+    try {
+      const response = await axios.get(
+        `${SCHEDULING_API_URL}/teachers/all-subjects`
+      );
+      externalClasses = response.data; // Assuming the API returns an array of class objects
+    } catch (error) {
+      console.error("Error fetching classes from external API:", error);
+      throw new Error("Failed to fetch classes from the external source.");
+    }
+
+    // Step 2b.2: Filter classes based on active semester
+    const filteredClasses = externalClasses.filter(
+      (cls) => cls.semester_id === activeSemester.semester_id
+    );
+
+    // If no classes match the active semester, return empty array
+    if (filteredClasses.length === 0) {
+      return [];
+    }
+
+    // Step 2b.3: Extract class IDs from filtered classes
+    const filteredClassIds = filteredClasses.map((cls) => cls.id);
+
+    // Step 2b.4: Fetch students who have no StudentOfficial record and have enlisted classes in the active semester
     const students = await db.StudentPersonalData.findAll({
-      where: {
-        ...(campus_id ? {campus_id} : {}),
-        "$student_official.student_id$": null, // No StudentOfficial record
-      },
+      where: campus_id ? {campus_id} : {},
+      attributes: [
+        "student_personal_id",
+        "firstName",
+        "lastName",
+        "middleName",
+        "enrollmentType",
+      ],
       include: [
         {
+          model: db.StudentOfficial,
+          attributes: [], // No need to select fields
+          required: false,
+        },
+        {
           model: db.StudentAcademicBackground,
-          require: true,
+          attributes: ["yearLevel"],
+          required: true,
           include: [
             {
               model: db.Program,
-              require: true,
               attributes: ["programCode", "programDescription"],
+              required: true,
             },
           ],
         },
         {
           model: db.StudentClassEnrollments,
-          required: false, // Ensures at least one enrolled class
+          attributes: ["student_class_enrollment_id"], // Use the correct primary key
+          required: false,
           where: {
             status: "enlisted",
+            class_id: {[Op.in]: filteredClassIds},
           },
-          include: [
-            {
-              model: db.Class,
-              required: true,
-              where: {
-                semester_id: activeSemester.semester_id,
-              },
-            },
-          ],
-        },
-        {
-          model: db.StudentOfficial,
-          require: true,
         },
       ],
+      where: {
+        ...(campus_id ? {campus_id} : {}),
+        "$student_official.student_id$": null, // Ensure no StudentOfficial record
+      },
+      // Use distinct to prevent duplicates
+      distinct: true,
     });
 
+    // Optional: Log fetched students for debugging
     console.log(
       "unenrolledStudents: ",
       students.map((s) => s.toJSON())
     );
 
-    // Map the students as needed
-    const studentsWithEnrollmentStatus = students.map((student) => ({
+    // Step 2b.5: Map the students as needed
+    studentsWithEnrollmentStatus = students.map((student) => ({
       id: student.student_personal_id,
       firstName: student.firstName,
       lastName: student.lastName,
@@ -277,9 +402,7 @@ async function getUnenrolledStudents(
         student.student_current_academicbackground.program.programCode,
       yearLevel: student.student_current_academicbackground.yearLevel,
       enrollmentType: student.enrollmentType,
-      hasEnlistedSubjects: student.student_class_enrollments.length
-        ? true
-        : false,
+      hasEnlistedSubjects: student.student_class_enrollments.length > 0,
     }));
 
     return studentsWithEnrollmentStatus;

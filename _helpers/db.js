@@ -110,7 +110,7 @@ async function initialize() {
   
 
   // ! Class
-  db.Class = require("../models/class.model")(sequelize);
+  // db.Class = require("../models/class.model")(sequelize);
 
   // ! Prospectus
   db.Prospectus = require("../models/prospectus.model")(sequelize);
