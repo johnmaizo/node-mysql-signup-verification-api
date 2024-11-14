@@ -1186,6 +1186,7 @@ function transformProspectusSubjectData(prospectusSubject) {
     prerequisites: prospectusSubject.prospectus_pre_requisites
       ? prospectusSubject.prospectus_pre_requisites.map((prerequisite) => ({
           pre_requisite_id: prerequisite.pre_requisite_id,
+          course_id: prerequisite.courseinfo?.course_id || null,
           courseCode: prerequisite.courseinfo?.courseCode || null,
           courseDescription: prerequisite.courseinfo?.courseDescription || null,
           unit: prerequisite.courseinfo?.unit || null,
