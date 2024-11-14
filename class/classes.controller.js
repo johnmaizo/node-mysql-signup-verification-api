@@ -20,6 +20,8 @@ router.get(
 
 router.get("/external/active", getAllClassActive);
 
+router.get("/external/total-students", getTotalStudents);
+
 module.exports = router;
 
 function getAllClassActive(req, res, next) {
@@ -28,5 +30,14 @@ function getAllClassActive(req, res, next) {
   classService
     .getAllClass(campus_id, schoolYear, semester_id)
     .then((classes) => res.json(classes))
+    .catch(next);
+}
+
+function getTotalStudents(req, res, next) {
+  const {campus_id, schoolYear, semester_id} = req.query;
+
+  classService
+    .getTotalStudents(campus_id, schoolYear, semester_id)
+    .then((total) => res.json({totalStudents: total}))
     .catch(next);
 }

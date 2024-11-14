@@ -11,6 +11,7 @@ const SCHEDULING_API_URL = process.env.SCHEDULING_API_URL;
 
 module.exports = {
   getAllClass,
+  getTotalStudents,
 };
 
 async function getAllClass(
@@ -199,5 +200,105 @@ async function getAllClass(
   } catch (error) {
     console.error("Error fetching classes:", error);
     throw new Error("Failed to fetch classes from the external source.");
+  }
+}
+
+async function getTotalStudents(
+  campus_id = null,
+  schoolYear = null,
+  semester_id = null
+) {
+  try {
+    // Fetch classes from the external API
+    const response = await axios.get(
+      `${SCHEDULING_API_URL}/teachers/all-subjects`
+    );
+    let externalClasses = response.data;
+
+    // Extract unique subject_ids from the classes
+    const subjectIds = [
+      ...new Set(externalClasses.map((cls) => cls.subject_id)),
+    ];
+
+    // Fetch course information along with campus details
+    const courses = await db.CourseInfo.findAll({
+      where: {
+        course_id: {
+          [Op.in]: subjectIds,
+        },
+      },
+      attributes: ["course_id", "campus_id"],
+    });
+
+    // Create a mapping from course_id to campus_id
+    const courseIdToCampusId = {};
+    courses.forEach((course) => {
+      courseIdToCampusId[course.course_id] = course.campus_id;
+    });
+
+    // Enrich each class with campus_id from the mapping
+    externalClasses.forEach((cls) => {
+      cls.campus_id = courseIdToCampusId[cls.subject_id] || null;
+    });
+
+    // Filter classes based on campus_id, schoolYear, and semester_id
+    const filteredClasses = externalClasses.filter((cls) => {
+      let match = true;
+      if (campus_id) {
+        match = match && cls.campus_id == campus_id;
+      }
+      if (schoolYear) {
+        match = match && cls.school_year == schoolYear;
+      }
+      if (semester_id) {
+        match = match && cls.semester_id == semester_id;
+      }
+      return match;
+    });
+
+    // Collect class IDs for which we need to get enrolled students
+    const classIds = filteredClasses.map((cls) => cls.id);
+
+    if (classIds.length === 0) {
+      // No classes match the criteria
+      return [];
+    }
+
+    // Fetch enrollment counts grouped by class_id
+    const enrollments = await db.StudentClassEnrollments.findAll({
+      attributes: [
+        "class_id",
+        [fn("COUNT", col("student_class_enrollment_id")), "totalStudents"],
+      ],
+      where: {
+        class_id: {
+          [Op.in]: classIds,
+        },
+        status: "enrolled",
+      },
+      group: ["class_id"],
+    });
+
+    // Create a mapping from class_id to totalStudents
+    const classIdToTotalStudents = {};
+    enrollments.forEach((enrollment) => {
+      classIdToTotalStudents[enrollment.class_id] = parseInt(
+        enrollment.get("totalStudents"),
+        10
+      );
+    });
+
+    // Prepare the result array
+    const result = classIds.map((classId) => {
+      return {
+        class_id: classId,
+        totalStudents: classIdToTotalStudents[classId] || 0,
+      };
+    });
+
+    return result;
+  } catch (error) {
+    console.error("Error fetching total students:", error);
+    throw new Error("Failed to fetch total students.");
   }
 }
