@@ -34,25 +34,65 @@ async function getAllClass(
       ...new Set(externalClasses.map((cls) => cls.subject_id)),
     ];
 
-    // Fetch course information to get campus_id for each subject_id
+    // Fetch course information along with department and campus details
     const courses = await db.CourseInfo.findAll({
       where: {
         course_id: {
           [Op.in]: subjectIds,
         },
       },
-      attributes: ["course_id", "campus_id"],
+      attributes: [
+        "course_id",
+        "campus_id",
+        "courseCode",
+        "courseDescription",
+        "department_id",
+      ],
+      include: [
+        {
+          model: db.Department,
+          attributes: ["departmentCode", "departmentName"],
+          include: [
+            {
+              model: db.Campus,
+              attributes: ["campusName"],
+            },
+          ],
+        },
+      ],
     });
 
-    // Create a mapping from course_id to campus_id
-    const courseIdToCampusId = {};
+    // Create a mapping from course_id to course information
+    const courseIdToInfo = {};
     courses.forEach((course) => {
-      courseIdToCampusId[course.course_id] = course.campus_id;
+      courseIdToInfo[course.course_id] = {
+        campus_id: course.campus_id,
+        courseCode: course.courseCode,
+        courseDescription: course.courseDescription,
+        departmentCode: course.department
+          ? course.department.departmentCode
+          : null,
+        departmentName: course.department
+          ? course.department.departmentName
+          : null,
+        fullDepartmentNameWithCampus:
+          course.department && course.department.campus
+            ? `${course.department.departmentCode} - ${course.department.departmentName} - ${course.department.campus.campusName}`
+            : null,
+      };
     });
 
-    // Enrich each class with campus_id from the mapping
+    // Enrich each class with course and department information from the mapping
     externalClasses.forEach((cls) => {
-      cls.campus_id = courseIdToCampusId[cls.subject_id] || null;
+      const courseInfo = courseIdToInfo[cls.subject_id];
+      cls.campus_id = courseInfo ? courseInfo.campus_id : null;
+      cls.courseCode = courseInfo ? courseInfo.courseCode : null;
+      cls.courseDescription = courseInfo ? courseInfo.courseDescription : null;
+      cls.departmentCode = courseInfo ? courseInfo.departmentCode : null;
+      cls.departmentName = courseInfo ? courseInfo.departmentName : null;
+      cls.fullDepartmentNameWithCampus = courseInfo
+        ? courseInfo.fullDepartmentNameWithCampus
+        : null;
     });
 
     // Filter classes based on campus_id, schoolYear, and semester_id
@@ -70,7 +110,7 @@ async function getAllClass(
       return match;
     });
 
-    // Map each class to include the formatted schedule string
+    // Map each class to include the formatted schedule string and course information
     const classesWithSchedule = filteredClasses.map((cls) => {
       const startTime = moment.utc(cls.start).local().format("h:mm A");
       const endTime = moment.utc(cls.end).local().format("h:mm A");
@@ -80,15 +120,18 @@ async function getAllClass(
         id: cls.id,
         teacher_id: cls.teacher_id,
         subject_id: cls.subject_id,
-        subject_code: cls.subject_code,
+        subject_code: cls.courseCode,
+        subject: cls.courseDescription,
         semester: cls.semester,
         semester_id: cls.semester_id,
         school_year: cls.school_year,
         teacher: cls.teacher,
-        subject: cls.subject,
         units: cls.units,
         room: cls.room,
         campus_id: cls.campus_id,
+        departmentCode: cls.departmentCode,
+        departmentName: cls.departmentName,
+        fullDepartmentNameWithCampus: cls.fullDepartmentNameWithCampus,
         schedule: scheduleString,
       };
     });
@@ -154,7 +197,7 @@ async function getAllClass(
 
     return classesWithSchedule;
   } catch (error) {
-    console.error("Error fetching classes from external API:", error);
+    console.error("Error fetching classes:", error);
     throw new Error("Failed to fetch classes from the external source.");
   }
 }

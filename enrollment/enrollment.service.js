@@ -2178,7 +2178,7 @@ async function getAllEnrolledClasses(semester_id) {
     ];
 
     // Step 6: Fetch related data in bulk to optimize performance
-    const [employees, courseInfos, semesters, buildings] = await Promise.all([
+    const [employees, courseInfos, semesters] = await Promise.all([
       db.Employee.findAll({
         where: {employee_id: {[Op.in]: teacherIds}},
         attributes: [
