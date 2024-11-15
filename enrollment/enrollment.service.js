@@ -985,6 +985,20 @@ async function enrollOlineApplicantStudent({fulldata_applicant_id}) {
         {transaction}
       );
 
+      // 6. Create Enrollment Process
+      await db.EnrollmentProcess.create(
+        {
+          student_personal_id: student_personal_id,
+          semester_id: academicBackground.semester_entry,
+          registrar_status: "accepted",
+          registrar_status_date: new Date(),
+          accounting_status: "upcoming",
+          payment_confirmed: false,
+          final_approval_status: false,
+        },
+        {transaction}
+      );
+
       // Commit transaction
       await transaction.commit();
 
@@ -1053,7 +1067,9 @@ async function getAllOnlineApplicant(campus_id = null) {
       (applicant) => applicant.status === "pending"
     );
 
-    console.log(`Total pending applicants: ${pendingApplicants.length}`);
+    console.log(
+      `\n\n\n\n\nTotal pending applicants: ${pendingApplicants.length}`
+    );
 
     if (pendingApplicants.length === 0) {
       console.log("No pending applicants found.");
