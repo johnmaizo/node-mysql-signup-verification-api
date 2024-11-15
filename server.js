@@ -86,6 +86,9 @@ app.use("/prospectus", require("./prospectus/prospectuses.controller"));
 // ! Student
 app.use("/students", require("./students/students.controller"));
 
+// ! Statistics
+app.use("/statistics", require("./statistics/statistics.controller"));
+
 // swagger docs route
 app.use("/api-docs", require("_helpers/swagger"));
 
