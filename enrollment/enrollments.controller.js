@@ -102,6 +102,18 @@ router.get(
 );
 
 router.get(
+  "/get-applicant-data/:id",
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.MIS,
+    Role.Accounting,
+  ]),
+  getApplicantDataById
+);
+
+router.get(
   "/get-enrollment-status/:id",
   authorize([
     Role.SuperAdmin,
@@ -330,6 +342,13 @@ function getAllEnrollmentStatus(req, res, next) {
 function getEnrollmentStatusById(req, res, next) {
   enrollmentService
     .getEnrollmentStatusById(req.params.id)
+    .then((student) => (student ? res.json(student) : res.sendStatus(404)))
+    .catch(next);
+}
+
+function getApplicantDataById(req, res, next) {
+  enrollmentService
+    .getApplicantDataById(req.params.id)
     .then((student) => (student ? res.json(student) : res.sendStatus(404)))
     .catch(next);
 }

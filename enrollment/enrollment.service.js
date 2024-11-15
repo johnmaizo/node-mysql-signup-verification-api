@@ -29,6 +29,7 @@ module.exports = {
   // deleteStudent,
 
   enrollOlineApplicantStudent,
+  getApplicantDataById,
   getAllOnlineApplicant,
 
   getStudentEnrolledClasses,
@@ -1010,6 +1011,21 @@ async function enrollOlineApplicantStudent({fulldata_applicant_id}) {
       await transaction.rollback();
       throw error;
     }
+  } catch (error) {
+    console.error("Error in enrollOlineApplicantStudent:", error.message);
+    throw error;
+  }
+}
+
+async function getApplicantDataById(fulldata_applicant_id) {
+  try {
+    // Fetch data from external API
+    const response = await axios.get(
+      `${MHAFRIC_API_URL}/api/full-student-data/?filter=fulldata_applicant_id=${fulldata_applicant_id}`
+    );
+    const data = response.data;
+
+    return data;
   } catch (error) {
     console.error("Error in enrollOlineApplicantStudent:", error.message);
     throw error;
