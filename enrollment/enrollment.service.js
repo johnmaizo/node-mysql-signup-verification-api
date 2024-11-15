@@ -1002,7 +1002,7 @@ async function enrollOlineApplicantStudent({fulldata_applicant_id}) {
       // Commit transaction
       await transaction.commit();
 
-      /*
+      
       // After successful commit, make the PUT request
       const putUrl = `${MHAFRIC_API_URL}/api/deactivate_or_modify_personal-student-data/${fulldata_applicant_id}/False`;
       const putBody = {
@@ -1019,7 +1019,7 @@ async function enrollOlineApplicantStudent({fulldata_applicant_id}) {
         // Optional: Depending on your requirements, you might want to handle this differently.
         // For example, you could log it, retry, or notify someone.
       }
-      */
+      
     } catch (error) {
       // Rollback transaction
       await transaction.rollback();
