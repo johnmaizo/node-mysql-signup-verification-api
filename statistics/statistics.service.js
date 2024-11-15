@@ -13,6 +13,8 @@ module.exports = {
   getTotalEnrollments,
   getEnrollmentsByDepartment,
   getEnrollmentsBySubject,
+  getEnrollmentStatusBreakdown,
+  getGenderDistribution,
   //   getTotalStudents,
 };
 
@@ -220,6 +222,88 @@ async function getEnrollmentsBySubject(
 
   // Return the enrollment counts as an array
   return Object.values(enrollmentCounts);
+}
+
+// ! Enrollment Status Breakdown
+
+async function getEnrollmentStatusBreakdown(
+  campus_id = null,
+  schoolYear = null,
+  semester_id = null
+) {
+  const classIds = await getFilteredClassIds(
+    campus_id,
+    schoolYear,
+    semester_id
+  );
+
+  if (classIds.length === 0) {
+    return [];
+  }
+
+  const statuses = await db.StudentClassEnrollments.findAll({
+    attributes: [
+      "status",
+      [fn("COUNT", col("student_class_enrollment_id")), "count"],
+    ],
+    where: {
+      class_id: {
+        [Op.in]: classIds,
+      },
+    },
+    group: ["status"],
+  });
+
+  return statuses.map((status) => ({
+    status: status.status,
+    count: parseInt(status.get("count"), 10),
+  }));
+}
+
+// ! Gender Distribution
+
+async function getGenderDistribution(
+  campus_id = null,
+  schoolYear = null,
+  semester_id = null
+) {
+  const classIds = await getFilteredClassIds(
+    campus_id,
+    schoolYear,
+    semester_id
+  );
+
+  if (classIds.length === 0) {
+    return [];
+  }
+
+  const genders = await db.StudentClassEnrollments.findAll({
+    attributes: [
+      [col("student_personal_datum.gender"), "gender"],
+      [fn("COUNT", col("student_class_enrollment_id")), "count"],
+    ],
+    where: {
+      class_id: {
+        [Op.in]: classIds,
+      },
+      status: "enrolled",
+    },
+    include: [
+      {
+        model: db.StudentPersonalData,
+        attributes: [],
+      },
+    ],
+    group: ["student_personal_datum.gender"],
+    raw: true, // Ensure raw data is returned
+  });
+
+  console.log(genders);
+
+  return genders.map((gender) => ({
+    gender: gender.gender,
+    count: parseInt(gender.count, 10), // Access 'count' directly
+  }));
 }
 
 // ! vvv OTHER HELPERS vvv
