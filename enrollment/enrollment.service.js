@@ -1002,7 +1002,6 @@ async function enrollOlineApplicantStudent({fulldata_applicant_id}) {
       // Commit transaction
       await transaction.commit();
 
-      
       // After successful commit, make the PUT request
       const putUrl = `${MHAFRIC_API_URL}/api/deactivate_or_modify_personal-student-data/${fulldata_applicant_id}/False`;
       const putBody = {
@@ -1019,7 +1018,6 @@ async function enrollOlineApplicantStudent({fulldata_applicant_id}) {
         // Optional: Depending on your requirements, you might want to handle this differently.
         // For example, you could log it, retry, or notify someone.
       }
-      
     } catch (error) {
       // Rollback transaction
       await transaction.rollback();
@@ -1764,6 +1762,11 @@ async function getAllEnrollmentStatus(
       studentWhere.campus_id = {[Op.eq]: campus_id};
     }
 
+    // Build the where clause for StudentClassEnrollments to filter "enlisted" subjects
+    const classEnrollmentWhere = {
+      status: "enlisted",
+    };
+
     // Fetch enrollment statuses with necessary includes
     const enrollmentStatuses = await db.EnrollmentProcess.findAll({
       where: enrollmentWhere,
@@ -1818,6 +1821,13 @@ async function getAllEnrollmentStatus(
                 },
               ],
             },
+            // Include StudentClassEnrollments to ensure at least one "enlisted" subject
+            {
+              model: db.StudentClassEnrollments,
+              where: classEnrollmentWhere,
+              required: true, // Ensures that only records with at least one matching enrollment are returned
+              attributes: [], // You can specify attributes if you need data from this model
+            },
           ],
         },
         {
@@ -1865,7 +1875,6 @@ async function getAllEnrollmentStatus(
     throw error;
   }
 }
-
 // Get enrollment status by applicant ID
 async function getEnrollmentStatusById(enrollment_id) {
   const enrollmentStatus = await db.EnrollmentProcess.findOne({
