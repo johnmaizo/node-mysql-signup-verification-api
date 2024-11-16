@@ -1296,7 +1296,7 @@ async function getAllProspectusSubjects(
         model: db.Prospectus,
         required: true,
         where: {
-          ...(external === "true" ? {isActive: true} : null),
+          ...(external === "true" && !prospectus_id ? {isActive: true} : null),
         },
         include: [
           {

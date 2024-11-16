@@ -1002,6 +1002,8 @@ async function enrollOlineApplicantStudent({fulldata_applicant_id}) {
       // Commit transaction
       await transaction.commit();
 
+      
+
       // After successful commit, make the PUT request
       const putUrl = `${MHAFRIC_API_URL}/api/deactivate_or_modify_personal-student-data/${fulldata_applicant_id}/False`;
       const putBody = {
@@ -1018,6 +1020,8 @@ async function enrollOlineApplicantStudent({fulldata_applicant_id}) {
         // Optional: Depending on your requirements, you might want to handle this differently.
         // For example, you could log it, retry, or notify someone.
       }
+
+      
     } catch (error) {
       // Rollback transaction
       await transaction.rollback();
@@ -1499,13 +1503,46 @@ async function getStudentAcademicBackground(id) {
     where: {
       student_personal_id: id,
     },
+    include: [
+      {
+        model: db.StudentPersonalData,
+        include: [
+          {
+            model: db.StudentClassEnrollments,
+            include: [
+              // Remove db.Class from includes
+              // We'll handle class details using the external API
+            ],
+          },
+        ],
+      },
+    ],
   });
 
   if (!studentAcademicBackground) {
     throw new Error("Student academic background not found.");
   }
 
-  return studentAcademicBackground;
+  return {
+    id: studentAcademicBackground.id,
+    applicationType: studentAcademicBackground.applicationType,
+    majorIn: studentAcademicBackground.majorIn,
+    program_id: studentAcademicBackground.program_id,
+    prospectus_id: studentAcademicBackground.prospectus_id,
+    semester_id: studentAcademicBackground.semester_id,
+    studentType: studentAcademicBackground.studentType,
+    student_personal_id: studentAcademicBackground.student_personal_id,
+    yearEntry: studentAcademicBackground.yearEntry,
+    yearGraduate: studentAcademicBackground.yearGraduate,
+    yearLevel: studentAcademicBackground.yearLevel,
+    isActive: studentAcademicBackground.isActive,
+    isDeleted: studentAcademicBackground.isDeleted,
+    createdAt: studentAcademicBackground.createdAt,
+    updatedAt: studentAcademicBackground.updatedAt,
+    student_class_enrollments:
+      studentAcademicBackground.student_personal_datum
+        .student_class_enrollments,
+  };
 }
 
 async function getAllStudentsOfficalActive() {
