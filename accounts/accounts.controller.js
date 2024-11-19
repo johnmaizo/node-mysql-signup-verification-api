@@ -20,6 +20,7 @@ router.post('/forgot-password', forgotPasswordSchema, forgotPassword);
 router.post('/validate-reset-token', validateResetTokenSchema, validateResetToken);
 router.post('/reset-password', resetPasswordSchema, resetPassword);
 
+router.get('/get-history-log/:id', getHistoryLogById);
 router.get('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS, Role.Accounting]), getById);
 router.post('/', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS, Role.Accounting]), createSchema, create);
 router.put('/:id', authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS, Role.Accounting]), updateSchema, update);
@@ -192,6 +193,14 @@ function getById(req, res, next) {
         .catch(next);
 }
 
+function getHistoryLogById(req, res, next) {
+    const {campusName} = req.query;
+
+    accountService.getHistoryLogById(req.params.id, campusName)
+        .then(account => account ? res.json(account) : res.sendStatus(404))
+        .catch(next);
+}
+
 function createSchema(req, res, next) {
     // Define the schema with conditional password and confirmPassword fields
     const schema = Joi.object({
@@ -211,13 +220,6 @@ function create(req, res, next) {
         .catch(next);
 }
 
-    /**
-     * Schema for updating an existing account
-     * @function
-     * @param {Object} req - The Express request object
-     * @param {Object} res - The Express response object
-     * @param {Function} next - The next middleware function
-     */
 function updateSchema(req, res, next) {
     const roles = req.body.role;
 
@@ -227,32 +229,11 @@ function updateSchema(req, res, next) {
         : [Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS].includes(roles);
 
     const schemaRules = {
-        // title: Joi.string().empty(''),
-        // firstName: Joi.string().empty(''),
-        // middleName: Joi.string().allow(null, '').optional(),
-        // lastName: Joi.string().empty(''),
-
-        // address: Joi.string().empty(''),
-        // contactNumber: Joi.string().empty(''),
-        // gender: Joi.string().empty(''),
-
         employee_id: Joi.number().empty(''),
         email: Joi.string().email().empty(''),
         password: requirePassword ? Joi.string().min(6).empty('') : Joi.any().strip(),
         confirmPassword: requirePassword ? Joi.string().valid(Joi.ref('password')).empty('') : Joi.any().strip(),
-
-        // role: Joi.alternatives().try(
-        //     Joi.string(),
-        //     Joi.array().items(Joi.string())
-        // ).empty(''),
-
-        // campus_id: Joi.number().empty(''),
     };
-
-    // only admins can update role
-    // if (req.user.role === Role.Admin) {
-    //     schemaRules.role = Joi.string().empty('');
-    // }
 
     const schema = Joi.object(schemaRules).with('password', 'confirmPassword');
     validateRequest(req, next, schema);

@@ -18,6 +18,7 @@ module.exports = {
   resetPassword,
   getAll,
   getById,
+  getHistoryLogById,
   create,
   update,
   delete: _delete,
@@ -227,6 +228,54 @@ async function getById(id) {
   return basicDetails(account, account.employee.campus, account.employee);
 }
 
+async function getHistoryLogById(id, campusName = null) {
+  let campus = null;
+
+  // If campusName is provided, find the campus
+  if (campusName) {
+    campus = await db.Campus.findOne({
+      where: {campusName},
+    });
+
+    // Throw an error if the campus is not found
+    if (!campus) {
+      throw new Error(`Campus with name "${campusName}" not found.`);
+    }
+  }
+
+  // Fetch the account and include relationships
+  const account = await db.Account.findOne({
+    where: {id},
+    include: [
+      {
+        model: db.Employee,
+        required: true, // Ensures the join is required
+        include: [
+          {
+            model: db.Campus,
+            attributes: ["campusName", "campus_id"],
+            where: campus ? {campus_id: campus.campus_id} : undefined, // Match campus_id if campus is found
+          },
+        ],
+      },
+      {
+        model: db.History,
+      },
+    ],
+  });
+
+  // Throw an error if the account is not found
+  if (!account) {
+    throw new Error(
+      `Account with id "${id}" not found${
+        campus ? ` for campus "${campusName}"` : ""
+      }.`
+    );
+  }
+
+  return account;
+}
+
 /**
  * Creates a new account based on the provided parameters.
  * @param {Object} params - An object containing the required parameters.
@@ -325,15 +374,15 @@ async function create(params, accountId) {
 }
 
 async function update(id, params) {
-  const account = await getAccount(id);
+  const account = await db.Account.findByPk(id);
 
   // Ensure employee_id is provided
-  if (!params.employee_id) {
+  if (!account.employee_id) {
     throw new Error("Employee ID is required.");
   }
 
   // Retrieve the employee to check the role and campus_id
-  const employee = await db.Employee.findByPk(params.employee_id);
+  const employee = await db.Employee.findByPk(account.employee_id);
   if (!employee) {
     throw new Error("Employee not found.");
   }
