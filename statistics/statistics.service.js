@@ -1,33 +1,14 @@
 const {Op, where, col, fn, literal} = require("sequelize");
 const db = require("_helpers/db");
 const Role = require("_helpers/role");
+const redis = require("_helpers/redisClient");
 
-const deepEqual = require("deep-equal");
-
-const {default: axios} = require("axios");
+const axios = require("axios");
 const moment = require("moment"); // For time formatting
 const {Parser} = require("json2csv");
 
 const SCHEDULING_API_URL = process.env.SCHEDULING_API_URL;
 
-// Caching for external API data and database queries
-let classCache = {
-  data: null,
-  timestamp: null,
-  ttl: 60000, // Cache for 1 minute
-};
-
-let courseInfoCache = {
-  data: null,
-  timestamp: null,
-  ttl: 60000, // Cache for 1 minute
-};
-
-let semesterCache = {
-  data: null,
-  timestamp: null,
-  ttl: 60000,
-};
 
 module.exports = {
   getTotalEnrollments,
@@ -39,65 +20,79 @@ module.exports = {
   exportEnrollments,
 };
 
+// Helper function to get cached data or fetch and cache it
+async function getCachedData(key, fetchFunction, ttl = 60) {
+  try {
+    const cachedData = await redis.get(key);
+    if (cachedData) {
+      return JSON.parse(cachedData);
+    } else {
+      const data = await fetchFunction();
+      await redis.set(key, JSON.stringify(data), "EX", ttl);
+      return data;
+    }
+  } catch (error) {
+    console.error(`Error fetching cached data for key ${key}:`, error);
+    // Fallback to fetching data directly if Redis fails
+    return await fetchFunction();
+  }
+}
+
+// Fetch and cache classes
 async function getCachedClasses() {
-  const now = Date.now();
-  if (classCache.data && now - classCache.timestamp < classCache.ttl) {
-    return classCache.data;
-  } else {
-    // Fetch classes from external API
-    const response = await axios.get(
-      `${SCHEDULING_API_URL}/teachers/all-subjects`
-    );
-    let classes = response.data;
-    classCache.data = classes;
-    classCache.timestamp = now;
-    return classes;
-  }
+  return getCachedData(
+    "classes",
+    async () => {
+      const response = await axios.get(
+        `${SCHEDULING_API_URL}/teachers/all-subjects`
+      );
+      return response.data;
+    },
+    60 // Cache for 60 seconds
+  );
 }
 
+// Fetch and cache course info
 async function getCachedCourseInfo() {
-  const now = Date.now();
-  if (
-    courseInfoCache.data &&
-    now - courseInfoCache.timestamp < courseInfoCache.ttl
-  ) {
-    return courseInfoCache.data;
-  } else {
-    const courses = await db.CourseInfo.findAll({
-      attributes: [
-        "course_id",
-        "campus_id",
-        "courseCode",
-        "courseDescription",
-        "department_id",
-      ],
-      include: [
-        {
-          model: db.Department,
-          attributes: ["department_id", "departmentName"],
-        },
-      ],
-    });
-    courseInfoCache.data = courses;
-    courseInfoCache.timestamp = now;
-    return courses;
-  }
+  return getCachedData(
+    "courseInfo",
+    async () => {
+      const courses = await db.CourseInfo.findAll({
+        attributes: [
+          "course_id",
+          "campus_id",
+          "courseCode",
+          "courseDescription",
+          "department_id",
+        ],
+        include: [
+          {
+            model: db.Department,
+            attributes: ["department_id", "departmentName"],
+          },
+        ],
+      });
+      return courses.map((course) => course.toJSON());
+    },
+    60 // Cache for 60 seconds
+  );
 }
 
+// Fetch and cache semesters
 async function getCachedSemesters() {
-  const now = Date.now();
-  if (semesterCache.data && now - semesterCache.timestamp < semesterCache.ttl) {
-    return semesterCache.data;
-  } else {
-    const semesters = await db.Semester.findAll({
-      attributes: ["semester_id", "semesterName"],
-    });
-    semesterCache.data = semesters;
-    semesterCache.timestamp = now;
-    return semesters;
-  }
+  return getCachedData(
+    "semesters",
+    async () => {
+      const semesters = await db.Semester.findAll({
+        attributes: ["semester_id", "semesterName"],
+      });
+      return semesters.map((sem) => sem.toJSON());
+    },
+    60 // Cache for 60 seconds
+  );
 }
 
+// Helper function to get filtered classes
 async function getFilteredClasses(campus_id, schoolYear, semester_id) {
   // Fetch classes from cache or external API
   let classes = await getCachedClasses();
@@ -117,31 +112,103 @@ async function getFilteredClasses(campus_id, schoolYear, semester_id) {
   return classes;
 }
 
+// Enrich classes with course data
+async function enrichClassesWithCourseData(classes) {
+  const subjectIds = [...new Set(classes.map((cls) => cls.subject_id))];
+
+  const courses = await getCachedCourseInfo();
+
+  // Map course_id to course info
+  const courseIdToInfo = {};
+  courses.forEach((course) => {
+    if (subjectIds.includes(course.course_id)) {
+      courseIdToInfo[course.course_id] = {
+        campus_id: course.campus_id,
+        department_id: course.department_id,
+        departmentName: course.Department
+          ? course.Department.departmentName
+          : null,
+        courseCode: course.courseCode,
+        courseDescription: course.courseDescription,
+      };
+    }
+  });
+
+  classes.forEach((cls) => {
+    const courseInfo = courseIdToInfo[cls.subject_id];
+    if (courseInfo) {
+      cls.campus_id = courseInfo.campus_id || null;
+      cls.department_id = courseInfo.department_id || null;
+      cls.departmentName = courseInfo.departmentName || null;
+      cls.courseCode = courseInfo.courseCode || null;
+      cls.courseDescription = courseInfo.courseDescription || null;
+    } else {
+      cls.campus_id = null;
+      cls.department_id = null;
+      cls.departmentName = null;
+      cls.courseCode = null;
+      cls.courseDescription = null;
+    }
+  });
+
+  return classes;
+}
+
+// Function implementations
+
 async function getTotalEnrollments(
   campus_id = null,
   schoolYear = null,
   semester_id = null
 ) {
-  // Fetch filtered classes
-  const classes = await getFilteredClasses(campus_id, schoolYear, semester_id);
+  try {
+    const classes = await getFilteredClasses(
+      campus_id,
+      schoolYear,
+      semester_id
+    );
 
-  if (classes.length === 0) {
-    return 0;
-  }
+    if (classes.length === 0) {
+      return 0;
+    }
 
-  const classIds = classes.map((cls) => cls.id);
+    const classIds = classes.map((cls) => cls.id);
 
-  const totalEnrollments = await db.StudentClassEnrollments.count({
-    where: {
-      class_id: {
-        [Op.in]: classIds,
+    const totalEnrollments = await db.StudentClassEnrollments.count({
+      where: {
+        class_id: {
+          [Op.in]: classIds,
+        },
+        status: "enrolled",
       },
-      status: "enrolled",
-    },
+    });
+
+    return totalEnrollments;
+  } catch (error) {
+    console.error("Error in getTotalEnrollments:", error);
+    throw new Error("Failed to get total enrollments");
+}
+}
+
+async function enrichClassesWithCourseData(classes) {
+  const subjectIds = [...new Set(classes.map((cls) => cls.subject_id))];
+
+  const courses = await getCachedCourseInfo();
+
+  // Map course_id to campus_id
+  const courseIdToCampusId = {};
+  courses.forEach((course) => {
+    if (subjectIds.includes(course.course_id)) {
+      courseIdToCampusId[course.course_id] = course.campus_id;
+    }
   });
 
-  return totalEnrollments;
-}
+  classes.forEach((cls) => {
+    cls.campus_id = courseIdToCampusId[cls.subject_id] || null;
+  });
+
+  return classes;
+  }
 
 async function enrichClassesWithCourseData(classes) {
   const subjectIds = [...new Set(classes.map((cls) => cls.subject_id))];
@@ -168,50 +235,59 @@ async function getEnrollmentsByDepartment(
   schoolYear = null,
   semester_id = null
 ) {
-  const classes = await getFilteredClasses(campus_id, schoolYear, semester_id);
+  try {
+    const classes = await getFilteredClasses(
+      campus_id,
+      schoolYear,
+      semester_id
+    );
 
-  if (classes.length === 0) {
-    return [];
-  }
-
-  const classIds = classes.map((cls) => cls.id);
-
-  const enrollments = await db.StudentClassEnrollments.findAll({
-    attributes: ["class_id"],
-    where: {
-      class_id: {
-        [Op.in]: classIds,
-      },
-      status: "enrolled",
-    },
-  });
-
-  // Create a map of class_id to class details
-  const classDetailsMap = {};
-  classes.forEach((cls) => {
-    classDetailsMap[cls.id] = cls;
-  });
-
-  const enrollmentCounts = {};
-
-  enrollments.forEach((enrollment) => {
-    const classDetail = classDetailsMap[enrollment.class_id];
-    if (classDetail) {
-      const deptId = classDetail.department_id || "unassigned";
-      const deptName = classDetail.departmentName || "General Subject";
-
-      if (!enrollmentCounts[deptId]) {
-        enrollmentCounts[deptId] = {
-          department_id: classDetail.department_id,
-          departmentName: deptName,
-          totalEnrollments: 0,
-        };
-      }
-      enrollmentCounts[deptId].totalEnrollments += 1;
+    if (classes.length === 0) {
+      return [];
     }
-  });
 
-  return Object.values(enrollmentCounts);
+    const classIds = classes.map((cls) => cls.id);
+
+    const enrollments = await db.StudentClassEnrollments.findAll({
+      attributes: ["class_id"],
+      where: {
+        class_id: {
+          [Op.in]: classIds,
+        },
+        status: "enrolled",
+      },
+    });
+
+    // Create a map of class_id to class details
+    const classDetailsMap = {};
+    classes.forEach((cls) => {
+      classDetailsMap[cls.id] = cls;
+    });
+
+    const enrollmentCounts = {};
+
+    enrollments.forEach((enrollment) => {
+      const classDetail = classDetailsMap[enrollment.class_id];
+      if (classDetail) {
+        const deptId = classDetail.department_id || "unassigned";
+        const deptName = classDetail.departmentName || "General Subject";
+
+        if (!enrollmentCounts[deptId]) {
+          enrollmentCounts[deptId] = {
+            department_id: classDetail.department_id,
+            departmentName: deptName,
+            totalEnrollments: 0,
+          };
+        }
+        enrollmentCounts[deptId].totalEnrollments += 1;
+      }
+    });
+
+    return Object.values(enrollmentCounts);
+  } catch (error) {
+    console.error("Error in getEnrollmentsByDepartment:", error);
+    throw new Error("Failed to get enrollments by department");
+  }
 }
 
 async function getEnrollmentsBySubject(
@@ -219,64 +295,73 @@ async function getEnrollmentsBySubject(
   schoolYear = null,
   semester_id = null
 ) {
-  const classes = await getFilteredClasses(campus_id, schoolYear, semester_id);
+  try {
+    const classes = await getFilteredClasses(
+      campus_id,
+      schoolYear,
+      semester_id
+    );
 
-  if (classes.length === 0) {
-    return [];
-  }
-
-  const classIds = classes.map((cls) => cls.id);
-
-  const enrollments = await db.StudentClassEnrollments.findAll({
-    attributes: ["class_id"],
-    where: {
-      class_id: {
-        [Op.in]: classIds,
-      },
-      status: "enrolled",
-    },
-  });
-
-  // Map class_id to subject_id
-  const classIdToSubjectId = {};
-  classes.forEach((cls) => {
-    classIdToSubjectId[cls.id] = cls.subject_id;
-  });
-
-  // Fetch course info from cache
-  const courses = await getCachedCourseInfo();
-
-  // Map course_id to course info
-  const courseInfoMap = {};
-  courses.forEach((course) => {
-    courseInfoMap[course.course_id] = {
-      courseCode: course.courseCode,
-      courseDescription: course.courseDescription,
-    };
-  });
-
-  const enrollmentCounts = {};
-
-  enrollments.forEach((enrollment) => {
-    const subjectId = classIdToSubjectId[enrollment.class_id];
-    if (subjectId) {
-      const courseInfo = courseInfoMap[subjectId];
-
-      if (courseInfo) {
-        if (!enrollmentCounts[subjectId]) {
-          enrollmentCounts[subjectId] = {
-            course_id: subjectId,
-            courseCode: courseInfo.courseCode,
-            courseDescription: courseInfo.courseDescription,
-            totalEnrollments: 0,
-          };
-        }
-        enrollmentCounts[subjectId].totalEnrollments += 1;
-      }
+    if (classes.length === 0) {
+      return [];
     }
-  });
 
-  return Object.values(enrollmentCounts);
+    const classIds = classes.map((cls) => cls.id);
+
+    const enrollments = await db.StudentClassEnrollments.findAll({
+      attributes: ["class_id"],
+      where: {
+        class_id: {
+          [Op.in]: classIds,
+        },
+        status: "enrolled",
+      },
+    });
+
+    // Map class_id to subject_id
+    const classIdToSubjectId = {};
+    classes.forEach((cls) => {
+      classIdToSubjectId[cls.id] = cls.subject_id;
+    });
+
+    // Fetch course info from cache
+    const courses = await getCachedCourseInfo();
+
+    // Map course_id to course info
+    const courseInfoMap = {};
+    courses.forEach((course) => {
+      courseInfoMap[course.course_id] = {
+        courseCode: course.courseCode,
+        courseDescription: course.courseDescription,
+      };
+    });
+
+    const enrollmentCounts = {};
+
+    enrollments.forEach((enrollment) => {
+      const subjectId = classIdToSubjectId[enrollment.class_id];
+      if (subjectId) {
+        const courseInfo = courseInfoMap[subjectId];
+
+        if (courseInfo) {
+          if (!enrollmentCounts[subjectId]) {
+            enrollmentCounts[subjectId] = {
+              course_id: subjectId,
+              courseCode: courseInfo.courseCode,
+              courseDescription: courseInfo.courseDescription,
+              totalEnrollments: 0,
+            };
+          }
+          enrollmentCounts[subjectId].totalEnrollments += 1;
+        }
+      }
+    });
+
+    return Object.values(enrollmentCounts);
+  } catch (error) {
+    console.error("Error in getEnrollmentsBySubject:", error);
+    throw new Error("Failed to get enrollments by subject");
+  }
 }
 
 async function getEnrollmentStatusBreakdown(
@@ -284,31 +369,40 @@ async function getEnrollmentStatusBreakdown(
   schoolYear = null,
   semester_id = null
 ) {
-  const classes = await getFilteredClasses(campus_id, schoolYear, semester_id);
+  try {
+    const classes = await getFilteredClasses(
+      campus_id,
+      schoolYear,
+      semester_id
+    );
 
-  if (classes.length === 0) {
-    return [];
-  }
+    if (classes.length === 0) {
+      return [];
+    }
 
-  const classIds = classes.map((cls) => cls.id);
+    const classIds = classes.map((cls) => cls.id);
 
-  const statuses = await db.StudentClassEnrollments.findAll({
-    attributes: [
-      "status",
-      [fn("COUNT", col("student_class_enrollment_id")), "count"],
-    ],
-    where: {
-      class_id: {
-        [Op.in]: classIds,
+    const statuses = await db.StudentClassEnrollments.findAll({
+      attributes: [
+        "status",
+        [fn("COUNT", col("student_class_enrollment_id")), "count"],
+      ],
+      where: {
+        class_id: {
+          [Op.in]: classIds,
+        },
       },
-    },
-    group: ["status"],
-  });
+      group: ["status"],
+    });
 
-  return statuses.map((status) => ({
-    status: status.status,
-    count: parseInt(status.get("count"), 10),
-  }));
+    return statuses.map((status) => ({
+      status: status.status,
+      count: parseInt(status.get("count"), 10),
+    }));
+  } catch (error) {
+    console.error("Error in getEnrollmentStatusBreakdown:", error);
+    throw new Error("Failed to get enrollment status breakdown");
+  }
 }
 
 async function getGenderDistribution(
@@ -316,44 +410,52 @@ async function getGenderDistribution(
   schoolYear = null,
   semester_id = null
 ) {
-  const classes = await getFilteredClasses(campus_id, schoolYear, semester_id);
+  try {
+    const classes = await getFilteredClasses(
+      campus_id,
+      schoolYear,
+      semester_id
+    );
 
-  if (classes.length === 0) {
-    return [];
+    if (classes.length === 0) {
+      return [];
+    }
+
+    const classIds = classes.map((cls) => cls.id);
+
+    const genders = await db.StudentClassEnrollments.findAll({
+      attributes: [
+        [col("student_personal_datum.gender"), "gender"],
+        [fn("COUNT", col("student_class_enrollment_id")), "count"],
+      ],
+      where: {
+        class_id: {
+          [Op.in]: classIds,
+        },
+        status: "enrolled",
+      },
+      include: [
+        {
+          model: db.StudentPersonalData,
+          attributes: [],
+        },
+      ],
+      group: ["student_personal_datum.gender"],
+      raw: true, // Ensure raw data is returned
+    });
+
+    return genders.map((gender) => ({
+      gender: gender.gender,
+      count: parseInt(gender.count, 10),
+    }));
+  } catch (error) {
+    console.error("Error in getGenderDistribution:", error);
+    throw new Error("Failed to get gender distribution");
   }
-
-  const classIds = classes.map((cls) => cls.id);
-
-  const genders = await db.StudentClassEnrollments.findAll({
-    attributes: [
-      [col("student_personal_datum.gender"), "gender"],
-      [fn("COUNT", col("student_class_enrollment_id")), "count"],
-    ],
-    where: {
-      class_id: {
-        [Op.in]: classIds,
-      },
-      status: "enrolled",
-    },
-    include: [
-      {
-        model: db.StudentPersonalData,
-        attributes: [],
-      },
-    ],
-    group: ["student_personal_datum.gender"],
-    raw: true, // Ensure raw data is returned
-  });
-
-  return genders.map((gender) => ({
-    gender: gender.gender,
-    count: parseInt(gender.count, 10),
-  }));
 }
 
 async function getEnrollmentTrendsBySemester(campus_id = null) {
   try {
-    // Fetch classes from cache or external API
     let classes = await getCachedClasses();
 
     // Enrich classes with course data
@@ -369,7 +471,6 @@ async function getEnrollmentTrendsBySemester(campus_id = null) {
     // Extract class IDs
     const classIds = classes.map((cls) => cls.id);
 
-    // If no classes after filtering, return empty array
     if (classIds.length === 0) {
       return [];
     }
@@ -443,87 +544,100 @@ async function getEnrollmentTrendsBySemester(campus_id = null) {
     return trends;
   } catch (error) {
     console.error("Error in getEnrollmentTrendsBySemester:", error);
-    throw error; // Propagate the error to be handled by the caller
+    throw new Error("Failed to get enrollment trends by semester");
   }
 }
 
 async function exportEnrollments(filters) {
-  // Fetch data based on filters
-  const data = await getEnrollmentData(filters);
+  try {
+    // Fetch data based on filters
+    const data = await getEnrollmentData(filters);
 
-  // Define fields for CSV
-  const fields = [
-    "student_id",
-    "student_name",
-    "class_id",
-    "status",
-    "enrollment_date",
-  ];
-  const parser = new Parser({fields});
-  const csv = parser.parse(data);
+    // Define fields for CSV
+    const fields = [
+      "student_id",
+      "student_name",
+      "class_id",
+      "status",
+      "enrollment_date",
+    ];
+    const parser = new Parser({fields});
+    const csv = parser.parse(data);
 
-  return csv;
+    return csv;
+  } catch (error) {
+    console.error("Error in exportEnrollments:", error);
+    throw new Error("Failed to export enrollments");
+  }
 }
 
 async function getEnrollmentData(filters) {
   const {campus_id, schoolYear, semester_id} = filters;
 
-  // Step 1: Get filtered classes
-  const classes = await getFilteredClasses(campus_id, schoolYear, semester_id);
+  try {
+    const classes = await getFilteredClasses(
+      campus_id,
+      schoolYear,
+      semester_id
+    );
 
-  if (classes.length === 0) {
-    return [];
+    if (classes.length === 0) {
+      return [];
+    }
+
+    const classIds = classes.map((cls) => cls.id);
+
+    // Fetch enrollments for those class IDs
+    const enrollments = await db.StudentClassEnrollments.findAll({
+      attributes: [
+        "student_class_enrollment_id",
+        "student_personal_id",
+        "class_id",
+        "status",
+        "createdAt", // Assuming 'createdAt' is the enrollment date
+      ],
+      where: {
+        class_id: {
+          [Op.in]: classIds,
+        },
+      },
+      include: [
+        {
+          model: db.StudentPersonalData,
+          attributes: ["firstName", "middleName", "lastName", "suffix"],
+          include: [
+            {
+              model: db.StudentOfficial,
+              attributes: ["student_id"],
+            },
+          ],
+        },
+      ],
+    });
+
+    // Prepare data for export
+    const data = enrollments.map((enrollment) => {
+      const studentData = enrollment.student_personal_datum;
+      const studentOfficial = studentData ? studentData.student_official : null;
+
+      const fullName = `${studentData.firstName} ${
+        studentData.middleName ? studentData.middleName + " " : ""
+      }${studentData.lastName}${
+        studentData.suffix ? ", " + studentData.suffix : ""
+      }`;
+
+      return {
+        student_id: studentOfficial ? studentOfficial.student_id : null,
+        student_name: fullName,
+        class_id: enrollment.class_id,
+        status: enrollment.status,
+        enrollment_date: enrollment.createdAt, // Adjust if your date field is different
+      };
+    });
+
+    return data;
+  } catch (error) {
+    console.error("Error in getEnrollmentData:", error);
+    throw new Error("Failed to get enrollment data");
   }
-
-  const classIds = classes.map((cls) => cls.id);
-
-  // Step 2: Fetch enrollments for those class IDs
-  const enrollments = await db.StudentClassEnrollments.findAll({
-    attributes: [
-      "student_class_enrollment_id",
-      "student_personal_id",
-      "class_id",
-      "status",
-      "createdAt", // Assuming 'createdAt' is the enrollment date
-    ],
-    where: {
-      class_id: {
-        [Op.in]: classIds,
-      },
-    },
-    include: [
-      {
-        model: db.StudentPersonalData,
-        attributes: ["firstName", "middleName", "lastName", "suffix"],
-        include: [
-          {
-            model: db.StudentOfficial,
-            attributes: ["student_id"],
-          },
-        ],
-      },
-    ],
-  });
-
-  // Step 3: Prepare data for export
-  const data = enrollments.map((enrollment) => {
-    const studentData = enrollment.student_personal_datum;
-    const studentOfficial = studentData ? studentData.student_official : null;
-
-    const fullName = `${studentData.firstName} ${
-      studentData.middleName ? studentData.middleName + " " : ""
-    }${studentData.lastName}${
-      studentData.suffix ? ", " + studentData.suffix : ""
-    }`;
-
-    return {
-      student_id: studentOfficial ? studentOfficial.student_id : null,
-      student_name: fullName,
-      class_id: enrollment.class_id,
-      status: enrollment.status,
-      enrollment_date: enrollment.createdAt, // Adjust if your date field is different
-    };
-  });
-
-  return data;
 }
