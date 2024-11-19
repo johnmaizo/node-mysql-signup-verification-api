@@ -48,6 +48,7 @@ async function getAllClass(
         "courseCode",
         "courseDescription",
         "department_id",
+        "unit", // Ensure 'unit' is included
       ],
       include: [
         {
@@ -70,6 +71,7 @@ async function getAllClass(
         campus_id: course.campus_id,
         courseCode: course.courseCode,
         courseDescription: course.courseDescription,
+        unit: course.unit, // Assign 'unit' from db.CourseInfo
         departmentCode: course.department
           ? course.department.departmentCode
           : null,
@@ -94,6 +96,9 @@ async function getAllClass(
       cls.fullDepartmentNameWithCampus = courseInfo
         ? courseInfo.fullDepartmentNameWithCampus
         : null;
+      cls.units = courseInfo ? courseInfo.unit : null; // Assign 'units' from db.CourseInfo
+      // Optionally, you can remove or ignore 'cls.units' from external API
+      // delete cls.units; // Uncomment if you want to remove the original 'units' field
     });
 
     // Filter classes based on campus_id, schoolYear, and semester_id
@@ -127,7 +132,7 @@ async function getAllClass(
         semester_id: cls.semester_id,
         school_year: cls.school_year,
         teacher: cls.teacher,
-        units: cls.units,
+        units: cls.units, // Now sourced from db.CourseInfo
         room: cls.room,
         campus_id: cls.campus_id,
         departmentCode: cls.departmentCode,

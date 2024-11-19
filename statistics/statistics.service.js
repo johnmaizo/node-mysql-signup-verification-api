@@ -6,6 +6,7 @@ const deepEqual = require("deep-equal");
 
 const {default: axios} = require("axios");
 const moment = require("moment"); // For time formatting
+const {Parser} = require("json2csv");
 
 const SCHEDULING_API_URL = process.env.SCHEDULING_API_URL;
 
@@ -15,6 +16,8 @@ module.exports = {
   getEnrollmentsBySubject,
   getEnrollmentStatusBreakdown,
   getGenderDistribution,
+  getEnrollmentTrendsBySemester,
+  exportEnrollments,
   //   getTotalStudents,
 };
 
@@ -306,6 +309,137 @@ async function getGenderDistribution(
   }));
 }
 
+// ! Enrollment Trends by Semester
+async function getEnrollmentTrendsBySemester(campus_id = null) {
+  try {
+    // Step 1: Fetch classes from external API
+    const response = await axios.get(
+      `${SCHEDULING_API_URL}/teachers/all-subjects`
+    );
+    let classes = response.data;
+
+    // Step 2: Enrich classes with course data
+    classes = await enrichClassesWithCourseData(classes);
+
+    // Step 3: Filter classes based on campus_id if provided
+    classes = classes.filter((cls) => {
+      let match = true;
+      if (campus_id) match = match && cls.campus_id == campus_id;
+      return match;
+    });
+
+    // Step 4: Extract class IDs
+    const classIds = classes.map((cls) => cls.id);
+
+    // If no classes after filtering, return empty array
+    if (classIds.length === 0) {
+      return [];
+    }
+
+    // Step 5: Fetch enrollment counts per class from the database
+    const enrollments = await db.StudentClassEnrollments.findAll({
+      attributes: [
+        "class_id",
+        [fn("COUNT", col("student_class_enrollment_id")), "totalStudents"],
+      ],
+      where: {
+        class_id: {
+          [Op.in]: classIds,
+        },
+        status: "enrolled",
+      },
+      group: ["class_id"],
+    });
+
+    // Step 6: Map class_id to total enrollments
+    const classIdToTotalStudents = {};
+    enrollments.forEach((enrollment) => {
+      classIdToTotalStudents[enrollment.class_id] = parseInt(
+        enrollment.get("totalStudents"),
+        10
+      );
+    });
+
+    // Step 7: Map class_id to semester_id and school_year
+    const classIdToSemesterYear = {};
+    classes.forEach((cls) => {
+      classIdToSemesterYear[cls.id] = {
+        semester_id: cls.semester_id,
+        school_year: cls.school_year,
+      };
+    });
+
+    // Step 8: Get unique semester_ids
+    const uniqueSemesterIds = [
+      ...new Set(classes.map((cls) => cls.semester_id)),
+    ];
+
+    // Step 9: Fetch semesterNames from db.Semester
+    const semesters = await db.Semester.findAll({
+      where: {
+        semester_id: {
+          [Op.in]: uniqueSemesterIds,
+        },
+      },
+      attributes: ["semester_id", "semesterName"],
+    });
+
+    // Step 10: Create a map from semester_id to semesterName
+    const semesterIdToName = {};
+    semesters.forEach((sem) => {
+      semesterIdToName[sem.semester_id] = sem.semesterName;
+    });
+
+    // Step 11: Aggregate enrollments by semester and school year
+    const trendsMap = {};
+
+    classIds.forEach((classId) => {
+      const {semester_id, school_year} = classIdToSemesterYear[classId] || {};
+      if (semester_id && school_year) {
+        const semesterName =
+          semesterIdToName[semester_id] || `Semester ${semester_id}`;
+        const key = `${school_year} - ${semesterName}`;
+        const count = classIdToTotalStudents[classId] || 0;
+        if (trendsMap[key]) {
+          trendsMap[key] += count;
+        } else {
+          trendsMap[key] = count;
+        }
+      }
+    });
+
+    // Step 12: Convert trendsMap to array
+    const trends = Object.keys(trendsMap).map((key) => ({
+      semester: key,
+      totalEnrollments: trendsMap[key],
+    }));
+
+    return trends;
+  } catch (error) {
+    console.error("Error in getEnrollmentTrendsBySemester:", error);
+    throw error; // Propagate the error to be handled by the caller
+  }
+}
+
+// ! Export Enrollments
+async function exportEnrollments(filters) {
+  // Fetch data based on filters
+  const data = await getEnrollmentData(filters);
+
+  // Define fields for CSV
+  const fields = [
+    "student_id",
+    "student_name",
+    "class_id",
+    "status",
+    "enrollment_date",
+  ];
+  const parser = new Parser({fields});
+  const csv = parser.parse(data);
+
+  return csv;
+}
+
 // ! vvv OTHER HELPERS vvv
 
 // Helper function to get class details by IDs
@@ -375,4 +509,69 @@ async function enrichClassesWithCourseAndDepartmentData(classes) {
   });
 
   return classes;
+}
+
+async function getEnrollmentData(filters) {
+  const {campus_id, schoolYear, semester_id} = filters;
+
+  // Step 1: Get class IDs matching the filters
+  const classIds = await getFilteredClassIds(
+    campus_id,
+    schoolYear,
+    semester_id
+  );
+
+  if (classIds.length === 0) {
+    return [];
+  }
+
+  // Step 2: Fetch enrollments for those class IDs
+  const enrollments = await db.StudentClassEnrollments.findAll({
+    attributes: [
+      "student_class_enrollment_id",
+      "student_personal_id",
+      "class_id",
+      "status",
+      "createdAt", // Assuming 'createdAt' is the enrollment date
+    ],
+    where: {
+      class_id: {
+        [Op.in]: classIds,
+      },
+    },
+    include: [
+      {
+        model: db.StudentPersonalData,
+        attributes: ["firstName", "middleName", "lastName", "suffix"],
+        include: [
+          {
+            model: db.StudentOfficial,
+            attributes: ["student_id"],
+          },
+        ],
+      },
+    ],
+  });
+
+  // Step 3: Prepare data for export
+  const data = enrollments.map((enrollment) => {
+    const studentData = enrollment.student_personal_datum;
+    const studentOfficial = studentData ? studentData.student_official : null;
+
+    const fullName = `${studentData.firstName} ${
+      studentData.middleName ? studentData.middleName + " " : ""
+    }${studentData.lastName}${
+      studentData.suffix ? ", " + studentData.suffix : ""
+    }`;
+
+    return {
+      student_id: studentOfficial ? studentOfficial.student_id : null,
+      student_name: fullName,
+      class_id: enrollment.class_id,
+      status: enrollment.status,
+      enrollment_date: enrollment.createdAt, // Adjust if your date field is different
+    };
+  });
+
+  return data;
 }
