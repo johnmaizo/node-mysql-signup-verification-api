@@ -126,7 +126,7 @@ router.get(
 );
 router.get(
   "/student-enrolled-classes/:student_personal_id/:semester_id",
-  authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.Accounting, Role.MIS, Role.Accounting]),
+  // authorize([Role.SuperAdmin, Role.Admin, Role.Registrar, Role.Accounting, Role.MIS, Role.Accounting]),
   getStudentEnrolledClasses
 );
 router.get(

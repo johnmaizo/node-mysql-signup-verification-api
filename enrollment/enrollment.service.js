@@ -442,7 +442,7 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
 
     // Step 10: Post data to the external API if enrollmentType is "on-site"
 
-    /*
+    
 
     if (applicant.enrollmentType === "on-site") {
       const onlineFullStudentInfoPOST = await axios.post(
@@ -575,7 +575,7 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
       );
     }
 
-    */
+    
 
     // Step 11: Extract the IDs of these enrollments
     const enrollmentIds = classEnrollments.map(
@@ -1002,7 +1002,7 @@ async function enrollOlineApplicantStudent({fulldata_applicant_id}) {
       // Commit transaction
       await transaction.commit();
 
-      /*
+      
 
       // After successful commit, make the PUT request
       const putUrl = `${MHAFRIC_API_URL}/api/deactivate_or_modify_personal-student-data/${fulldata_applicant_id}/False`;
@@ -1021,7 +1021,7 @@ async function enrollOlineApplicantStudent({fulldata_applicant_id}) {
         // For example, you could log it, retry, or notify someone.
       }
 
-      */
+      
     } catch (error) {
       // Rollback transaction
       await transaction.rollback();
@@ -1983,204 +1983,266 @@ async function getStudentEnrolledClasses(
   semester_id,
   status = "enrolled"
 ) {
-  let studentOfficialWhere =
-    student_personal_id && !student_id
-      ? {student_personal_id}
-      : student_id && {student_id};
-
-  // Step 1: Fetch the student's official student ID
-  const studentOfficial = await db.StudentOfficial.findOne({
-    where: studentOfficialWhere,
-    attributes: ["student_id", "student_personal_id"],
-  });
-
-  // Use student_personal_id from studentOfficial if exists, else use the passed-in student_personal_id
-  const personalIdToUse = studentOfficial
-    ? studentOfficial.student_personal_id
-    : student_personal_id;
-
-  // Step 2: Fetch the student's class enrollments
-  const enrolledClasses = await db.StudentClassEnrollments.findAll({
-    where: {
-      student_personal_id: personalIdToUse,
-      status,
-    },
-  });
-
-  // Check if there are any enrolled classes
-  if (!enrolledClasses || enrolledClasses.length === 0) {
-    return []; // Return an empty array if no classes are found
-  }
-
-  // Extract class_ids from enrollments
-  const enrolledClassIds = enrolledClasses.map(
-    (enrollment) => enrollment.class_id
-  );
-
-  // Step 3: Fetch classes from external API
-  let externalClasses;
   try {
-    const response = await axios.get(
-      `${SCHEDULING_API_URL}/teachers/all-subjects`
-    );
-    externalClasses = response.data; // Assuming the API returns an array of class objects
-  } catch (error) {
-    console.error("Error fetching classes from external API:", error);
-    throw new Error("Failed to fetch classes from the external source.");
-  }
+    let studentOfficialWhere =
+      student_personal_id && !student_id
+        ? {student_personal_id}
+        : student_id && {student_id};
 
-  // Step 4: Filter external classes by semester_id
-  const filteredClasses = externalClasses.filter(
-    (cls) => cls.semester_id === semester_id
-  );
+    // Step 1: Fetch the student's official student ID
+    const studentOfficial = await db.StudentOfficial.findOne({
+      where: studentOfficialWhere,
+      attributes: ["student_id", "student_personal_id"],
+    });
 
-  // Step 5: Match the student's enrolled classes with external classes
-  const matchedClasses = filteredClasses.filter((cls) =>
-    enrolledClassIds.includes(cls.id)
-  );
+    // Use student_personal_id from studentOfficial if exists, else use the passed-in student_personal_id
+    const personalIdToUse = studentOfficial
+      ? studentOfficial.student_personal_id
+      : student_personal_id;
 
-  if (matchedClasses.length === 0) {
-    return []; // No matched classes found
-  }
+    console.log("Personal ID to Use:", personalIdToUse);
 
-  // Step 6: Extract unique IDs for bulk fetching
-  const teacherIds = [...new Set(matchedClasses.map((cls) => cls.teacher_id))];
-  const subjectIds = [...new Set(matchedClasses.map((cls) => cls.subject_id))];
-  const semesterIds = [
-    ...new Set(matchedClasses.map((cls) => cls.semester_id)),
-  ];
+    // Step 2: Fetch the student's class enrollments
+    const enrolledClasses = await db.StudentClassEnrollments.findAll({
+      where: {
+        student_personal_id: personalIdToUse,
+        status,
+      },
+    });
 
-  // Step 7: Fetch related data from the database
-  const [employees, courseInfos, semesters] = await Promise.all([
-    db.Employee.findAll({
-      where: {employee_id: {[Op.in]: teacherIds}},
-      attributes: [
-        "employee_id",
-        "title",
-        "firstName",
-        "middleName",
-        "lastName",
-        "role",
-        "qualifications",
-      ],
-    }),
-    db.CourseInfo.findAll({
-      where: {course_id: {[Op.in]: subjectIds}},
-      attributes: ["course_id", "courseCode", "courseDescription", "unit"],
-    }),
-    db.Semester.findAll({
-      where: {semester_id: {[Op.in]: semesterIds}},
-      attributes: ["semester_id", "schoolYear", "semesterName"],
-    }),
-  ]);
+    console.log("Enrolled Classes:", enrolledClasses);
 
-  // Create maps for quick lookup
-  const employeeMap = new Map();
-  employees.forEach((emp) => {
-    employeeMap.set(emp.employee_id, emp);
-  });
-
-  const courseInfoMap = new Map();
-  courseInfos.forEach((course) => {
-    courseInfoMap.set(course.course_id, course);
-  });
-
-  const semesterMap = new Map();
-  semesters.forEach((sem) => {
-    semesterMap.set(sem.semester_id, sem);
-  });
-
-  // Step 8: Map the data to include only the necessary fields
-  const result = matchedClasses.map((cls) => {
-    const courseInfo = courseInfoMap.get(cls.subject_id);
-    const semester = semesterMap.get(cls.semester_id);
-    const instructor = employeeMap.get(cls.teacher_id);
-
-    // Handle roles
-    let roles =
-      instructor && instructor.role
-        ? instructor.role.split(",").map((r) => r.trim())
-        : [];
-
-    const validRoles = [
-      "SuperAdmin",
-      "Admin",
-      "MIS",
-      "Registrar",
-      "DataCenter",
-      "Dean",
-      "Accounting",
-    ];
-
-    // Filter roles to keep only valid ones
-    const forValidRoles = roles.filter((role) => validRoles.includes(role));
-
-    // Get the first valid role if available
-    const firstValidRole = roles.length > 0 ? roles[0] : null;
-
-    // Handle qualifications, parse the string into an array if needed
-    let qualificationsArray = [];
-    if (instructor && typeof instructor.qualifications === "string") {
-      try {
-        qualificationsArray = JSON.parse(instructor.qualifications);
-      } catch (error) {
-        console.error("Error parsing qualifications:", error);
-        qualificationsArray = []; // Handle the error by returning an empty array
-      }
-    } else if (instructor && Array.isArray(instructor.qualifications)) {
-      qualificationsArray = instructor.qualifications;
+    // Check if there are any enrolled classes
+    if (!enrolledClasses || enrolledClasses.length === 0) {
+      return []; // Return an empty array if no classes are found
     }
 
-    // Check if qualifications exist and map the abbreviations
-    const qualifications =
-      qualificationsArray.length > 0
-        ? `, (${qualificationsArray.map((q) => q.abbreviation).join(", ")})`
-        : "";
+    // Extract class_ids from enrollments
+    const enrolledClassIds = enrolledClasses.map(
+      (enrollment) => enrollment.class_id
+    );
 
-    // Construct instructor names
-    const instructorFullName = instructor
-      ? `${instructor.title} ${instructor.firstName}${
-          instructor.middleName ? ` ${instructor.middleName[0]}.` : ""
-        } ${instructor.lastName}${qualifications}`
-      : null;
+    console.log("Enrolled Class IDs:", enrolledClassIds);
 
-    const instructorFullNameWithRole = instructor
-      ? `${instructor.title} ${instructor.firstName}${
-          instructor.middleName ? ` ${instructor.middleName[0]}.` : ""
-        } ${instructor.lastName}${qualifications} - ${
-          firstValidRole ? firstValidRole : forValidRoles.join(", ")
-        }`
-      : null;
+    // Step 3: Fetch classes from external API
+    let externalClasses;
+    try {
+      const response = await axios.get(
+        `${SCHEDULING_API_URL}/teachers/all-subjects`
+      );
+      externalClasses = response.data; // Assuming the API returns an array of class objects
+      console.log("External Classes Fetched:", externalClasses.length);
+      console.log(
+        "External Classes IDs:",
+        externalClasses.map((cls) => cls.id)
+      );
+    } catch (error) {
+      console.error("Error fetching classes from external API:", error);
+      throw new Error("Failed to fetch classes from the external source.");
+    }
 
-    const instructorName = instructor
-      ? `${instructor.firstName}${
-          instructor.middleName ? ` ${instructor.middleName[0]}.` : ""
-        } ${instructor.lastName}`
-      : null;
+    // Step 4: Identify Missing Class IDs
+    const enrolledClassIdsSet = new Set(enrolledClassIds);
+    const externalClassIdsSet = new Set(externalClasses.map((cls) => cls.id));
+    const missingClassIds = [...enrolledClassIdsSet].filter(
+      (id) => !externalClassIdsSet.has(id)
+    );
 
-    return {
-      student_id: studentOfficial ? studentOfficial.student_id : null,
-      student_personal_id: personalIdToUse,
-      class_id: cls.id,
-      course_id: courseInfo ? courseInfo.course_id : null,
-      semester_id: semester ? semester.semester_id : null,
-      employee_id: instructor ? instructor.employee_id : null,
+    console.log("Missing Class IDs in External API:", missingClassIds);
 
-      className: cls.subject, // Assuming 'subject' represents the class name
-      subjectCode: cls.subject_code,
-      subjectDescription: courseInfo
-        ? courseInfo.courseDescription
-        : cls.subject,
-      unit: courseInfo ? courseInfo.unit : cls.units,
-      schoolYear: cls.school_year,
-      semesterName: semester ? semester.semesterName : cls.semester,
-      instructorFullName,
-      instructorFullNameWithRole,
-      instructorName,
-    };
-  });
+    // Step 5: Filter external classes by semester_id
+    const filteredClasses = externalClasses.filter(
+      (cls) => cls.semester_id === semester_id
+    );
 
-  return result;
+    console.log(
+      `Filtered Classes by Semester ID=${semester_id}:`,
+      filteredClasses.length
+    );
+
+    // Step 6: Match the student's enrolled classes with external classes
+    const matchedClasses = filteredClasses.filter((cls) =>
+      enrolledClassIds.includes(cls.id)
+    );
+
+    console.log(
+      "Matched Classes:",
+      matchedClasses.map((cls) => cls.id)
+    );
+
+    // Debugging: Log detailed information about unmatched classes
+    const unmatchedClassIds = enrolledClassIds.filter(
+      (id) => !matchedClasses.some((cls) => cls.id === id)
+    );
+    if (unmatchedClassIds.length > 0) {
+      console.warn("Unmatched Class IDs:", unmatchedClassIds);
+      // Optionally, log details of unmatched classes
+      const unmatchedClasses = externalClasses.filter((cls) =>
+        unmatchedClassIds.includes(cls.id)
+      );
+      console.log("Unmatched Classes Details:", unmatchedClasses);
+    }
+
+    if (matchedClasses.length === 0) {
+      return []; // No matched classes found
+    }
+
+    // Step 7: Extract unique IDs for bulk fetching
+    const teacherIds = [
+      ...new Set(matchedClasses.map((cls) => cls.teacher_id)),
+    ];
+    const subjectIds = [
+      ...new Set(matchedClasses.map((cls) => cls.subject_id)),
+    ];
+    const semesterIds = [
+      ...new Set(matchedClasses.map((cls) => cls.semester_id)),
+    ];
+
+    console.log("Teacher IDs:", teacherIds);
+    console.log("Subject IDs:", subjectIds);
+    console.log("Semester IDs:", semesterIds);
+
+    // Step 8: Fetch related data from the database
+    const [employees, courseInfos, semesters] = await Promise.all([
+      db.Employee.findAll({
+        where: {employee_id: {[Op.in]: teacherIds}},
+        attributes: [
+          "employee_id",
+          "title",
+          "firstName",
+          "middleName",
+          "lastName",
+          "role",
+          "qualifications",
+        ],
+      }),
+      db.CourseInfo.findAll({
+        where: {course_id: {[Op.in]: subjectIds}},
+        attributes: ["course_id", "courseCode", "courseDescription", "unit"],
+      }),
+      db.Semester.findAll({
+        where: {semester_id: {[Op.in]: semesterIds}},
+        attributes: ["semester_id", "schoolYear", "semesterName"],
+      }),
+    ]);
+
+    console.log("Employees Fetched:", employees.length);
+    console.log("CourseInfos Fetched:", courseInfos.length);
+    console.log("Semesters Fetched:", semesters.length);
+
+    // Create maps for quick lookup
+    const employeeMap = new Map();
+    employees.forEach((emp) => {
+      employeeMap.set(emp.employee_id, emp);
+    });
+
+    const courseInfoMap = new Map();
+    courseInfos.forEach((course) => {
+      courseInfoMap.set(course.course_id, course);
+    });
+
+    const semesterMap = new Map();
+    semesters.forEach((sem) => {
+      semesterMap.set(sem.semester_id, sem);
+    });
+
+    // Step 9: Map the data to include only the necessary fields
+    const result = matchedClasses.map((cls) => {
+      const courseInfo = courseInfoMap.get(cls.subject_id);
+      const semester = semesterMap.get(cls.semester_id);
+      const instructor = employeeMap.get(cls.teacher_id);
+
+      // Handle roles
+      let roles =
+        instructor && instructor.role
+          ? instructor.role.split(",").map((r) => r.trim())
+          : [];
+
+      const validRoles = [
+        "SuperAdmin",
+        "Admin",
+        "MIS",
+        "Registrar",
+        "DataCenter",
+        "Dean",
+        "Accounting",
+      ];
+
+      // Filter roles to keep only valid ones
+      const forValidRoles = roles.filter((role) => validRoles.includes(role));
+
+      // Get the first valid role if available
+      const firstValidRole = forValidRoles.length > 0 ? forValidRoles[0] : null;
+
+      // Handle qualifications, parse the string into an array if needed
+      let qualificationsArray = [];
+      if (instructor && typeof instructor.qualifications === "string") {
+        try {
+          qualificationsArray = JSON.parse(instructor.qualifications);
+        } catch (error) {
+          console.error("Error parsing qualifications:", error);
+          qualificationsArray = []; // Handle the error by returning an empty array
+        }
+      } else if (instructor && Array.isArray(instructor.qualifications)) {
+        qualificationsArray = instructor.qualifications;
+      }
+
+      // Check if qualifications exist and map the abbreviations
+      const qualifications =
+        qualificationsArray.length > 0
+          ? `, (${qualificationsArray.map((q) => q.abbreviation).join(", ")})`
+          : "";
+
+      // Construct instructor names
+      const instructorFullName = instructor
+        ? `${instructor.title} ${instructor.firstName}${
+            instructor.middleName ? ` ${instructor.middleName[0]}.` : ""
+          } ${instructor.lastName}${qualifications}`
+        : null;
+
+      const instructorFullNameWithRole = instructor
+        ? `${instructor.title} ${instructor.firstName}${
+            instructor.middleName ? ` ${instructor.middleName[0]}.` : ""
+          } ${instructor.lastName}${qualifications} - ${
+            firstValidRole ? firstValidRole : forValidRoles.join(", ")
+          }`
+        : null;
+
+      const instructorName = instructor
+        ? `${instructor.firstName}${
+            instructor.middleName ? ` ${instructor.middleName[0]}.` : ""
+          } ${instructor.lastName}`
+        : null;
+
+      return {
+        student_id: studentOfficial ? studentOfficial.student_id : null,
+        student_personal_id: personalIdToUse,
+        class_id: cls.id,
+        course_id: courseInfo ? courseInfo.course_id : null,
+        semester_id: semester ? semester.semester_id : null,
+        employee_id: instructor ? instructor.employee_id : null,
+
+        className: cls.subject, // Assuming 'subject' represents the class name
+        subjectCode: cls.subject_code,
+        subjectDescription: courseInfo
+          ? courseInfo.courseDescription
+          : cls.subject,
+        unit: courseInfo ? courseInfo.unit : cls.units,
+        schoolYear: cls.school_year,
+        semesterName: semester ? semester.semesterName : cls.semester,
+        instructorFullName,
+        instructorFullNameWithRole,
+        instructorName,
+      };
+    });
+
+    console.log("Final Result:", result);
+
+    return result;
+  } catch (error) {
+    console.error("Error in getStudentEnrolledClasses:", error);
+    throw new Error("Failed to get student enrolled classes");
+  }
 }
 
 async function getAllEnrolledClasses(semester_id) {
