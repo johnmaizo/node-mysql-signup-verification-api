@@ -295,6 +295,7 @@ async function getEnrollmentsBySubject(
   semester_id = null
 ) {
   try {
+    // Step 1: Fetch and Filter Classes
     const classes = await getFilteredClasses(
       campus_id,
       schoolYear,
@@ -302,28 +303,39 @@ async function getEnrollmentsBySubject(
     );
 
     if (classes.length === 0) {
+      console.log("No classes found for the given filters.");
       return [];
     }
 
     const classIds = classes.map((cls) => cls.id);
 
+    // Step 2: Fetch Unique Student Enrollments per Course
     const enrollments = await db.StudentClassEnrollments.findAll({
-      attributes: ["class_id"],
+      attributes: ["class_id", "student_personal_id"],
       where: {
         class_id: {
           [Op.in]: classIds,
         },
-        status: "enrolled",
+        status: "enrolled", // Adjust if 'enlisted' should also be included
       },
+      raw: true, // Fetch plain objects
     });
 
-    // Map class_id to subject_id
+    if (enrollments.length === 0) {
+      console.log("No enrollments found for the filtered classes.");
+      return [];
+    }
+
+    // Debugging: Log fetched enrollments
+    console.log("Fetched Enrollments:", enrollments);
+
+    // Step 3: Map Class IDs to Subject IDs
     const classIdToSubjectId = {};
     classes.forEach((cls) => {
       classIdToSubjectId[cls.id] = cls.subject_id;
     });
 
-    // Fetch course info from cache
+    // Step 4: Fetch Course Info from Cache
     const courses = await getCachedCourseInfo();
 
     // Map course_id to course info
@@ -335,11 +347,14 @@ async function getEnrollmentsBySubject(
       };
     });
 
+    // Step 5: Aggregate Unique Students per Subject
     const enrollmentCounts = {};
+    const othersStudentIds = new Set(); // To collect "Others" student IDs
 
     enrollments.forEach((enrollment) => {
       const subjectId = classIdToSubjectId[enrollment.class_id];
-      if (subjectId) {
+      const studentId = enrollment.student_personal_id;
+      if (subjectId && studentId) {
         const courseInfo = courseInfoMap[subjectId];
 
         if (courseInfo) {
@@ -348,15 +363,66 @@ async function getEnrollmentsBySubject(
               course_id: subjectId,
               courseCode: courseInfo.courseCode,
               courseDescription: courseInfo.courseDescription,
-              totalEnrollments: 0,
+              uniqueStudents: new Set(),
             };
           }
-          enrollmentCounts[subjectId].totalEnrollments += 1;
+          enrollmentCounts[subjectId].uniqueStudents.add(studentId);
         }
       }
     });
 
-    return Object.values(enrollmentCounts);
+    // Convert Sets to Counts
+    const enrollmentCountsArray = Object.values(enrollmentCounts).map(
+      (subject) => ({
+        course_id: subject.course_id,
+        courseCode: subject.courseCode,
+        courseDescription: subject.courseDescription,
+        uniqueStudents: subject.uniqueStudents.size,
+        studentIds: subject.uniqueStudents, // Include student IDs for "Others"
+      })
+    );
+
+    // Step 6: Sort and Aggregate Top 3 and Others
+    const sortedData = [...enrollmentCountsArray].sort(
+      (a, b) => b.uniqueStudents - a.uniqueStudents
+    );
+
+    // Select the top 3 subjects
+    const topCourses = sortedData.slice(0, 3);
+
+    // Aggregate the remaining subjects into "Others"
+    const others = sortedData.slice(3);
+
+    // Collect all student IDs from "Others"
+    others.forEach((course) => {
+      course.studentIds.forEach((id) => othersStudentIds.add(id));
+    });
+
+    // Calculate the total unique students for "Others"
+    const othersTotalStudents = othersStudentIds.size;
+
+    // Collect the descriptions and student counts of the courses under "Others"
+    const othersDescriptions = others.map(
+      (course) =>
+        `${course.courseCode} - ${course.courseDescription}: ${course.uniqueStudents}`
+    );
+
+    // Prepare the final categories and series data
+    const finalCategories = [
+      ...topCourses.map((item) => `${item.courseCode}`),
+      "Others",
+    ];
+
+    const finalUniqueStudents = [
+      ...topCourses.map((item) => item.uniqueStudents),
+      othersTotalStudents,
+    ];
+
+    return {
+      categories: finalCategories,
+      data: finalUniqueStudents,
+      othersDescriptions: othersDescriptions,
+    };
   } catch (error) {
     console.error("Error in getEnrollmentsBySubject:", error);
     throw new Error("Failed to get enrollments by subject");
