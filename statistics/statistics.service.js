@@ -555,10 +555,23 @@ async function getEnrollmentTrendsBySemester(campus_id = null) {
     // Enrich classes with course data
     classes = await enrichClassesWithCourseData(classes);
 
-    // Filter classes based on campus_id if provided
-    if (campus_id) {
-      classes = classes.filter((cls) => cls.campus_id === campus_id);
+    // Debugging: Log campus_id type and value
+    console.log("Received campus_id:", campus_id, "Type:", typeof campus_id);
+
+    // Convert campus_id to number if it's provided
+    if (campus_id !== null) {
+      const campusIdNum = Number(campus_id);
+      if (isNaN(campusIdNum)) {
+        throw new Error("Invalid campus_id. It must be a number.");
+      }
+      classes = classes.filter((cls) => cls.campus_id === campusIdNum);
     }
+
+    // Debugging: Log number of classes after filtering
+    console.log(
+      `Number of classes after filtering by campus_id=${campus_id}:`,
+      classes.length
+    );
 
     // Extract class IDs
     const classIds = classes.map((cls) => cls.id);
@@ -568,7 +581,6 @@ async function getEnrollmentTrendsBySemester(campus_id = null) {
     }
 
     // Step 2: Fetch Student Enrollments
-    // Fetch all enrollments for the filtered classes with status 'enrolled'
     const enrollments = await db.StudentClassEnrollments.findAll({
       attributes: ["student_personal_id", "class_id"],
       where: {
