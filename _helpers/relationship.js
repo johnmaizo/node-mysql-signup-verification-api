@@ -212,14 +212,6 @@ function defineRelationships(db) {
 
   // Continue with other existing relationships (omitted for brevity)
 
-  // ! Building Structure -> Classes
-  // db.BuildingStructure.hasMany(db.Class, {
-  //   foreignKey: "structure_id",
-  // });
-  // db.Class.belongsTo(db.BuildingStructure, {
-  //   foreignKey: "structure_id",
-  // });
-
   // StudentAcademicBackground belongsTo Prospectus
   db.StudentAcademicBackground.belongsTo(db.Prospectus, {
     foreignKey: "prospectus_id",

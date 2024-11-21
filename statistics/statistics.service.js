@@ -9,7 +9,6 @@ const {Parser} = require("json2csv");
 
 const SCHEDULING_API_URL = process.env.SCHEDULING_API_URL;
 
-
 module.exports = {
   getTotalEnrollments,
   getEnrollmentsByDepartment,
@@ -187,7 +186,7 @@ async function getTotalEnrollments(
   } catch (error) {
     console.error("Error in getTotalEnrollments:", error);
     throw new Error("Failed to get total enrollments");
-}
+  }
 }
 
 async function enrichClassesWithCourseData(classes) {
@@ -208,7 +207,7 @@ async function enrichClassesWithCourseData(classes) {
   });
 
   return classes;
-  }
+}
 
 async function enrichClassesWithCourseData(classes) {
   const subjectIds = [...new Set(classes.map((cls) => cls.subject_id))];
@@ -411,6 +410,7 @@ async function getGenderDistribution(
   semester_id = null
 ) {
   try {
+    // Step 1: Fetch and Filter Classes
     const classes = await getFilteredClasses(
       campus_id,
       schoolYear,
@@ -418,36 +418,63 @@ async function getGenderDistribution(
     );
 
     if (classes.length === 0) {
+      console.log("No classes found for the given filters.");
       return [];
     }
 
     const classIds = classes.map((cls) => cls.id);
 
-    const genders = await db.StudentClassEnrollments.findAll({
-      attributes: [
-        [col("student_personal_datum.gender"), "gender"],
-        [fn("COUNT", col("student_class_enrollment_id")), "count"],
-      ],
+    // Step 2: Fetch Unique Student Personal IDs
+    const uniqueEnrollments = await db.StudentClassEnrollments.findAll({
+      attributes: [[col("student_personal_id"), "student_personal_id"]],
       where: {
         class_id: {
           [Op.in]: classIds,
         },
-        status: "enrolled",
+        status: "enrolled", // Adjust if 'enlisted' should also be included
       },
-      include: [
-        {
-          model: db.StudentPersonalData,
-          attributes: [],
-        },
-      ],
-      group: ["student_personal_datum.gender"],
-      raw: true, // Ensure raw data is returned
+      group: ["student_personal_id"],
+      raw: true,
     });
 
-    return genders.map((gender) => ({
-      gender: gender.gender,
-      count: parseInt(gender.count, 10),
+    if (uniqueEnrollments.length === 0) {
+      console.log("No unique enrollments found.");
+      return [];
+    }
+
+    // Debugging: Log unique enrollments
+    console.log("Unique Enrollments:", uniqueEnrollments);
+
+    // Extract unique student_personal_ids
+    const uniqueStudentIds = uniqueEnrollments.map(
+      (enrollment) => enrollment.student_personal_id
+    );
+
+    // Step 3: Aggregate Genders
+    const genders = await db.StudentPersonalData.findAll({
+      attributes: ["gender", [fn("COUNT", col("gender")), "count"]],
+      where: {
+        student_personal_id: {
+          [Op.in]: uniqueStudentIds,
+        },
+      },
+      group: ["gender"],
+      raw: true,
+    });
+
+    // Debugging: Log aggregated genders
+    console.log("Aggregated Genders:", genders);
+
+    // Format the result
+    const genderDistribution = genders.map((record) => ({
+      gender: record.gender || "Unspecified",
+      count: parseInt(record.count, 10),
     }));
+
+    // Debugging: Log final gender distribution
+    console.log("Final Gender Distribution:", genderDistribution);
+
+    return genderDistribution;
   } catch (error) {
     console.error("Error in getGenderDistribution:", error);
     throw new Error("Failed to get gender distribution");
@@ -456,17 +483,16 @@ async function getGenderDistribution(
 
 async function getEnrollmentTrendsBySemester(campus_id = null) {
   try {
+    // Step 1: Fetch and Enrich Classes
     let classes = await getCachedClasses();
 
     // Enrich classes with course data
     classes = await enrichClassesWithCourseData(classes);
 
     // Filter classes based on campus_id if provided
-    classes = classes.filter((cls) => {
-      let match = true;
-      if (campus_id) match = match && cls.campus_id == campus_id;
-      return match;
-    });
+    if (campus_id) {
+      classes = classes.filter((cls) => cls.campus_id === campus_id);
+    }
 
     // Extract class IDs
     const classIds = classes.map((cls) => cls.id);
@@ -475,31 +501,27 @@ async function getEnrollmentTrendsBySemester(campus_id = null) {
       return [];
     }
 
-    // Fetch enrollment counts per class from the database
+    // Step 2: Fetch Student Enrollments
+    // Fetch all enrollments for the filtered classes with status 'enrolled'
     const enrollments = await db.StudentClassEnrollments.findAll({
-      attributes: [
-        "class_id",
-        [fn("COUNT", col("student_class_enrollment_id")), "totalStudents"],
-      ],
+      attributes: ["student_personal_id", "class_id"],
       where: {
         class_id: {
           [Op.in]: classIds,
         },
-        status: "enrolled",
+        status: "enrolled", // Adjust if 'enlisted' should also be included
       },
-      group: ["class_id"],
+      raw: true, // Fetch plain objects
     });
 
-    // Map class_id to total enrollments
-    const classIdToTotalStudents = {};
-    enrollments.forEach((enrollment) => {
-      classIdToTotalStudents[enrollment.class_id] = parseInt(
-        enrollment.get("totalStudents"),
-        10
-      );
-    });
+    if (enrollments.length === 0) {
+      return [];
+    }
 
-    // Map class_id to semester_id and school_year
+    // Debugging: Log fetched enrollments
+    console.log("Fetched Enrollments:", enrollments);
+
+    // Step 3: Map Class IDs to Semester and School Year
     const classIdToSemesterYear = {};
     classes.forEach((cls) => {
       classIdToSemesterYear[cls.id] = {
@@ -508,7 +530,10 @@ async function getEnrollmentTrendsBySemester(campus_id = null) {
       };
     });
 
-    // Fetch semesterNames from cache or db.Semester
+    // Debugging: Log classId to semester-year mapping
+    console.log("Class ID to Semester-Year Mapping:", classIdToSemesterYear);
+
+    // Step 4: Fetch Semester Names
     const semesters = await getCachedSemesters();
 
     // Create a map from semester_id to semesterName
@@ -517,29 +542,52 @@ async function getEnrollmentTrendsBySemester(campus_id = null) {
       semesterIdToName[sem.semester_id] = sem.semesterName;
     });
 
-    // Aggregate enrollments by semester and school year
-    const trendsMap = {};
+    // Debugging: Log semester_id to semesterName mapping
+    console.log("Semester ID to Name Mapping:", semesterIdToName);
 
-    classIds.forEach((classId) => {
-      const {semester_id, school_year} = classIdToSemesterYear[classId] || {};
-      if (semester_id && school_year) {
+    // Step 5: Aggregate Unique Student Enrollments by Semester
+    const trendsMap = {}; // { '2023-2024 - Fall': Set { studentId1, ... }, ... }
+
+    enrollments.forEach((enrollment) => {
+      const {class_id, student_personal_id} = enrollment;
+      const semesterYear = classIdToSemesterYear[class_id];
+
+      if (semesterYear) {
+        const {semester_id, school_year} = semesterYear;
         const semesterName =
           semesterIdToName[semester_id] || `Semester ${semester_id}`;
         const key = `${school_year} - ${semesterName}`;
-        const count = classIdToTotalStudents[classId] || 0;
-        if (trendsMap[key]) {
-          trendsMap[key] += count;
-        } else {
-          trendsMap[key] = count;
+
+        if (!trendsMap[key]) {
+          trendsMap[key] = new Set();
         }
+
+        trendsMap[key].add(student_personal_id);
       }
     });
 
-    // Convert trendsMap to array
+    // Debugging: Log trendsMap before converting to array
+    console.log("Trends Map:", trendsMap);
+
+    // Step 6: Convert trendsMap to Array with Counts
     const trends = Object.keys(trendsMap).map((key) => ({
       semester: key,
-      totalEnrollments: trendsMap[key],
+      totalStudents: trendsMap[key].size,
     }));
+
+    // Optional: Sort the trends by school_year and semester
+    trends.sort((a, b) => {
+      const [yearA, semA] = a.semester.split(" - ");
+      const [yearB, semB] = b.semester.split(" - ");
+
+      if (yearA === yearB) {
+        return semA.localeCompare(semB);
+      }
+      return yearA.localeCompare(yearB);
+    });
+
+    // Debugging: Log final trends
+    console.log("Final Trends:", trends);
 
     return trends;
   } catch (error) {
