@@ -321,7 +321,7 @@ async function getUnenrolledStudents(
   // Extract class IDs from filtered classes
   const filteredClassIds = filteredClasses.map((cls) => cls.id);
 
-  
+
 
   if (existing_students) {
     // Step 2a: Handle existing_students
@@ -510,6 +510,7 @@ async function getUnenrolledStudents(
     // Map the students to include necessary information
     studentsWithEnrollmentStatus = students.map((student) => ({
       id: student.student_personal_id,
+      student_id: student.student_official.student_id,
       firstName: student.firstName,
       lastName: student.lastName,
       middleName: student.middleName,
