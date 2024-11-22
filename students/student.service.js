@@ -295,6 +295,34 @@ async function getUnenrolledStudents(
   // Initialize an empty array to hold the result
   let studentsWithEnrollmentStatus = [];
 
+
+  // Fetch classes from the external API
+  let externalClasses;
+  try {
+    const response = await axios.get(
+      `${SCHEDULING_API_URL}/teachers/all-subjects`
+    );
+    externalClasses = response.data;
+  } catch (error) {
+    console.error("Error fetching classes from external API:", error);
+    throw new Error("Failed to fetch classes from the external source.");
+  }
+
+  // Filter classes based on the target semester
+  const filteredClasses = externalClasses.filter(
+    (cls) => cls.semester_id === targetSemester.semester_id
+  );
+
+  // If no classes match the target semester, return empty array
+  if (filteredClasses.length === 0) {
+    return [];
+  }
+
+  // Extract class IDs from filtered classes
+  const filteredClassIds = filteredClasses.map((cls) => cls.id);
+
+  
+
   if (existing_students) {
     // Step 2a: Handle existing_students
 
@@ -351,31 +379,6 @@ async function getUnenrolledStudents(
     return studentsWithEnrollmentStatus;
   } else if (new_unenrolled_students) {
     // Step 2b: Handle new_unenrolled_students
-
-    // Fetch classes from the external API
-    let externalClasses;
-    try {
-      const response = await axios.get(
-        `${SCHEDULING_API_URL}/teachers/all-subjects`
-      );
-      externalClasses = response.data;
-    } catch (error) {
-      console.error("Error fetching classes from external API:", error);
-      throw new Error("Failed to fetch classes from the external source.");
-    }
-
-    // Filter classes based on the target semester
-    const filteredClasses = externalClasses.filter(
-      (cls) => cls.semester_id === targetSemester.semester_id
-    );
-
-    // If no classes match the target semester, return empty array
-    if (filteredClasses.length === 0) {
-      return [];
-    }
-
-    // Extract class IDs from filtered classes
-    const filteredClassIds = filteredClasses.map((cls) => cls.id);
 
     // Fetch students who have no StudentOfficial record and have enlisted classes in the target semester
     const students = await db.StudentPersonalData.findAll({
