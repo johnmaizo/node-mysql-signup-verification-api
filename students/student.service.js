@@ -9,6 +9,7 @@ module.exports = {
   addEnrollment,
   getStudentOfficial,
   getStudentById,
+  getStudentGrades,
   getUnenrolledStudents,
   updateStudentInformation,
   getStudentPersonalDataById,
@@ -230,6 +231,38 @@ async function getStudentById(student_id, campus_id) {
     throw new Error(`Failed to retrieve student data: ${error.message}`);
   }
 }
+
+async function getStudentGrades(student_id, campus_id) {
+  try {
+    // Step 1: Verify that the student exists
+    const student = await db.StudentOfficial.findOne({
+      where: {student_id, campus_id},
+      include: [
+        {
+          model: db.StudentPersonalData,
+        },
+      ],
+    });
+
+    if (!student) {
+      throw new Error("Student not found");
+    }
+
+    // Step 2: Fetch grades from the external API
+    const gradesResponse = await axios.get(
+      `https://xavgrading-api.onrender.com/external/get-grades-of-students-by-studentid/${student_id}`
+    );
+
+    // Assuming the API returns a JSON object with the grades
+    const gradesData = gradesResponse.data;
+
+    return gradesData;
+  } catch (error) {
+    console.error("Error in getStudentGrades:", error.message);
+    throw new Error(`Failed to retrieve student grades: ${error.message}`);
+  }
+}
+
 async function getUnenrolledStudents(
   campus_id,
   existing_students,

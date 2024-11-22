@@ -50,6 +50,9 @@ router.get(
 );
 
 router.get("/get-student-by-id", getStudentById);
+router.get("/get-student-grades", getStudentGrades);
+
+
 router.put(
   "/update-student",
   authorize([
@@ -78,6 +81,14 @@ function getStudentById(req, res, next) {
   studentService
     .getStudentById(student_id, campus_id)
     .then((student) => res.json(student))
+    .catch(next);
+}
+
+function getStudentGrades(req, res, next) {
+  const { student_id, campus_id } = req.query;
+  studentService
+    .getStudentGrades(student_id, campus_id)
+    .then((grades) => res.json(grades))
     .catch(next);
 }
 
