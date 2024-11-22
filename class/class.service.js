@@ -22,20 +22,20 @@ async function getAllClass(
   let externalClasses;
 
   try {
-    // Fetch classes from the external API
+    // Step 1: Fetch classes from the external API
     const response = await axios.get(
       `${SCHEDULING_API_URL}/teachers/all-subjects`
     );
     externalClasses = response.data; // Assuming the API returns an array of class objects
 
-    console.log("\n\n\nexternalClasses:", externalClasses);
+    // console.log("\n\n\nexternalClasses:", externalClasses);
 
-    // Extract unique subject_ids from the classes
+    // Step 2: Extract unique subject_ids from the classes
     const subjectIds = [
       ...new Set(externalClasses.map((cls) => cls.subject_id)),
     ];
 
-    // Fetch course information along with department and campus details
+    // Step 3: Fetch course information along with department and campus details
     const courses = await db.CourseInfo.findAll({
       where: {
         course_id: {
@@ -64,7 +64,7 @@ async function getAllClass(
       ],
     });
 
-    // Create a mapping from course_id to course information
+    // Step 4: Create a mapping from course_id to course information
     const courseIdToInfo = {};
     courses.forEach((course) => {
       courseIdToInfo[course.course_id] = {
@@ -85,7 +85,7 @@ async function getAllClass(
       };
     });
 
-    // Enrich each class with course and department information from the mapping
+    // Step 5: Enrich each class with course and department information from the mapping
     externalClasses.forEach((cls) => {
       const courseInfo = courseIdToInfo[cls.subject_id];
       cls.campus_id = courseInfo ? courseInfo.campus_id : null;
@@ -101,8 +101,14 @@ async function getAllClass(
       // delete cls.units; // Uncomment if you want to remove the original 'units' field
     });
 
-    // Filter classes based on campus_id, schoolYear, and semester_id
+    // Step 6: Filter classes based on campus_id, schoolYear, and semester_id
+    // **Modification Start:** Exclude classes without a valid semester_id
     let filteredClasses = externalClasses.filter((cls) => {
+      // **Exclude classes with no semester_id**
+      if (cls.semester_id == null) {
+        return false;
+      }
+
       let match = true;
       if (campus_id) {
         match = match && cls.campus_id == campus_id;
@@ -115,8 +121,9 @@ async function getAllClass(
       }
       return match;
     });
+    // **Modification End**
 
-    // Map each class to include the formatted schedule string and course information
+    // Step 7: Map each class to include the formatted schedule string and course information
     const classesWithSchedule = filteredClasses.map((cls) => {
       const startTime = moment.utc(cls.start).local().format("h:mm A");
       const endTime = moment.utc(cls.end).local().format("h:mm A");
@@ -142,10 +149,10 @@ async function getAllClass(
       };
     });
 
-    // Collect class IDs for which we need to get enrolled students
+    // Step 8: Collect class IDs for which we need to get enrolled students
     const classIds = classesWithSchedule.map((cls) => cls.id);
 
-    // Fetch enrollment counts and students for the classes
+    // Step 9: Fetch enrollment counts and students for the classes
     const enrollmentsWithStudents = await db.StudentClassEnrollments.findAll({
       where: {
         class_id: {
@@ -167,7 +174,7 @@ async function getAllClass(
       ],
     });
 
-    // Create a mapping from class_id to student details
+    // Step 10: Create a mapping from class_id to student details
     const classIdToStudents = {};
     const classIdToStudentCount = {};
 
@@ -195,7 +202,7 @@ async function getAllClass(
       classIdToStudentCount[classId]++;
     });
 
-    // Add totalStudents and students to each class
+    // Step 11: Add totalStudents and students to each class
     classesWithSchedule.forEach((cls) => {
       cls.totalStudents = classIdToStudentCount[cls.id] || 0;
       cls.students = classIdToStudents[cls.id] || [];

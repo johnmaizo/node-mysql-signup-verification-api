@@ -440,9 +440,7 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
     // Log the first class enrollment for debugging
     console.log(classEnrollments[0].toJSON());
 
-    // Step 10: Post data to the external API if enrollmentType is "on-site"
-
-    
+    // Step 10: Post data to the external API based on enrollmentType
 
     if (applicant.enrollmentType === "on-site") {
       const onlineFullStudentInfoPOST = await axios.post(
@@ -518,7 +516,7 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
               applicant.student_current_academicbackground?.studentType ||
               "Regular",
             semester_entry:
-              applicant.student_current_academicbackground?.semester_id, // Adjust as needed
+              applicant.student_current_academicbackground?.semester_id,
             year_level: applicant.student_current_academicbackground?.yearLevel,
             year_entry:
               applicant.student_current_academicbackground?.yearEntry || 0,
@@ -573,9 +571,23 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
         "Post response (onlineFullStudentInfoPOST):",
         onlineFullStudentInfoPOST.data
       );
+    } else if (applicant.enrollmentType === "online") {
+      // Post data to the external API
+      await axios.post(
+        `${MHAFRIC_API_URL}/api/official-student-data/`,
+        {
+          student_id: student_id,
+          campus: campus.campus_id,
+          password: "", // default pass or can be blank
+          fulldata_applicant_id: applicant.applicant_id_for_online,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
     }
-
-    
 
     // Step 11: Extract the IDs of these enrollments
     const enrollmentIds = classEnrollments.map(
