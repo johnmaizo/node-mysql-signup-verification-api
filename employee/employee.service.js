@@ -3,6 +3,7 @@ const db = require("_helpers/db");
 const Role = require("_helpers/role");
 
 const deepEqual = require("deep-equal");
+const { default: axios } = require("axios");
 
 module.exports = {
   createEmployee,
