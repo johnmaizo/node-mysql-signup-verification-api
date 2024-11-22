@@ -340,7 +340,8 @@ async function getUnenrolledStudents(
       fullName: `${student.firstName} ${student.middleName || ""} ${
         student.lastName
       }`,
-      hasEnlistedSubjects: student.StudentClassEnrollments.length > 0,
+      // hasEnlistedSubjects: student.StudentClassEnrollments.length > 0,
+      hasEnlistedSubjects: student.student_class_enrollments.length > 0,
     }));
 
     return studentsWithEnrollmentStatus;
