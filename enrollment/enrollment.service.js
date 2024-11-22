@@ -340,10 +340,22 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
         console.log("No enlisted classes found for the student.");
         // Commit the transaction and exit since there's nothing to update
         await transaction.commit();
+
+        // **New Code: Call the external API after actions are done**
+        const fetch_enrolled_students = await axios.get(
+          "https://xavgrading-api.onrender.com/external/fetch-enrolled-students"
+        );
+
+        console.log(
+          "fetch_enrolled_students response:",
+          fetch_enrolled_students.data
+        );
+
         return {
           status: "skipped",
           message:
             "Student is already enrolled with no enlisted classes to update.",
+          externalFetchResponse: fetch_enrolled_students.data,
         };
       }
 
@@ -368,10 +380,21 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
       // Commit the transaction after successful updates
       await transaction.commit();
 
+      // **New Code: Call the external API after actions are done**
+      const fetch_enrolled_students = await axios.get(
+        "https://xavgrading-api.onrender.com/external/fetch-enrolled-students"
+      );
+
+      console.log(
+        "fetch_enrolled_students response:",
+        fetch_enrolled_students.data
+      );
+
       // **Optionally, return a status indicating the update was successful**
       return {
         status: "updated",
         message: "Student is already enrolled, class enrollments updated.",
+        externalFetchResponse: fetch_enrolled_students.data,
       };
     }
 
@@ -651,8 +674,22 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
       `Enrollment process completed successfully for student ID ${student_id}.`
     );
 
+    // **New Code: Call the external API after actions are done**
+    const fetch_enrolled_students = await axios.get(
+      "https://xavgrading-api.onrender.com/external/fetch-enrolled-students"
+    );
+
+    console.log(
+      "fetch_enrolled_students response:",
+      fetch_enrolled_students.data
+    );
+
     // **Optionally, return a status indicating success**
-    return {status: "enrolled", student_id};
+    return {
+      status: "enrolled",
+      student_id,
+      externalFetchResponse: fetch_enrolled_students.data,
+    };
   } catch (error) {
     // Rollback the transaction in case of any errors
     await transaction.rollback();
@@ -1014,8 +1051,6 @@ async function enrollOlineApplicantStudent({fulldata_applicant_id}) {
       // Commit transaction
       await transaction.commit();
 
-      
-
       // After successful commit, make the PUT request
       const putUrl = `${MHAFRIC_API_URL}/api/deactivate_or_modify_personal-student-data/${fulldata_applicant_id}/False`;
       const putBody = {
@@ -1032,8 +1067,6 @@ async function enrollOlineApplicantStudent({fulldata_applicant_id}) {
         // Optional: Depending on your requirements, you might want to handle this differently.
         // For example, you could log it, retry, or notify someone.
       }
-
-      
     } catch (error) {
       // Rollback transaction
       await transaction.rollback();

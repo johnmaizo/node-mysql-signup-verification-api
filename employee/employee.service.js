@@ -125,6 +125,33 @@ async function createEmployee(params, accountId) {
     changes: params,
     accountId: accountId,
   });
+
+  // **New Code: Call the external API after actions are done**
+  try {
+    const fetch_employees_response = await axios.get(
+      "https://xavgrading-api.onrender.com/external/fetch-employees"
+    );
+
+    console.log("fetch_employees_response:", fetch_employees_response.data);
+
+    // Optionally, you can return or handle the response as needed
+    return {
+      status: "success",
+      message: "Employee created successfully.",
+      externalFetchResponse: fetch_employees_response.data,
+    };
+  } catch (error) {
+    console.error(
+      "Error fetching employees from external API:",
+      error.response ? error.response.data : error.message
+    );
+    // Depending on your requirements, you can choose to throw an error, return a partial response, or ignore the error
+    throw new Error(
+      `Employee created, but failed to fetch employees from external API: ${
+        error.response ? JSON.stringify(error.response.data) : error.message
+      }`
+    );
+  }
 }
 
 // Common function to handle the transformation
