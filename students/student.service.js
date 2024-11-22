@@ -328,6 +328,8 @@ async function getUnenrolledStudents(
       distinct: true,
     });
 
+    console.log("\n\n\n\n\n\n\n\n\n\nSTUDENTS: ", students)
+
     // Map the students to include enrollment status without individual queries
     studentsWithEnrollmentStatus = students.map((student) => ({
       student_id: student.student_official.student_id,
