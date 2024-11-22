@@ -120,14 +120,21 @@ function addEnrollment(req, res, next) {
 }
 
 function getUnenrolledStudents(req, res, next) {
-  const {campus_id, existing_students, new_unenrolled_students, semester_id} =
-    req.query;
+  const {
+    campus_id,
+    existing_students,
+    new_unenrolled_students,
+    semester_id,
+    enlistment,
+  } = req.query;
+
   studentService
     .getUnenrolledStudents(
       campus_id,
       existing_students,
       new_unenrolled_students,
-      semester_id
+      semester_id,
+      enlistment
     )
     .then((students) => res.json(students))
     .catch(next);

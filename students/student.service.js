@@ -267,7 +267,8 @@ async function getUnenrolledStudents(
   campus_id,
   existing_students,
   new_unenrolled_students,
-  semester_id // New parameter
+  semester_id,
+  enlistment
 ) {
   // Step 1: Get the target semester
   const semesterWhere = {
@@ -429,6 +430,72 @@ async function getUnenrolledStudents(
     );
 
     // Step 2b.5: Map the students as needed
+    studentsWithEnrollmentStatus = students.map((student) => ({
+      id: student.student_personal_id,
+      firstName: student.firstName,
+      lastName: student.lastName,
+      middleName: student.middleName,
+      fullName: `${student.firstName} ${student.middleName || ""} ${
+        student.lastName
+      }`,
+      programCode:
+        student.student_current_academicbackground.program.programCode,
+      yearLevel: student.student_current_academicbackground.yearLevel,
+      enrollmentType: student.enrollmentType,
+      hasEnlistedSubjects: student.student_class_enrollments.length > 0,
+    }));
+
+    return studentsWithEnrollmentStatus;
+  } else if (enlistment) {
+    // Step 2c: Handle students ready for enlistment
+
+    // Fetch students who have an EnrollmentProcess record for the target semester
+    // with registrar_status 'approved' and accounting_status 'upcoming'
+    const students = await db.StudentPersonalData.findAll({
+      where: campus_id ? {campus_id} : {},
+      attributes: [
+        "student_personal_id",
+        "firstName",
+        "lastName",
+        "middleName",
+      ],
+      include: [
+        {
+          model: db.StudentOfficial,
+          attributes: ["student_id"],
+          required: true,
+        },
+        {
+          model: db.EnrollmentProcess,
+          attributes: [
+            "registrar_status",
+            "accounting_status",
+            "final_approval_status",
+          ],
+          required: true,
+          where: {
+            semester_id: targetSemester.semester_id,
+            registrar_status: "approved",
+            accounting_status: "upcoming",
+          },
+        },
+        {
+          model: db.StudentAcademicBackground,
+          attributes: ["yearLevel"],
+          required: true,
+          include: [
+            {
+              model: db.Program,
+              attributes: ["programCode", "programDescription"],
+              required: true,
+            },
+          ],
+        },
+      ],
+      distinct: true,
+    });
+
+    // Map the students to include necessary information
     studentsWithEnrollmentStatus = students.map((student) => ({
       id: student.student_personal_id,
       firstName: student.firstName,
