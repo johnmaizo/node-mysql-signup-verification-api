@@ -450,7 +450,7 @@ async function getUnenrolledStudents(
     // Step 2c: Handle students ready for enlistment
 
     // Fetch students who have an EnrollmentProcess record for the target semester
-    // with registrar_status 'approved' and accounting_status 'upcoming'
+    // with registrar_status 'accepted' and accounting_status 'upcoming'
     const students = await db.StudentPersonalData.findAll({
       where: campus_id ? {campus_id} : {},
       attributes: [
@@ -475,7 +475,7 @@ async function getUnenrolledStudents(
           required: true,
           where: {
             semester_id: targetSemester.semester_id,
-            registrar_status: "approved",
+            registrar_status: "accepted",
             accounting_status: "upcoming",
           },
         },
