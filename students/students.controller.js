@@ -52,7 +52,6 @@ router.get(
 router.get("/get-student-by-id", getStudentById);
 router.get("/get-student-grades", getStudentGrades);
 
-
 router.put(
   "/update-student",
   authorize([
@@ -85,7 +84,7 @@ function getStudentById(req, res, next) {
 }
 
 function getStudentGrades(req, res, next) {
-  const { student_id, campus_id } = req.query;
+  const {student_id, campus_id} = req.query;
   studentService
     .getStudentGrades(student_id, campus_id)
     .then((grades) => res.json(grades))
@@ -121,12 +120,14 @@ function addEnrollment(req, res, next) {
 }
 
 function getUnenrolledStudents(req, res, next) {
-  const {campus_id, existing_students, new_unenrolled_students} = req.query;
+  const {campus_id, existing_students, new_unenrolled_students, semester_id} =
+    req.query;
   studentService
     .getUnenrolledStudents(
       campus_id,
       existing_students,
-      new_unenrolled_students
+      new_unenrolled_students,
+      semester_id
     )
     .then((students) => res.json(students))
     .catch(next);

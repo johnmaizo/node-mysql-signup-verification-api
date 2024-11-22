@@ -266,24 +266,29 @@ async function getStudentGrades(student_id, campus_id) {
 async function getUnenrolledStudents(
   campus_id,
   existing_students,
-  new_unenrolled_students
+  new_unenrolled_students,
+  semester_id // New parameter
 ) {
-  // Step 1: Get active semester
+  // Step 1: Get the target semester
   const semesterWhere = {
-    isActive: true,
     isDeleted: false,
   };
+  if (semester_id) {
+    semesterWhere.semester_id = semester_id;
+  } else {
+    semesterWhere.isActive = true;
+  }
   if (campus_id) {
     semesterWhere.campus_id = campus_id;
   }
 
-  const activeSemester = await db.Semester.findOne({
+  const targetSemester = await db.Semester.findOne({
     where: semesterWhere,
     attributes: ["semester_id"], // Select only needed fields
   });
 
-  if (!activeSemester) {
-    throw new Error("No active semester found.");
+  if (!targetSemester) {
+    throw new Error("No semester found.");
   }
 
   // Initialize an empty array to hold the result
@@ -292,7 +297,7 @@ async function getUnenrolledStudents(
   if (existing_students) {
     // Step 2a: Handle existing_students
 
-    // Fetch existing official students who have not been enrolled in the new semester
+    // Fetch existing official students who have not been enrolled in the target semester
     const students = await db.StudentPersonalData.findAll({
       where: campus_id ? {campus_id} : {},
       attributes: [
@@ -312,23 +317,20 @@ async function getUnenrolledStudents(
           attributes: [], // No need to select fields from here
           required: true,
           where: {
-            semester_id: {[Op.ne]: activeSemester.semester_id},
+            semester_id: {[Op.ne]: targetSemester.semester_id},
           },
         },
         {
           model: db.StudentClassEnrollments,
-          attributes: ["student_class_enrollment_id"], // Use the correct primary key
-          required: false, // Left join to check if any enrollment exists
+          attributes: ["student_class_enrollment_id"],
+          required: false,
           where: {
             status: "enlisted",
           },
         },
       ],
-      // Use raw queries and grouping to optimize
       distinct: true,
     });
-
-    console.log("\n\n\n\n\n\n\n\n\n\nSTUDENTS: ", students)
 
     // Map the students to include enrollment status without individual queries
     studentsWithEnrollmentStatus = students.map((student) => ({
@@ -340,40 +342,41 @@ async function getUnenrolledStudents(
       fullName: `${student.firstName} ${student.middleName || ""} ${
         student.lastName
       }`,
-      // hasEnlistedSubjects: student.StudentClassEnrollments.length > 0,
-      hasEnlistedSubjects: student.student_class_enrollments.length > 0,
+      hasEnlistedSubjects:
+        student.student_class_enrollments &&
+        student.student_class_enrollments.length > 0,
     }));
 
     return studentsWithEnrollmentStatus;
   } else if (new_unenrolled_students) {
     // Step 2b: Handle new_unenrolled_students
 
-    // Step 2b.1: Fetch classes from the external API
+    // Fetch classes from the external API
     let externalClasses;
     try {
       const response = await axios.get(
         `${SCHEDULING_API_URL}/teachers/all-subjects`
       );
-      externalClasses = response.data; // Assuming the API returns an array of class objects
+      externalClasses = response.data;
     } catch (error) {
       console.error("Error fetching classes from external API:", error);
       throw new Error("Failed to fetch classes from the external source.");
     }
 
-    // Step 2b.2: Filter classes based on active semester
+    // Filter classes based on the target semester
     const filteredClasses = externalClasses.filter(
-      (cls) => cls.semester_id === activeSemester.semester_id
+      (cls) => cls.semester_id === targetSemester.semester_id
     );
 
-    // If no classes match the active semester, return empty array
+    // If no classes match the target semester, return empty array
     if (filteredClasses.length === 0) {
       return [];
     }
 
-    // Step 2b.3: Extract class IDs from filtered classes
+    // Extract class IDs from filtered classes
     const filteredClassIds = filteredClasses.map((cls) => cls.id);
 
-    // Step 2b.4: Fetch students who have no StudentOfficial record and have enlisted classes in the active semester
+    // Fetch students who have no StudentOfficial record and have enlisted classes in the target semester
     const students = await db.StudentPersonalData.findAll({
       where: campus_id ? {campus_id} : {},
       attributes: [
@@ -403,7 +406,7 @@ async function getUnenrolledStudents(
         },
         {
           model: db.StudentClassEnrollments,
-          attributes: ["student_class_enrollment_id"], // Use the correct primary key
+          attributes: ["student_class_enrollment_id"],
           required: false,
           where: {
             status: "enlisted",
