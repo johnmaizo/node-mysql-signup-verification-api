@@ -407,7 +407,7 @@ async function getUnenrolledStudents(
         {
           model: db.StudentClassEnrollments,
           attributes: ["student_class_enrollment_id"],
-          required: false,
+          required: true, // Changed to true to ensure students have enlisted classes
           where: {
             status: "enlisted",
             class_id: {[Op.in]: filteredClassIds},
