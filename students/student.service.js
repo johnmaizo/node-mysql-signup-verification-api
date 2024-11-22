@@ -330,7 +330,7 @@ async function getUnenrolledStudents(
 
     // Map the students to include enrollment status without individual queries
     studentsWithEnrollmentStatus = students.map((student) => ({
-      student_id: student.StudentOfficial.student_id,
+      student_id: student.student_official.student_id,
       student_personal_id: student.student_personal_id,
       firstName: student.firstName,
       lastName: student.lastName,
