@@ -1584,6 +1584,7 @@ async function getStudentAcademicBackground(id) {
     isDeleted: studentAcademicBackground.isDeleted,
     createdAt: studentAcademicBackground.createdAt,
     updatedAt: studentAcademicBackground.updatedAt,
+    campus_id: studentAcademicBackground.student_personal_datum.campus_id,
     student_class_enrollments:
       studentAcademicBackground.student_personal_datum
         .student_class_enrollments,

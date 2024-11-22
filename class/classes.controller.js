@@ -8,13 +8,13 @@ const classService = require("./class.service");
 
 router.get(
   "/active",
-  authorize([
-    Role.SuperAdmin,
-    Role.Admin,
-    Role.Registrar,
-    Role.MIS,
-    Role.Accounting,
-  ]),
+  // authorize([
+  //   Role.SuperAdmin,
+  //   Role.Admin,
+  //   Role.Registrar,
+  //   Role.MIS,
+  //   Role.Accounting,
+  // ]),
   getAllClassActive
 );
 
