@@ -127,7 +127,7 @@ function addEnrollment(req, res, next) {
 
 function addEnrollmentExternal(req, res, next) {
   studentService
-    .addEnrollment(req.body, req.user.id, true)
+    .addEnrollment(req.body, null, true)
     .then(() => res.json({message: "Enrollment added successfully."}))
     .catch(next);
 }

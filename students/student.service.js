@@ -17,7 +17,7 @@ module.exports = {
   getStudentPersonalDataById,
 };
 
-async function addEnrollment(params, accountId, external = false) {
+async function addEnrollment(params, accountId = null, external = false) {
   let applicant_id_for_online;
   let student_personal_id;
   let semester_id;
@@ -105,25 +105,27 @@ async function addEnrollment(params, accountId, external = false) {
   await academicBackground.save();
 
   // Log history for academic background update
-  await db.History.create({
-    action: "update",
-    entity: "StudentAcademicBackground",
-    entityId: academicBackground.id,
-    changes: {
-      semester_id,
-      yearLevel: academicBackground.yearLevel,
-    },
-    accountId,
-  });
+  if (accountId) {
+    await db.History.create({
+      action: "update",
+      entity: "StudentAcademicBackground",
+      entityId: academicBackground.id,
+      changes: {
+        semester_id,
+        yearLevel: academicBackground.yearLevel,
+      },
+      accountId,
+    });
 
-  // Log history for new enrollment process
-  await db.History.create({
-    action: "create",
-    entity: "EnrollmentProcess",
-    entityId: newEnrollment.enrollment_id, // Ensure 'enrollment_id' is correct
-    changes: {semester_id},
-    accountId,
-  });
+    // Log history for new enrollment process
+    await db.History.create({
+      action: "create",
+      entity: "EnrollmentProcess",
+      entityId: newEnrollment.enrollment_id, // Ensure 'enrollment_id' is correct
+      changes: {semester_id},
+      accountId,
+    });
+  }
 
   // After successful commit, make the PUT request
   const putUrl = `${MHAFRIC_API_URL}/api/deactivate_or_modify_stdntacademicbackground/${applicant_id_for_online}/False`;
