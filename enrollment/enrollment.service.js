@@ -342,21 +342,21 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
         await transaction.commit();
 
         // **New Code: Call the external API after actions are done**
-        const fetch_enrolled_students = await axios.get(
-          "https://xavgrading-api.onrender.com/external/fetch-enrolled-students"
-        );
+        // const fetch_enrolled_students = await axios.get(
+        //   "https://xavgrading-api.onrender.com/external/fetch-enrolled-students"
+        // );
 
-        console.log(
-          "fetch_enrolled_students response:",
-          fetch_enrolled_students.data
-        );
+        // console.log(
+        //   "fetch_enrolled_students response:",
+        //   fetch_enrolled_students.data
+        // );
 
-        return {
-          status: "skipped",
-          message:
-            "Student is already enrolled with no enlisted classes to update.",
-          externalFetchResponse: fetch_enrolled_students.data,
-        };
+        // return {
+        //   status: "skipped",
+        //   message:
+        //     "Student is already enrolled with no enlisted classes to update.",
+        //   externalFetchResponse: fetch_enrolled_students.data,
+        // };
       }
 
       // Extract the IDs of these enrollments
@@ -381,21 +381,21 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
       await transaction.commit();
 
       // **New Code: Call the external API after actions are done**
-      const fetch_enrolled_students = await axios.get(
-        "https://xavgrading-api.onrender.com/external/fetch-enrolled-students"
-      );
+      // const fetch_enrolled_students = await axios.get(
+      //   "https://xavgrading-api.onrender.com/external/fetch-enrolled-students"
+      // );
 
-      console.log(
-        "fetch_enrolled_students response:",
-        fetch_enrolled_students.data
-      );
+      // console.log(
+      //   "fetch_enrolled_students response:",
+      //   fetch_enrolled_students.data
+      // );
 
-      // **Optionally, return a status indicating the update was successful**
-      return {
-        status: "updated",
-        message: "Student is already enrolled, class enrollments updated.",
-        externalFetchResponse: fetch_enrolled_students.data,
-      };
+      // // **Optionally, return a status indicating the update was successful**
+      // return {
+      //   status: "updated",
+      //   message: "Student is already enrolled, class enrollments updated.",
+      //   externalFetchResponse: fetch_enrolled_students.data,
+      // };
     }
 
     // **Proceed with the enrollment process for students not already enrolled**
@@ -603,7 +603,7 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
     
       // Save the applicant model within the transaction
       await applicant.save({ transaction });
-      
+
     } else if (applicant.enrollmentType === "online") {
       // Post data to the external API
       await axios.post(
@@ -685,21 +685,21 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
     );
 
     // **New Code: Call the external API after actions are done**
-    const fetch_enrolled_students = await axios.get(
-      "https://xavgrading-api.onrender.com/external/fetch-enrolled-students"
-    );
+    // const fetch_enrolled_students = await axios.get(
+    //   "https://xavgrading-api.onrender.com/external/fetch-enrolled-students"
+    // );
 
-    console.log(
-      "fetch_enrolled_students response:",
-      fetch_enrolled_students.data
-    );
+    // console.log(
+    //   "fetch_enrolled_students response:",
+    //   fetch_enrolled_students.data
+    // );
 
-    // **Optionally, return a status indicating success**
-    return {
-      status: "enrolled",
-      student_id,
-      externalFetchResponse: fetch_enrolled_students.data,
-    };
+    // // **Optionally, return a status indicating success**
+    // return {
+    //   status: "enrolled",
+    //   student_id,
+    //   externalFetchResponse: fetch_enrolled_students.data,
+    // };
   } catch (error) {
     // Rollback the transaction in case of any errors
     await transaction.rollback();
