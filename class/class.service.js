@@ -12,6 +12,7 @@ const SCHEDULING_API_URL = process.env.SCHEDULING_API_URL;
 module.exports = {
   getAllClass,
   getTotalStudents,
+  getClassById,
 };
 
 async function getAllClass(
@@ -312,5 +313,174 @@ async function getTotalStudents(
   } catch (error) {
     console.error("Error fetching total students:", error);
     throw new Error("Failed to fetch total students.");
+  }
+}
+
+// **New Function to Get Class by ID**
+async function getClassById(id) {
+  try {
+    // Step 1: Fetch the class from the external API by ID
+    const response = await axios.get(
+      `${SCHEDULING_API_URL}/teachers/schedules/${id}`
+    );
+    const externalClassData = response.data;
+
+    if (!externalClassData || externalClassData.length === 0) {
+      throw new Error(`Class with ID ${id} not found.`);
+    }
+
+    const cls = externalClassData[0]; // Assuming the API returns an array
+
+    // Step 2: Fetch course information along with department and campus details
+    const course = await db.CourseInfo.findOne({
+      where: {
+        course_id: cls.subject_id,
+      },
+      attributes: [
+        "course_id",
+        "campus_id",
+        "courseCode",
+        "courseDescription",
+        "department_id",
+        "unit",
+      ],
+      include: [
+        {
+          model: db.Department,
+          attributes: ["departmentCode", "departmentName"],
+          include: [
+            {
+              model: db.Campus,
+              attributes: ["campusName"],
+            },
+          ],
+        },
+      ],
+    });
+
+    if (!course) {
+      throw new Error(`Course with ID ${cls.subject_id} not found.`);
+    }
+
+    // Step 3: Enrich the class with course and department information
+    cls.campus_id = course.campus_id;
+    cls.courseCode = course.courseCode;
+    cls.courseDescription = course.courseDescription;
+    cls.departmentCode = course.department
+      ? course.department.departmentCode
+      : null;
+    cls.departmentName = course.department
+      ? course.department.departmentName
+      : null;
+    cls.fullDepartmentNameWithCampus =
+      course.department && course.department.campus
+        ? `${course.department.departmentCode} - ${course.department.departmentName} - ${course.department.campus.campusName}`
+        : null;
+    cls.units = course.unit;
+
+    // Step 4: Format the schedule string
+    const startTime = moment.utc(cls.start).local().format("h:mm A");
+    const endTime = moment.utc(cls.end).local().format("h:mm A");
+    const scheduleString = `${cls.day} ${startTime} - ${endTime}`;
+
+    // Step 5: Fetch enrolled students for the class
+    const enrollmentsWithStudents = await db.StudentClassEnrollments.findAll({
+      where: {
+        class_id: cls.id,
+        status: "enrolled",
+      },
+      include: [
+        {
+          model: db.StudentPersonalData,
+          attributes: [
+            "firstName",
+            "middleName",
+            "lastName",
+            "suffix",
+            "gender",
+          ],
+          include: [
+            {
+              model: db.StudentOfficial,
+              attributes: ["student_id"],
+            },
+            {
+              model: db.StudentAcademicBackground,
+              // as: "student_current_academicbackground",
+              attributes: ["yearLevel"],
+              include: [
+                {
+                  model: db.Program,
+                  attributes: ["programCode"],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    // Step 6: Prepare the list of enrolled students with additional details
+    const students = enrollmentsWithStudents.map((enrollment) => {
+      const studentData = enrollment.student_personal_datum;
+
+      const studentOfficial = studentData.student_official;
+
+      const fullName = `${studentData.firstName} ${
+        studentData.middleName ? studentData.middleName + " " : ""
+      }${studentData.lastName}${
+        studentData.suffix ? ", " + studentData.suffix : ""
+      }`;
+
+      const gender = studentData.gender;
+
+      // Get academic background details
+      const academicBackground = studentData.student_current_academicbackground;
+      const programCode = academicBackground
+        ? academicBackground.program.programCode
+        : null;
+      const yearLevel = academicBackground
+        ? academicBackground.yearLevel
+        : null;
+
+      return {
+        student_id: studentOfficial.student_id,
+        name: fullName,
+        gender: gender,
+        program: programCode,
+        yearLevel: yearLevel,
+      };
+    });
+
+    // Step 7: Build the final class data object
+    const classData = {
+      id: cls.id,
+      teacher_id: cls.teacher_id,
+      subject_id: cls.subject_id,
+      subject_code: cls.courseCode,
+      subject: cls.courseDescription,
+      semester: cls.semester,
+      semester_id: cls.semester_id,
+      school_year: cls.school_year,
+      teacher: cls.teacher,
+      units: cls.units,
+      room: cls.room,
+      campus_id: cls.campus_id,
+      departmentCode: cls.departmentCode,
+      departmentName: cls.departmentName,
+      fullDepartmentNameWithCampus: cls.fullDepartmentNameWithCampus,
+      schedule: scheduleString,
+      totalStudents: students.length,
+      students: students,
+    };
+
+    return classData;
+  } catch (error) {
+    console.error("Error fetching class by ID:", error.message);
+    throw new Error(
+      error.response && error.response.status === 404
+        ? `Class with ID ${id} not found.`
+        : "Failed to fetch class from the external source."
+    );
   }
 }

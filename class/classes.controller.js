@@ -8,19 +8,22 @@ const classService = require("./class.service");
 
 router.get(
   "/active",
-  // authorize([
-  //   Role.SuperAdmin,
-  //   Role.Admin,
-  //   Role.Registrar,
-  //   Role.MIS,
-  //   Role.Accounting,
-  // ]),
+  authorize([
+    Role.SuperAdmin,
+    Role.Admin,
+    Role.Registrar,
+    Role.MIS,
+    Role.Accounting,
+  ]),
   getAllClassActive
 );
 
 router.get("/external/active", getAllClassActive);
 
 router.get("/external/total-students", getTotalStudents);
+
+// **New Route for Getting Class by ID**
+router.get("/:id", getClassById);
 
 module.exports = router;
 
@@ -39,5 +42,15 @@ function getTotalStudents(req, res, next) {
   classService
     .getTotalStudents(campus_id, schoolYear, semester_id)
     .then((total) => res.json({totalStudents: total}))
+    .catch(next);
+}
+
+// **New Function for Handling the Class by ID Request**
+function getClassById(req, res, next) {
+  const {id} = req.params;
+
+  classService
+    .getClassById(id)
+    .then((classData) => res.json(classData))
     .catch(next);
 }
