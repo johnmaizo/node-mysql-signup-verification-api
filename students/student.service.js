@@ -1,9 +1,11 @@
+require("dotenv").config();
 const {Op} = require("sequelize");
 const db = require("_helpers/db");
 const Role = require("_helpers/role");
 const {default: axios} = require("axios");
 
 const SCHEDULING_API_URL = process.env.SCHEDULING_API_URL;
+const MHAFRIC_API_URL = process.env.MHAFRIC_API;
 
 module.exports = {
   addEnrollment,
@@ -15,29 +17,55 @@ module.exports = {
   getStudentPersonalDataById,
 };
 
-async function addEnrollment(params, accountId) {
-  const {student_personal_id, semester_id} = params;
+async function addEnrollment(params, accountId, external = false) {
+  let applicant_id_for_online;
+  let student_personal_id;
+  let semester_id;
 
-  // Check if the student exists
-  const student = await db.StudentPersonalData.findByPk(student_personal_id);
-  if (!student) {
-    throw new Error("Student not found.");
+  if (external) {
+    const {fulldata_applicant_id, semester_id: ext_semester_id} = params;
+
+    applicant_id_for_online = fulldata_applicant_id;
+
+    // Find the student using fulldata_applicant_id
+    const student = await db.StudentPersonalData.findOne({
+      where: {applicant_id_for_online: fulldata_applicant_id},
+    });
+
+    if (!student) {
+      throw new Error("External student not found.");
+    }
+
+    student_personal_id = student.student_personal_id;
+    semester_id = ext_semester_id;
+  } else {
+    const {student_personal_id: int_student_id, semester_id: int_semester_id} =
+      params;
+
+    // Check if the internal student exists
+    const student = await db.StudentPersonalData.findByPk(int_student_id);
+    if (!student) {
+      throw new Error("Internal student not found.");
+    }
+
+    student_personal_id = int_student_id;
+    semester_id = int_semester_id;
   }
 
-  // Check if an EnrollmentProcess already exists for this student and semester
-  const existingEnrollmentProcess = await db.EnrollmentProcess.findOne({
+  // Check for existing enrollment
+  const existingEnrollment = await db.EnrollmentProcess.findOne({
     where: {
       student_personal_id,
       semester_id,
     },
   });
 
-  if (existingEnrollmentProcess) {
+  if (existingEnrollment) {
     throw new Error("Enrollment already exists for this student and semester.");
   }
 
   // Create a new EnrollmentProcess record
-  const newEnrollmentProcess = await db.EnrollmentProcess.create({
+  const newEnrollment = await db.EnrollmentProcess.create({
     student_personal_id,
     semester_id,
     registrar_status: "accepted", // Initial status
@@ -47,7 +75,7 @@ async function addEnrollment(params, accountId) {
     final_approval_status: false,
   });
 
-  // Get the student's academic background
+  // Fetch and update academic background
   const academicBackground = await db.StudentAcademicBackground.findOne({
     where: {student_personal_id},
   });
@@ -56,30 +84,27 @@ async function addEnrollment(params, accountId) {
     throw new Error("Student academic background not found.");
   }
 
-  // Define the sequence of year levels
+  // Define year levels progression
   const yearLevels = ["First Year", "Second Year", "Third Year", "Fourth Year"];
 
-  // Find the index of the current year level
   let currentLevelIndex = yearLevels.indexOf(academicBackground.yearLevel);
 
   if (currentLevelIndex === -1) {
     throw new Error(`Invalid yearLevel: ${academicBackground.yearLevel}`);
   }
 
-  // Advance to the next year level if not already at the last level
+  // Advance to the next year level or mark as Graduated
   if (currentLevelIndex < yearLevels.length - 1) {
     academicBackground.yearLevel = yearLevels[currentLevelIndex + 1];
   } else {
-    // Optional: Handle the case where the student is already in the Fourth Year
-    // For example, keep the yearLevel as "Fourth Year" or handle graduation
     academicBackground.yearLevel = "Graduated";
   }
 
-  // Update the academic background's semester_id
+  // Update semester_id
   academicBackground.semester_id = semester_id;
   await academicBackground.save();
 
-  // Log the action
+  // Log history for academic background update
   await db.History.create({
     action: "update",
     entity: "StudentAcademicBackground",
@@ -91,14 +116,31 @@ async function addEnrollment(params, accountId) {
     accountId,
   });
 
-  // Log the creation of the new enrollment process
+  // Log history for new enrollment process
   await db.History.create({
     action: "create",
     entity: "EnrollmentProcess",
-    entityId: newEnrollmentProcess.enrollment_id,
+    entityId: newEnrollment.enrollment_id, // Ensure 'enrollment_id' is correct
     changes: {semester_id},
     accountId,
   });
+
+  // After successful commit, make the PUT request
+  const putUrl = `${MHAFRIC_API_URL}/api/deactivate_or_modify_stdntacademicbackground/${applicant_id_for_online}/False`;
+  const putBody = {
+    semester_entry: semester_id,
+  };
+
+  try {
+    const putResponse = await axios.put(putUrl, putBody);
+    console.log(
+      `PUT request successful: ${putResponse.status} ${putResponse.statusText}`
+    );
+  } catch (putError) {
+    console.error("Error in PUT request:", putError.message);
+    // Optional: Depending on your requirements, you might want to handle this differently.
+    // For example, you could log it, retry, or notify someone.
+  }
 
   return;
 }
@@ -295,7 +337,6 @@ async function getUnenrolledStudents(
   // Initialize an empty array to hold the result
   let studentsWithEnrollmentStatus = [];
 
-
   // Fetch classes from the external API
   let externalClasses;
   try {
@@ -320,8 +361,6 @@ async function getUnenrolledStudents(
 
   // Extract class IDs from filtered classes
   const filteredClassIds = filteredClasses.map((cls) => cls.id);
-
-
 
   if (existing_students) {
     // Step 2a: Handle existing_students

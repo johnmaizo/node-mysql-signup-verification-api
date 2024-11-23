@@ -594,6 +594,16 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
         "Post response (onlineFullStudentInfoPOST):",
         onlineFullStudentInfoPOST.data
       );
+    
+      // Retrieve the fulldata_applicant_id from the response
+      const fulldata_applicant_id = onlineFullStudentInfoPOST.data.fulldata_applicant_id;
+    
+      // Update the applicant's applicant_id_for_online field
+      applicant.applicant_id_for_online = fulldata_applicant_id;
+    
+      // Save the applicant model within the transaction
+      await applicant.save({ transaction });
+      
     } else if (applicant.enrollmentType === "online") {
       // Post data to the external API
       await axios.post(

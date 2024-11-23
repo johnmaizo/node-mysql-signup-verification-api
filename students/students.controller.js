@@ -19,6 +19,12 @@ router.post(
   addEnrollment
 );
 
+router.post(
+  "/external/add-enrollment",
+  addEnrollmentSchemaExternal,
+  addEnrollmentExternal
+);
+
 router.get(
   "/official/:student_personal_id",
   authorize([
@@ -114,7 +120,14 @@ function updateStudentInformation(req, res, next) {
 
 function addEnrollment(req, res, next) {
   studentService
-    .addEnrollment(req.body, req.user.id)
+    .addEnrollment(req.body, req.user.id, false)
+    .then(() => res.json({message: "Enrollment added successfully."}))
+    .catch(next);
+}
+
+function addEnrollmentExternal(req, res, next) {
+  studentService
+    .addEnrollment(req.body, req.user.id, true)
     .then(() => res.json({message: "Enrollment added successfully."}))
     .catch(next);
 }
@@ -145,6 +158,14 @@ function getUnenrolledStudents(req, res, next) {
 function addEnrollmentSchema(req, res, next) {
   const schema = Joi.object({
     student_personal_id: Joi.number().required(),
+    semester_id: Joi.number().required(),
+  });
+  validateRequest(req, next, schema);
+}
+
+function addEnrollmentSchemaExternal(req, res, next) {
+  const schema = Joi.object({
+    fulldata_applicant_id: Joi.number().required(),
     semester_id: Joi.number().required(),
   });
   validateRequest(req, next, schema);
