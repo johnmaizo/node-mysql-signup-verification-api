@@ -223,15 +223,11 @@ function create(req, res, next) {
 function updateSchema(req, res, next) {
     const roles = req.body.role;
 
-    const requirePassword = Array.isArray(roles)
-        ? roles.some(role => [Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS, Role.Accounting].includes(role))
-        : [Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS, Role.Accounting].includes(roles);
-
     const schemaRules = {
         employee_id: Joi.number().empty(''),
         email: Joi.string().email().empty(''),
-        password: requirePassword ? Joi.string().min(6).empty('') : Joi.any().strip(),
-        confirmPassword: requirePassword ? Joi.string().valid(Joi.ref('password')).empty('') : Joi.any().strip(),
+        password: Joi.string().min(8).empty(''),
+        confirmPassword: Joi.string().valid(Joi.ref('password')).empty('')
     };
 
     const schema = Joi.object(schemaRules).with('password', 'confirmPassword');
