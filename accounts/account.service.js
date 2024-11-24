@@ -374,9 +374,8 @@ async function create(params, accountId) {
 }
 
 async function update(id, params) {
-  
-  console.log("\n\n\n\n\nparams: ", params)
-  
+  console.log("\n\n\n\n\nparams: ", params);
+
   const account = await db.Account.findByPk(id);
 
   // Ensure employee_id is provided
@@ -399,9 +398,9 @@ async function update(id, params) {
     throw `Email "${params.email}" is already taken.`;
   }
 
-  console.log("\n\n\n\n\nparams: ", params)
-  console.log("\n\n\n\n\nparams PASSWORD: ", params.password)
-  console.log("\n\n\n\n\nparams account.employee_id: ", account.employee_id)
+  console.log("\n\n\n\n\nparams: ", params);
+  console.log("\n\n\n\n\nparams PASSWORD: ", params.password);
+  console.log("\n\n\n\n\nparams account.employee_id: ", account.employee_id);
 
   // Hash password if it was entered
   if (params.password) {
@@ -422,8 +421,8 @@ async function update(id, params) {
 
   // return basicDetails(account, campus, employee);
   return {
-    message: "Account Updated Successfully!"
-  }
+    message: "Account Updated Successfully!",
+  };
 }
 
 async function _delete(id) {
