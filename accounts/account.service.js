@@ -378,6 +378,10 @@ async function update(id, params) {
 
   const account = await db.Account.findByPk(id);
 
+  if (!account) {
+    throw new Error("Account not found.");
+  }
+
   // Ensure employee_id is provided
   if (!account.employee_id) {
     throw new Error("Employee ID is required.");
@@ -395,31 +399,25 @@ async function update(id, params) {
     account.email !== params.email &&
     (await db.Account.findOne({where: {email: params.email}}))
   ) {
-    throw `Email "${params.email}" is already taken.`;
+    throw new Error(`Email "${params.email}" is already taken.`);
   }
-
-  console.log("\n\n\n\n\nparams: ", params);
-  console.log("\n\n\n\n\nparams PASSWORD: ", params.password);
-  console.log("\n\n\n\n\nparams account.employee_id: ", account.employee_id);
 
   // Hash password if it was entered
   if (params.password) {
     params.passwordHash = await hash(params.password);
+    delete params.password;
+    delete params.confirmPassword;
   }
+
+  // Exclude primary key fields from params
+  delete params.id;
+  delete params.employee_id;
 
   // Copy params to account and save
   Object.assign(account, params);
   account.updated = Date.now();
   await account.save();
 
-  // Retrieve campus info from the employee record
-  // const campus = employee.campus_id
-  //   ? await db.Campus.findByPk(employee.campus_id, {
-  //       attributes: ["campusName", "campus_id"],
-  //     })
-  //   : null;
-
-  // return basicDetails(account, campus, employee);
   return {
     message: "Account Updated Successfully!",
   };
