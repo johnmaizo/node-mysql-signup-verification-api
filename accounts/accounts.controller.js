@@ -223,10 +223,9 @@ function create(req, res, next) {
 function updateSchema(req, res, next) {
     const roles = req.body.role;
 
-    // Check if roles include SuperAdmin, Admin, or Registrar
     const requirePassword = Array.isArray(roles)
-        ? roles.some(role => [Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS].includes(role))
-        : [Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS].includes(roles);
+        ? roles.some(role => [Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS, Role.Accounting].includes(role))
+        : [Role.SuperAdmin, Role.Admin, Role.Registrar, Role.DataCenter, Role.MIS, Role.Accounting].includes(roles);
 
     const schemaRules = {
         employee_id: Joi.number().empty(''),
