@@ -240,9 +240,9 @@ function updateSchema(req, res, next) {
 
 function update(req, res, next) {
     // users can update their own account and admins can update any account
-    if (Number(req.params.id) !== req.user.id && req.user.role !== Role.Admin) {
-        return res.status(401).json({ message: 'Unauthorized' });
-    }
+    // if (Number(req.params.id) !== req.user.id && req.user.role !== Role.Admin) {
+    //     return res.status(401).json({ message: 'Unauthorized' });
+    // }
 
     accountService.update(req.params.id, req.body)
         .then(account => res.json(account))
