@@ -314,57 +314,60 @@ async function getUnenrolledStudents(
   semester_id,
   enlistment
 ) {
-  // Step 1: Get the target semester (for new_unenrolled_students and enlistment)
-  let targetSemester = null;
+  // Step 1: Get the target semester
+  const semesterWhere = {
+    isDeleted: false,
+  };
   if (semester_id) {
-    const semesterWhere = {
-      isDeleted: false,
-      semester_id,
-    };
-    if (campus_id) {
-      semesterWhere.campus_id = campus_id;
-    }
+    semesterWhere.semester_id = semester_id;
+  } else {
+    semesterWhere.isActive = true;
+  }
+  if (campus_id) {
+    semesterWhere.campus_id = campus_id;
+  }
 
-    targetSemester = await db.Semester.findOne({
-      where: semesterWhere,
-      attributes: ["semester_id"], // Select only needed fields
-    });
+  const targetSemester = await db.Semester.findOne({
+    where: semesterWhere,
+    attributes: ["semester_id"], // Select only needed fields
+  });
 
-    if (!targetSemester) {
-      throw new Error("No semester found.");
-    }
+  if (!targetSemester) {
+    throw new Error("No semester found.");
   }
 
   // Initialize an empty array to hold the result
   let studentsWithEnrollmentStatus = [];
 
-  // Fetch classes from the external API (only if targetSemester is defined)
-  let filteredClassIds = [];
-  if (targetSemester) {
-    let externalClasses;
-    try {
-      const response = await axios.get(
-        `${SCHEDULING_API_URL}/teachers/all-subjects`
-      );
-      externalClasses = response.data;
-    } catch (error) {
-      console.error("Error fetching classes from external API:", error);
-      throw new Error("Failed to fetch classes from the external source.");
-    }
-
-    // Filter classes based on the target semester
-    const filteredClasses = externalClasses.filter(
-      (cls) => cls.semester_id === targetSemester.semester_id
+  // Fetch classes from the external API
+  let externalClasses;
+  try {
+    const response = await axios.get(
+      `${SCHEDULING_API_URL}/teachers/all-subjects`
     );
-
-    // Extract class IDs from filtered classes
-    filteredClassIds = filteredClasses.map((cls) => cls.id);
+    externalClasses = response.data;
+  } catch (error) {
+    console.error("Error fetching classes from external API:", error);
+    throw new Error("Failed to fetch classes from the external source.");
   }
+
+  // Filter classes based on the target semester
+  const filteredClasses = externalClasses.filter(
+    (cls) => cls.semester_id === targetSemester.semester_id
+  );
+
+  // If no classes match the target semester, return empty array
+  if (filteredClasses.length === 0) {
+    return [];
+  }
+
+  // Extract class IDs from filtered classes
+  const filteredClassIds = filteredClasses.map((cls) => cls.id);
 
   if (existing_students) {
     // Step 2a: Handle existing_students
 
-    // Fetch existing official students who have not been enrolled in any semester
+    // Fetch existing official students who have not been enrolled in the target semester
     const students = await db.StudentPersonalData.findAll({
       where: campus_id ? {campus_id} : {},
       attributes: [
@@ -384,7 +387,7 @@ async function getUnenrolledStudents(
           attributes: [], // No need to select fields from here
           required: true,
           where: {
-            semester_id: null, // Students not enrolled in any semester
+            semester_id: {[Op.ne]: targetSemester.semester_id},
           },
         },
         {
