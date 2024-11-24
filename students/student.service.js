@@ -131,7 +131,6 @@ async function addEnrollment(params, accountId = null, external = false) {
   const putUrl = `${MHAFRIC_API_URL}/api/deactivate_or_modify_stdntacademicbackground/${applicant_id_for_online}/False`;
   const putBody = {
     semester_entry: semester_id,
-    year_level: academicBackground.yearLevel,
   };
 
   try {

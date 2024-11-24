@@ -20,9 +20,16 @@ function model(sequelize) {
     },
 
     semesterName: { 
-      type: DataTypes.STRING(20), 
-      allowNull: false 
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      validate: {
+        isIn: {
+          args: [['1st Semester', '2nd Semester', 'Summer']],
+          msg: 'semesterName must be one of "1st Semester", "2nd Semester", or "Summer".',
+        },
+      },
     },
+
     schoolYear: { 
       type: DataTypes.STRING(9), 
       allowNull: false,
