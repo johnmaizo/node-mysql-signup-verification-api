@@ -40,6 +40,11 @@ router.post(
   enrollOnlineApplicantStudentSchema,
   enrollOlineApplicantStudent
 );
+router.post(
+  "/reject-online-applicant-student",
+  enrollOnlineApplicantStudentSchema,
+  rejectEnrollOlineApplicantStudent
+);
 router.get(
   "/get-enlisted-classes/:student_personal_id",
   authorize([
@@ -243,6 +248,15 @@ function enrollOlineApplicantStudent(req, res, next) {
     .enrollOlineApplicantStudent(req.body)
     .then(() =>
       res.json({message: "Enrollment accepted and data saved successfully."})
+    )
+    .catch(next);
+}
+
+function rejectEnrollOlineApplicantStudent(req, res, next) {
+  enrollmentService
+    .rejectEnrollOlineApplicantStudent(req.body)
+    .then(() =>
+      res.json({message: "Enrollment Rejected successfully!"})
     )
     .catch(next);
 }

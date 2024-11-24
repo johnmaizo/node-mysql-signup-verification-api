@@ -29,6 +29,7 @@ module.exports = {
   // deleteStudent,
 
   enrollOlineApplicantStudent,
+  rejectEnrollOlineApplicantStudent,
   getApplicantDataById,
   getAllOnlineApplicant,
 
@@ -594,16 +595,16 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
         "Post response (onlineFullStudentInfoPOST):",
         onlineFullStudentInfoPOST.data
       );
-    
+
       // Retrieve the fulldata_applicant_id from the response
-      const fulldata_applicant_id = onlineFullStudentInfoPOST.data.fulldata_applicant_id;
-    
+      const fulldata_applicant_id =
+        onlineFullStudentInfoPOST.data.fulldata_applicant_id;
+
       // Update the applicant's applicant_id_for_online field
       applicant.applicant_id_for_online = fulldata_applicant_id;
-    
-      // Save the applicant model within the transaction
-      await applicant.save({ transaction });
 
+      // Save the applicant model within the transaction
+      await applicant.save({transaction});
     } else if (applicant.enrollmentType === "online") {
       // Post data to the external API
       await axios.post(
@@ -1088,6 +1089,30 @@ async function enrollOlineApplicantStudent({fulldata_applicant_id}) {
   }
 }
 
+async function rejectEnrollOlineApplicantStudent({fulldata_applicant_id}) {
+  console.log("\n\n\nFULLDATA_applicant_id: ", fulldata_applicant_id);
+  try {
+    // Make the PUT request
+    const putUrl = `${MHAFRIC_API_URL}/api/deactivate_or_modify_personal-student-data/${fulldata_applicant_id}/False`;
+    const putBody = {
+      status: "rejected",
+    };
+
+    try {
+      const putResponse = await axios.put(putUrl, putBody);
+      console.log(
+        `PUT request successful: ${putResponse.status} ${putResponse.statusText}`
+      );
+    } catch (putError) {
+      console.error("Error in PUT request:", putError.message);
+      // Optional: Depending on your requirements, you might want to handle this differently.
+      // For example, you could log it, retry, or notify someone.
+    }
+  } catch (error) {
+    console.error("Error in enrollOlineApplicantStudent:", error.message);
+    throw error;
+  }
+}
 async function getApplicantDataById(fulldata_applicant_id) {
   try {
     // Fetch data from external API
