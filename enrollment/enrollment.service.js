@@ -2500,14 +2500,14 @@ async function getAllEnrolledClasses(semester_id) {
 
       // Handle qualifications, parse the string into an array if needed
       let qualificationsArray = [];
-      if (typeof instructor.qualifications === "string") {
+      if (instructor && typeof instructor.qualifications === "string") {
         try {
           qualificationsArray = JSON.parse(instructor.qualifications);
         } catch (error) {
           console.error("Error parsing qualifications:", error);
           qualificationsArray = []; // Handle the error by returning an empty array
         }
-      } else if (Array.isArray(instructor.qualifications)) {
+      } else if (instructor && Array.isArray(instructor.qualifications)) {
         qualificationsArray = instructor.qualifications;
       }
 
