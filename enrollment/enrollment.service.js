@@ -264,9 +264,11 @@ async function submitEnlistment(params, options = {}) {
 }
 
 async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
-  const transaction = await db.sequelize.transaction();
-
+  let transaction;
+  
   try {
+    transaction = await db.sequelize.transaction();
+
     // Step 1: Fetch the applicant data along with necessary associations
     const applicant = await db.StudentPersonalData.findOne({
       where: {student_personal_id},
@@ -343,21 +345,31 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
         await transaction.commit();
 
         // **New Code: Call the external API after actions are done**
-        const fetch_enrolled_students = await axios.get(
-          "https://xavgrading-api.onrender.com/external/fetch-enrolled-students"
-        );
+        try {
+          const fetch_enrolled_students = await axios.get(
+            "https://xavgrading-api.onrender.com/external/fetch-enrolled-students"
+          );
 
-        console.log(
-          "fetch_enrolled_students response:",
-          fetch_enrolled_students.data
-        );
+          console.log(
+            "fetch_enrolled_students response:",
+            fetch_enrolled_students.data
+          );
 
-        return {
-          status: "skipped",
-          message:
-            "Student is already enrolled with no enlisted classes to update.",
-          externalFetchResponse: fetch_enrolled_students.data,
-        };
+          return {
+            status: "skipped",
+            message:
+              "Student is already enrolled with no enlisted classes to update.",
+            externalFetchResponse: fetch_enrolled_students.data,
+          };
+        } catch (apiError) {
+          console.error("Error fetching enrolled students:", apiError);
+          return {
+            status: "skipped",
+            message:
+              "Student is already enrolled with no enlisted classes to update.",
+            externalFetchError: apiError.message,
+          };
+        }
       }
 
       // Extract the IDs of these enrollments
@@ -382,21 +394,30 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
       await transaction.commit();
 
       // **New Code: Call the external API after actions are done**
-      const fetch_enrolled_students = await axios.get(
-        "https://xavgrading-api.onrender.com/external/fetch-enrolled-students"
-      );
+      try {
+        const fetch_enrolled_students = await axios.get(
+          "https://xavgrading-api.onrender.com/external/fetch-enrolled-students"
+        );
 
-      console.log(
-        "fetch_enrolled_students response:",
-        fetch_enrolled_students.data
-      );
+        console.log(
+          "fetch_enrolled_students response:",
+          fetch_enrolled_students.data
+        );
 
-      // **Optionally, return a status indicating the update was successful**
-      return {
-        status: "updated",
-        message: "Student is already enrolled, class enrollments updated.",
-        externalFetchResponse: fetch_enrolled_students.data,
-      };
+        return {
+          status: "updated",
+          message: "Student is already enrolled, class enrollments updated.",
+          externalFetchResponse: fetch_enrolled_students.data,
+        };
+      } catch (apiError) {
+        console.error("Error fetching enrolled students:", apiError);
+
+        return {
+          status: "updated",
+          message: "Student is already enrolled, class enrollments updated.",
+          externalFetchError: apiError.message,
+        };
+      }
     }
 
     // **Proceed with the enrollment process for students not already enrolled**
@@ -684,8 +705,27 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
     console.log(
       `Enrollment process completed successfully for student ID ${student_id}.`
     );
+  } catch (error) {
+    if (transaction) {
+      try {
+        await transaction.rollback();
+      } catch (rollbackError) {
+        console.error("Error rolling back transaction:", rollbackError);
+      }
+    }
+    console.error(
+      "Error in enrollOlineApplicantStudentMockUpOnsite:",
+      error.response ? error.response.data : error.message
+    );
+    throw new Error(
+      `Enrollment failed: ${
+        error.response ? JSON.stringify(error.response.data) : error.message
+      }`
+    );
+  }
 
-    // **New Code: Call the external API after actions are done**
+  // **New Code: Call the external API after actions are done**
+  try {
     const fetch_enrolled_students = await axios.get(
       "https://xavgrading-api.onrender.com/external/fetch-enrolled-students"
     );
@@ -701,18 +741,14 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
       student_id,
       externalFetchResponse: fetch_enrolled_students.data,
     };
-  } catch (error) {
-    // Rollback the transaction in case of any errors
-    await transaction.rollback();
-    console.error(
-      "Error in enrollOlineApplicantStudentMockUpOnsite:",
-      error.response ? error.response.data : error.message
-    );
-    throw new Error(
-      `Enrollment failed: ${
-        error.response ? JSON.stringify(error.response.data) : error.message
-      }`
-    );
+  } catch (apiError) {
+    console.error("Error fetching enrolled students:", apiError);
+
+    return {
+      status: "enrolled",
+      student_id,
+      externalFetchError: apiError.message,
+    };
   }
 }
 
