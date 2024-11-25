@@ -18,7 +18,7 @@ const allowedOrigins = [
   "https://misbenedictocollege.netlify.app", // Production frontend
   "http://localhost:5173", // Development frontend
   "http://localhost:3000",
-  "https://nextportal-yaxo.vercel.app/",
+  "https://benedicto-student-portal.vercel.app/",
 ];
 
 app.use(
