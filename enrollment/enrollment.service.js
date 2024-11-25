@@ -265,7 +265,6 @@ async function submitEnlistment(params, options = {}) {
 
 async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
   let transaction;
-  
   try {
     transaction = await db.sequelize.transaction();
 
@@ -705,8 +704,34 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
     console.log(
       `Enrollment process completed successfully for student ID ${student_id}.`
     );
+
+    // **New Code: Call the external API after actions are done**
+    try {
+      const fetch_enrolled_students = await axios.get(
+        "https://xavgrading-api.onrender.com/external/fetch-enrolled-students"
+      );
+
+      console.log(
+        "fetch_enrolled_students response:",
+        fetch_enrolled_students.data
+      );
+
+      return {
+        status: "enrolled",
+        student_id,
+        externalFetchResponse: fetch_enrolled_students.data,
+      };
+    } catch (apiError) {
+      console.error("Error fetching enrolled students:", apiError);
+
+      return {
+        status: "enrolled",
+        student_id,
+        externalFetchError: apiError.message,
+      };
+    }
   } catch (error) {
-    if (transaction) {
+    if (transaction && !transaction.finished) {
       try {
         await transaction.rollback();
       } catch (rollbackError) {
@@ -722,33 +747,6 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
         error.response ? JSON.stringify(error.response.data) : error.message
       }`
     );
-  }
-
-  // **New Code: Call the external API after actions are done**
-  try {
-    const fetch_enrolled_students = await axios.get(
-      "https://xavgrading-api.onrender.com/external/fetch-enrolled-students"
-    );
-
-    console.log(
-      "fetch_enrolled_students response:",
-      fetch_enrolled_students.data
-    );
-
-    // **Optionally, return a status indicating success**
-    return {
-      status: "enrolled",
-      student_id,
-      externalFetchResponse: fetch_enrolled_students.data,
-    };
-  } catch (apiError) {
-    console.error("Error fetching enrolled students:", apiError);
-
-    return {
-      status: "enrolled",
-      student_id,
-      externalFetchError: apiError.message,
-    };
   }
 }
 
