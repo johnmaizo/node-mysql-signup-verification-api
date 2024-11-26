@@ -1281,7 +1281,7 @@ async function getAllOnlineApplicant(campus_id = null) {
 }
 
 // ! For Student
-async function getAllStudentsOfficial(campusName = null) {
+async function getAllStudentsOfficial(campusName = null, schoolYear = null, semester_id = null) {
   let campus;
 
   if (campusName) {
@@ -1308,7 +1308,10 @@ async function getAllStudentsOfficial(campusName = null) {
         include: [
           {
             model: db.StudentAcademicBackground,
-
+            where: {
+              // ...(schoolYear ? { yearEntry: schoolYear } : {}),
+              ...(semester_id ? { semester_id } : {}),
+            },
             include: [
               {
                 model: db.Program,
@@ -1333,6 +1336,7 @@ async function getAllStudentsOfficial(campusName = null) {
               "yearEntry",
               "yearLevel",
               "yearGraduate",
+              "semester_id",
             ],
           },
         ],
@@ -1499,7 +1503,7 @@ function generateColor(baseColor) {
     .slice(1)}`.toUpperCase();
 }
 
-async function getChartData(campusName = null) {
+async function getChartData(campusName = null, schoolYear = null, semester_id = null) {
   let campus;
 
   if (campusName) {
@@ -1545,7 +1549,7 @@ async function getChartData(campusName = null) {
   }
 
   // Fetch students with departments using the updated helper function
-  const students = await getAllStudentsOfficial(campusName);
+  const students = await getAllStudentsOfficial(campusName, schoolYear, semester_id);
 
   console.log(`Total students after mapping: ${students.length}`);
 

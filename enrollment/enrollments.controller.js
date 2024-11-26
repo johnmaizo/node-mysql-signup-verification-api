@@ -293,10 +293,10 @@ function getAllStudentOfficialCount(req, res, next) {
 }
 
 function getChartData(req, res, next) {
-  const {campusName} = req.query;
+  const { campusName, schoolYear, semester_id } = req.query;
 
   enrollmentService
-    .getChartData(campusName)
+    .getChartData(campusName, schoolYear, semester_id)
     .then((count) => res.json(count))
     .catch(next);
 }
