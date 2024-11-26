@@ -1281,7 +1281,11 @@ async function getAllOnlineApplicant(campus_id = null) {
 }
 
 // ! For Student
-async function getAllStudentsOfficial(campusName = null, schoolYear = null, semester_id = null) {
+async function getAllStudentsOfficial(
+  campusName = null,
+  schoolYear = null,
+  semester_id = null
+) {
   let campus;
 
   if (campusName) {
@@ -1310,7 +1314,7 @@ async function getAllStudentsOfficial(campusName = null, schoolYear = null, seme
             model: db.StudentAcademicBackground,
             where: {
               // ...(schoolYear ? { yearEntry: schoolYear } : {}),
-              ...(semester_id ? { semester_id } : {}),
+              ...(semester_id ? {semester_id} : {}),
             },
             include: [
               {
@@ -1413,7 +1417,8 @@ async function getAllStudentsOfficial(campusName = null, schoolYear = null, seme
     );
 
     // Extract the personal data fields
-    const {firstName, middleName, lastName, email, gender} = studentPersonalData;
+    const {firstName, middleName, lastName, email, gender} =
+      studentPersonalData;
 
     studentsWithDepartment.push({
       ...student.toJSON(),
@@ -1451,7 +1456,7 @@ async function getAllStudentOfficialCount(
 
   if (campusName) {
     campus = await db.Campus.findOne({
-      where: { campusName },
+      where: {campusName},
     });
 
     if (!campus) {
@@ -1461,9 +1466,8 @@ async function getAllStudentOfficialCount(
 
   // Fetch the student IDs matching the criteria
   const students = await db.StudentOfficial.findAll({
-    attributes: ['id'],
     where: {
-      ...(campus ? { campus_id: campus.campus_id } : {}),
+      ...(campus ? {campus_id: campus.campus_id} : {}),
       student_id: {
         [Op.like]: `${new Date().getFullYear()}%`,
       },
@@ -1471,21 +1475,20 @@ async function getAllStudentOfficialCount(
     include: [
       {
         model: db.StudentPersonalData,
-        attributes: [],
         include: [
           {
             model: db.StudentAcademicBackground,
-            attributes: [],
             where: {
               // ...(schoolYear ? { yearEntry: schoolYear } : {}),
-              ...(semester_id ? { semester_id } : {}),
+              ...(semester_id ? {semester_id} : {}),
             },
+            attributes: ["semester_id"],
           },
         ],
+        attributes: [],
       },
     ],
-    raw: true,
-    group: ['id'],
+    attributes: ["student_id", "createdAt"], // Include other attributes as needed
   });
 
   // Return the count of unique student IDs
@@ -1525,7 +1528,11 @@ function generateColor(baseColor) {
     .slice(1)}`.toUpperCase();
 }
 
-async function getChartData(campusName = null, schoolYear = null, semester_id = null) {
+async function getChartData(
+  campusName = null,
+  schoolYear = null,
+  semester_id = null
+) {
   let campus;
 
   if (campusName) {
@@ -1571,7 +1578,11 @@ async function getChartData(campusName = null, schoolYear = null, semester_id = 
   }
 
   // Fetch students with departments using the updated helper function
-  const students = await getAllStudentsOfficial(campusName, schoolYear, semester_id);
+  const students = await getAllStudentsOfficial(
+    campusName,
+    schoolYear,
+    semester_id
+  );
 
   console.log(`Total students after mapping: ${students.length}`);
 
