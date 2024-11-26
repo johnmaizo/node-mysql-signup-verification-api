@@ -1461,7 +1461,7 @@ async function getAllStudentOfficialCount(
 
   // Fetch the student IDs matching the criteria
   const students = await db.StudentOfficial.findAll({
-    attributes: ['student_official_id'],
+    attributes: ['id'],
     where: {
       ...(campus ? { campus_id: campus.campus_id } : {}),
       student_id: {
@@ -1485,7 +1485,7 @@ async function getAllStudentOfficialCount(
       },
     ],
     raw: true,
-    // group: ['id'],
+    group: ['id'],
   });
 
   // Return the count of unique student IDs
