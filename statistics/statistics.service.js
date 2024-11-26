@@ -321,10 +321,13 @@ async function enrichClassesWithDepartmentData(classes) {
       cls.department_id = courseInfo.department_id || null;
       cls.departmentName =
         courseInfo.department?.departmentName || "General Subject";
+      cls.departmentCode =
+        courseInfo.department?.departmentCode || "General Subject";
     } else {
       // If no CourseInfo found, assign 'General Subject'
       cls.department_id = null;
       cls.departmentName = "General Subject";
+      cls.departmentCode = "General Subject";
     }
   });
 }
