@@ -1441,7 +1441,7 @@ async function getAllStudentsOfficial(campusName = null, schoolYear = null, seme
   return studentsWithDepartment;
 }
 
-async function getAllStudentOfficialCount(campusName = null) {
+async function getAllStudentOfficialCount(campusName = null, schoolYear = null, semester_id = null) {
   let campus;
 
   // If campusName is provided, fetch the campus based on the campus name
