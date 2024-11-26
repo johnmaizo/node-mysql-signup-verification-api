@@ -1413,7 +1413,7 @@ async function getAllStudentsOfficial(campusName = null, schoolYear = null, seme
     );
 
     // Extract the personal data fields
-    const {firstName, middleName, lastName, email} = studentPersonalData;
+    const {firstName, middleName, lastName, email, gender} = studentPersonalData;
 
     studentsWithDepartment.push({
       ...student.toJSON(),
@@ -1425,6 +1425,7 @@ async function getAllStudentsOfficial(campusName = null, schoolYear = null, seme
       middleName,
       lastName,
       email,
+      gender,
       programCode:
         student.student_personal_datum.student_current_academicbackground
           .program.programCode,
@@ -1441,47 +1442,54 @@ async function getAllStudentsOfficial(campusName = null, schoolYear = null, seme
   return studentsWithDepartment;
 }
 
-async function getAllStudentOfficialCount(campusName = null, schoolYear = null, semester_id = null) {
+async function getAllStudentOfficialCount(
+  campusName = null,
+  schoolYear = null,
+  semester_id = null
+) {
   let campus;
 
-  // If campusName is provided, fetch the campus based on the campus name
   if (campusName) {
     campus = await db.Campus.findOne({
-      where: {campusName},
+      where: { campusName },
     });
 
-    // Check if the campus exists
     if (!campus) {
       throw new Error("Campus not found");
     }
   }
 
-  // Count the students based on the provided campus or all students if campusName is null
-  const studentCount = await db.StudentOfficial.count({
+  // Fetch the student IDs matching the criteria
+  const students = await db.StudentOfficial.findAll({
+    attributes: ['student_official_id'],
     where: {
-      // Only filter by campus_id if a campus is found (i.e., campusName was provided)
-      ...(campus ? {campus_id: campus.campus_id} : {}),
+      ...(campus ? { campus_id: campus.campus_id } : {}),
       student_id: {
-        [Op.like]: `${new Date().getFullYear()}%`, // Adjust this condition as per your filtering needs
+        [Op.like]: `${new Date().getFullYear()}%`,
       },
-      include: [
-        {
-          model: db.StudentPersonalData,
-          include: [
-            {
-              model: db.StudentAcademicBackground,
-              where: {
-                // ...(schoolYear ? { yearEntry: schoolYear } : {}),
-                ...(semester_id ? { semester_id } : {}),
-              },
-            },
-          ],
-        },
-      ],
     },
+    include: [
+      {
+        model: db.StudentPersonalData,
+        attributes: [],
+        include: [
+          {
+            model: db.StudentAcademicBackground,
+            attributes: [],
+            where: {
+              // ...(schoolYear ? { yearEntry: schoolYear } : {}),
+              ...(semester_id ? { semester_id } : {}),
+            },
+          },
+        ],
+      },
+    ],
+    raw: true,
+    group: ['student_official_id'],
   });
 
-  return studentCount;
+  // Return the count of unique student IDs
+  return students.length;
 }
 
 function generateColor(baseColor) {
