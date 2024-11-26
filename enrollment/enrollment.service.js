@@ -1455,7 +1455,7 @@ async function getAllStudentOfficialCount(
 ) {
   let campus;
 
-  console.log("\n\n\nsemester_id: ", semester_id)
+  console.log("\n\n\nsemester_id: ", semester_id);
 
   if (campusName) {
     campus = await db.Campus.findOne({
@@ -1471,9 +1471,9 @@ async function getAllStudentOfficialCount(
   const students = await db.StudentOfficial.findAll({
     where: {
       ...(campus ? {campus_id: campus.campus_id} : {}),
-      // student_id: {
-      //   [Op.like]: `${new Date().getFullYear()}%`,
-      // },
+      student_id: {
+        [Op.like]: `${new Date().getFullYear()}%`,
+      },
     },
     include: [
       {
@@ -1485,10 +1485,47 @@ async function getAllStudentOfficialCount(
               // ...(schoolYear ? { yearEntry: schoolYear } : {}),
               ...(semester_id ? {semester_id} : {}),
             },
-            attributes: ["semester_id"],
+            include: [
+              {
+                model: db.Program,
+                include: [
+                  {
+                    model: db.Department,
+                    attributes: ["department_id", "departmentName"],
+                  },
+                ],
+                attributes: [
+                  "program_id",
+                  "programDescription",
+                  "programCode",
+                  "department_id",
+                ],
+              },
+            ],
+            attributes: [
+              "majorIn",
+              "studentType",
+              "applicationType",
+              "yearEntry",
+              "yearLevel",
+              "yearGraduate",
+              "semester_id",
+            ],
           },
         ],
-        attributes: [],
+        attributes: [
+          "student_personal_id",
+          "firstName",
+          "middleName",
+          "lastName",
+          "email",
+          "gender",
+        ],
+      },
+      {
+        model: db.Campus,
+
+        attributes: ["campusName", "campus_id"],
       },
     ],
     attributes: ["student_id", "createdAt"], // Include other attributes as needed
