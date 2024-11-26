@@ -1472,17 +1472,18 @@ async function getAllStudentOfficialCount(
     where: {
       ...(campus ? {campus_id: campus.campus_id} : {}),
       student_id: {
-        [Op.like]: `${new Date().getFullYear()}%`,
+        [Op.like]: `${new Date().getFullYear()}%`, // Adjust this condition as per your filtering needs
       },
     },
     include: [
       {
         model: db.StudentPersonalData,
+        required: true, // Ensures INNER JOIN with StudentPersonalData
         include: [
           {
             model: db.StudentAcademicBackground,
+            required: true, // Ensures INNER JOIN with StudentAcademicBackground
             where: {
-              // ...(schoolYear ? { yearEntry: schoolYear } : {}),
               ...(semester_id ? {semester_id} : {}),
             },
             include: [
@@ -1524,7 +1525,6 @@ async function getAllStudentOfficialCount(
       },
       {
         model: db.Campus,
-
         attributes: ["campusName", "campus_id"],
       },
     ],
