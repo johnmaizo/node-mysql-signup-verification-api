@@ -1350,6 +1350,7 @@ async function getAllStudentsOfficial(
           "middleName",
           "lastName",
           "email",
+          "gender",
         ],
       },
       {
@@ -1454,6 +1455,8 @@ async function getAllStudentOfficialCount(
 ) {
   let campus;
 
+  console.log("\n\n\nsemester_id: ", semester_id)
+
   if (campusName) {
     campus = await db.Campus.findOne({
       where: {campusName},
@@ -1468,9 +1471,9 @@ async function getAllStudentOfficialCount(
   const students = await db.StudentOfficial.findAll({
     where: {
       ...(campus ? {campus_id: campus.campus_id} : {}),
-      student_id: {
-        [Op.like]: `${new Date().getFullYear()}%`,
-      },
+      // student_id: {
+      //   [Op.like]: `${new Date().getFullYear()}%`,
+      // },
     },
     include: [
       {
