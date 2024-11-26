@@ -620,6 +620,8 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
       const fulldata_applicant_id =
         onlineFullStudentInfoPOST.data.fulldata_applicant_id;
 
+        console.log("\n\n\n\nfulldata_applicant_id: ", onlineFullStudentInfoPOST.data.fulldata_applicant_id)
+
       // Update the applicant's applicant_id_for_online field
       applicant.applicant_id_for_online = fulldata_applicant_id;
 

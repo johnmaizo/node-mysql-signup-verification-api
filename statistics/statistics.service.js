@@ -235,15 +235,15 @@ async function getEnrollmentsByDepartment(
   semester_id = null
 ) {
   try {
-    const classes = await getFilteredClasses(
-      campus_id,
-      schoolYear,
-      semester_id
-    );
+    // Fetch and filter classes
+    let classes = await getFilteredClasses(campus_id, schoolYear, semester_id);
 
     if (classes.length === 0) {
       return [];
     }
+
+    // Enrich classes with department data
+    await enrichClassesWithDepartmentData(classes);
 
     const classIds = classes.map((cls) => cls.id);
 
@@ -273,7 +273,7 @@ async function getEnrollmentsByDepartment(
 
         if (!enrollmentCounts[deptId]) {
           enrollmentCounts[deptId] = {
-            department_id: classDetail.department_id,
+            department_id: deptId,
             departmentName: deptName,
             totalEnrollments: 0,
           };
@@ -287,6 +287,46 @@ async function getEnrollmentsByDepartment(
     console.error("Error in getEnrollmentsByDepartment:", error);
     throw new Error("Failed to get enrollments by department");
   }
+}
+
+async function enrichClassesWithDepartmentData(classes) {
+  // Get all unique subject_ids from classes
+  const subjectIds = [...new Set(classes.map((cls) => cls.subject_id))];
+
+  // Fetch CourseInfo records with associated Department
+  const courseInfos = await db.CourseInfo.findAll({
+    where: {
+      course_id: {
+        [Op.in]: subjectIds,
+      },
+    },
+    include: [
+      {
+        model: db.Department,
+        attributes: ["department_id", "departmentName"],
+      },
+    ],
+  });
+
+  // Create a map of course_id to CourseInfo
+  const courseInfoMap = {};
+  courseInfos.forEach((courseInfo) => {
+    courseInfoMap[courseInfo.course_id] = courseInfo;
+  });
+
+  // Enrich classes with department data
+  classes.forEach((cls) => {
+    const courseInfo = courseInfoMap[cls.subject_id];
+    if (courseInfo) {
+      cls.department_id = courseInfo.department_id || null;
+      cls.departmentName =
+        courseInfo.department?.departmentName || "General Subject";
+    } else {
+      // If no CourseInfo found, assign 'General Subject'
+      cls.department_id = null;
+      cls.departmentName = "General Subject";
+    }
+  });
 }
 
 async function getEnrollmentsBySubject(
