@@ -284,10 +284,10 @@ function getEnlistedClassesExternal(req, res, next) {
 }
 
 function getAllStudentOfficialCount(req, res, next) {
-  const {campusName} = req.query;
+  const { campusName, schoolYear, semester_id } = req.query;
 
   enrollmentService
-    .getAllStudentOfficialCount(campusName)
+    .getAllStudentOfficialCount(campusName, schoolYear, semester_id)
     .then((count) => res.json(count))
     .catch(next);
 }
