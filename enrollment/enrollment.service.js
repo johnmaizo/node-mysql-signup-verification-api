@@ -1485,7 +1485,7 @@ async function getAllStudentOfficialCount(
       },
     ],
     raw: true,
-    group: ['id'],
+    // group: ['id'],
   });
 
   // Return the count of unique student IDs
