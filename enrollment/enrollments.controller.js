@@ -262,9 +262,9 @@ function rejectEnrollOlineApplicantStudent(req, res, next) {
 }
 
 function getAllStudentsOfficial(req, res, next) {
-  const {campusName} = req.query;
+  const { campusName, schoolYear, semester_id } = req.query;
   enrollmentService
-    .getAllStudentsOfficial(campusName)
+    .getAllStudentsOfficial(campusName, schoolYear, semester_id)
     .then((students) => res.json(students))
     .catch(next);
 }
