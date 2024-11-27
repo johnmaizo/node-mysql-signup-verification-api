@@ -269,11 +269,13 @@ async function getEnrollmentsByDepartment(
       const classDetail = classDetailsMap[enrollment.class_id];
       if (classDetail) {
         const deptId = classDetail.department_id || "unassigned";
+        const deptCode = classDetail.departmentCode || "GS"; // Ensure departmentCode is available
         const deptName = classDetail.departmentName || "General Subject";
 
         if (!enrollmentCounts[deptId]) {
           enrollmentCounts[deptId] = {
             department_id: deptId,
+            departmentCode: deptCode,
             departmentName: deptName,
             totalEnrollments: 0,
           };
@@ -322,7 +324,7 @@ async function enrichClassesWithDepartmentData(classes) {
       cls.departmentName =
         courseInfo.department?.departmentName || "General Subject";
       cls.departmentCode =
-        courseInfo.department?.departmentCode || "General Subject";
+        courseInfo.department?.departmentCode || "GS";
     } else {
       // If no CourseInfo found, assign 'General Subject'
       cls.department_id = null;
