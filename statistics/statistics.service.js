@@ -305,7 +305,7 @@ async function enrichClassesWithDepartmentData(classes) {
     include: [
       {
         model: db.Department,
-        attributes: ["department_id", "departmentName"],
+        attributes: ["department_id", "departmentName", "departmentCode"],
       },
     ],
   });
@@ -329,7 +329,7 @@ async function enrichClassesWithDepartmentData(classes) {
       // If no CourseInfo found, assign 'General Subject'
       cls.department_id = null;
       cls.departmentName = "General Subject";
-      cls.departmentCode = "General Subject";
+      cls.departmentCode = "GS";
     }
   });
 }
