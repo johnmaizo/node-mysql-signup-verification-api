@@ -75,6 +75,13 @@ async function addEnrollment(params, accountId = null, external = false) {
     final_approval_status: false,
   });
 
+  // Fetch the new semester details
+  const newSemester = await db.Semester.findByPk(semester_id);
+
+  if (!newSemester) {
+    throw new Error("Semester not found.");
+  }
+
   // Fetch and update academic background
   const academicBackground = await db.StudentAcademicBackground.findOne({
     where: {student_personal_id},
@@ -93,11 +100,17 @@ async function addEnrollment(params, accountId = null, external = false) {
     throw new Error(`Invalid yearLevel: ${academicBackground.yearLevel}`);
   }
 
-  // Advance to the next year level or mark as Graduated
-  if (currentLevelIndex < yearLevels.length - 1) {
-    academicBackground.yearLevel = yearLevels[currentLevelIndex + 1];
-  } else {
-    academicBackground.yearLevel = "Graduated";
+  let yearLevelChanged = false; // Flag to track if yearLevel was updated
+
+  // Only advance to the next year level if the new semester is "1st Semester"
+  if (newSemester.semesterName === "1st Semester") {
+    if (currentLevelIndex < yearLevels.length - 1) {
+      academicBackground.yearLevel = yearLevels[currentLevelIndex + 1];
+      yearLevelChanged = true;
+    } else {
+      academicBackground.yearLevel = "Graduated";
+      yearLevelChanged = true;
+    }
   }
 
   // Update semester_id
@@ -106,14 +119,19 @@ async function addEnrollment(params, accountId = null, external = false) {
 
   // Log history for academic background update
   if (accountId) {
+    const changes = {
+      semester_id,
+    };
+
+    if (yearLevelChanged) {
+      changes.yearLevel = academicBackground.yearLevel;
+    }
+
     await db.History.create({
       action: "update",
       entity: "StudentAcademicBackground",
       entityId: academicBackground.id,
-      changes: {
-        semester_id,
-        yearLevel: academicBackground.yearLevel,
-      },
+      changes,
       accountId,
     });
 
