@@ -2014,6 +2014,7 @@ async function getAllEnrollmentStatus(
             "middleName",
             "email",
             "campus_id",
+            "gender",
           ],
           where: studentWhere,
           required: true,
