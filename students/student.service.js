@@ -402,11 +402,18 @@ async function getUnenrolledStudents(
         },
         {
           model: db.StudentAcademicBackground,
-          attributes: [], // No need to select fields from here
+          attributes: ["yearLevel"],
           required: true,
           where: {
             semester_id: {[Op.ne]: targetSemester.semester_id},
           },
+          include: [
+            {
+              model: db.Program,
+              attributes: ["programCode", "programDescription"],
+              required: true,
+            },
+          ],
         },
         {
           model: db.StudentClassEnrollments,
@@ -433,6 +440,9 @@ async function getUnenrolledStudents(
       hasEnlistedSubjects:
         student.student_class_enrollments &&
         student.student_class_enrollments.length > 0,
+      programCode:
+        student.student_current_academicbackground.program.programCode,
+      yearLevel: student.student_current_academicbackground.yearLevel,
     }));
 
     return studentsWithEnrollmentStatus;

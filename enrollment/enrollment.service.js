@@ -620,7 +620,10 @@ async function enrollOlineApplicantStudentMockUpOnsite(student_personal_id) {
       const fulldata_applicant_id =
         onlineFullStudentInfoPOST.data.fulldata_applicant_id;
 
-        console.log("\n\n\n\nfulldata_applicant_id: ", onlineFullStudentInfoPOST.data.fulldata_applicant_id)
+      console.log(
+        "\n\n\n\nfulldata_applicant_id: ",
+        onlineFullStudentInfoPOST.data.fulldata_applicant_id
+      );
 
       // Update the applicant's applicant_id_for_online field
       applicant.applicant_id_for_online = fulldata_applicant_id;
@@ -2079,12 +2082,16 @@ async function getAllEnrollmentStatus(
           : ""
       }${status.student_personal_datum.lastName}`,
       student_personal_id: status.student_personal_datum.student_personal_id,
+      gender: status.student_personal_datum.gender,
       programCode:
         status.student_personal_datum.student_current_academicbackground.program
           .programCode,
       programDescription:
         status.student_personal_datum.student_current_academicbackground.program
           .programDescription,
+      yearLevel:
+        status.student_personal_datum.student_current_academicbackground
+          .yearLevel,
       departmentCode:
         status.student_personal_datum.student_current_academicbackground.program
           .department.departmentCode,
