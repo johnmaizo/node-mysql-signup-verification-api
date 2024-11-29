@@ -5,7 +5,7 @@ const Role = require("_helpers/role");
 const deepEqual = require("deep-equal");
 
 const {default: axios} = require("axios");
-require("dotenv").config(); // Ensure environment variables are loaded
+require("dotenv").config();
 
 const moment = require("moment-timezone");
 
@@ -129,7 +129,7 @@ async function getAllClass(
     // Step 7: Map each class to include the formatted schedule string and course information
     const classesWithSchedule = filteredClasses.map((cls) => {
       // **Retrieve the desired time zone from environment variables**
-      const desiredTimeZone = "Asia/Singapore"; // Default to Asia/Singapore if not set
+      const desiredTimeZone = process.env.TIME_ZONE || "Asia/Singapore"; // Default to Asia/Singapore if not set
 
       // Parse the start and end times correctly
       // Since the timestamps are in UTC, use moment.utc() before converting
@@ -390,8 +390,17 @@ async function getClassById(id) {
     cls.units = course.unit;
 
     // Step 4: Format the schedule string
-    const startTime = moment.utc(cls.start).local().format("h:mm A");
-    const endTime = moment.utc(cls.end).local().format("h:mm A");
+    // const startTime = moment.utc(cls.start).local().format("h:mm A");
+    // const endTime = moment.utc(cls.end).local().format("h:mm A");
+    const desiredTimeZone = process.env.TIME_ZONE || "Asia/Singapore"; // Default to Asia/Singapore if not set
+
+    // Parse the start and end times correctly
+    // Since the timestamps are in UTC, use moment.utc() before converting
+    const startTime = moment
+      .utc(cls.start)
+      .tz(desiredTimeZone)
+      .format("h:mm A");
+    const endTime = moment.utc(cls.end).tz(desiredTimeZone).format("h:mm A");
     const scheduleString = `${cls.day} ${startTime} - ${endTime}`;
 
     // Step 5: Fetch enrolled students for the class
