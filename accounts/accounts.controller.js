@@ -281,8 +281,8 @@ function setTokenCookie(res, token) {
     const cookieOptions = {
         httpOnly: true,
         expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-        secure: process.env.NODE_ENV === 'production', // Set to true if your site is served over HTTPS
-        sameSite: 'Strict' // Adjust as necessary
+        secure: process.env.NODE_ENV === 'production', // true if served over HTTPS
+        sameSite: 'none' // necessary for cross-site cookies
     };
     res.cookie('refreshToken', token, cookieOptions);
 }
